@@ -1,0 +1,872 @@
+# Kodi Media Center language file
+# Addon Name: EasyTV
+# Addon id: script.easytv
+# Addon Provider: KODeKarnage, Rouzax
+msgid ""
+msgstr ""
+"Project-Id-Version: Kodi Addons\n"
+"Report-Msgid-Bugs-To: https://github.com/Rouzax/script.easytv/issues\n"
+"POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: Kodi Translation Team\n"
+"Language-Team: English\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: en\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# =============================================================================
+# LEGACY STRINGS REMOVED - The following IDs were from the original addon
+# and are no longer used: 32000-32016, 32030-32044, 32060-32063, 32069-32072,
+# 32080-32096. They have been replaced by the new 32500+ series.
+# =============================================================================
+
+#empty strings from id 32000 to 32029
+
+#empty strings from id 32030 to 32031
+
+msgctxt "#32032"
+msgid "Allow multiple episodes of same TV Show"
+msgstr ""
+
+#empty strings from id 32033 to 32035
+
+# DEPRECATED: 32036 was "Include unwatched movies" toggle, replaced by movie_selection dropdown in 4.0.32
+msgctxt "#32036"
+msgid "Include unwatched movies"
+msgstr ""
+
+msgctxt "#32037"
+msgid "Movie selection"
+msgstr ""
+
+#empty strings from id 32038 to 32063
+
+msgctxt "#32064"
+msgid "Show Name"
+msgstr ""
+
+msgctxt "#32065"
+msgid "Last Watched"
+msgstr ""
+
+msgctxt "#32066"
+msgid "# Unwatched Episodes"
+msgstr ""
+
+msgctxt "#32067"
+msgid "# Watched Episodes"
+msgstr ""
+
+msgctxt "#32068"
+msgid "Season"
+msgstr ""
+
+#empty strings from id 32069 to 32072
+
+msgctxt "#32073"
+msgid "Standard"
+msgstr ""
+
+msgctxt "#32074"
+msgid "Posters"
+msgstr ""
+
+msgctxt "#32075"
+msgid "Big Screen"
+msgstr ""
+
+msgctxt "#32076"
+msgid "Return to EasyTV after playback"
+msgstr ""
+
+#empty strings from id 32077 to 32090
+
+msgctxt "#32091"
+msgid "Don't play"
+msgstr ""
+
+msgctxt "#32092"
+msgid "Play"
+msgstr ""
+
+#empty strings from id 32093 to 32099
+#dialog
+
+msgctxt "#32100"
+msgid "This addon finds the next episode in each TV show."
+msgstr ""
+
+msgctxt "#32101"
+msgid "Do you want a list or a randomised playlist?"
+msgstr ""
+
+msgctxt "#32102"
+msgid "Show me"
+msgstr ""
+
+msgctxt "#32103"
+msgid "Surprise me"
+msgstr ""
+
+msgctxt "#32104"
+msgid "Select the playlist"
+msgstr ""
+
+# -- yGUI --
+msgctxt "#32105"
+msgid "Close"
+msgstr ""
+
+# -- service not running message --
+msgctxt "#32106"
+msgid "EasyTV Service is not running."
+msgstr ""
+
+msgctxt "#32107"
+msgid "Would you like to attempt to start it now?"
+msgstr ""
+
+# -- service needs restart to update --
+msgctxt "#32108"
+msgid "EasyTV Service has updated. Please restart to apply changes."
+msgstr ""
+
+# -- clone needs updating --
+msgctxt "#32110"
+msgid "EasyTV has updated and this clone is now out of date."
+msgstr ""
+
+msgctxt "#32111"
+msgid "Would you like to update the clone now?"
+msgstr ""
+
+msgctxt "#32112"
+msgid "Never"
+msgstr ""
+
+msgctxt "#32113"
+msgid "day"
+msgstr ""
+
+msgctxt "#32114"
+msgid "days"
+msgstr ""
+
+msgctxt "#32115"
+msgid "EasyTV is still populating with shows."
+msgstr ""
+
+msgctxt "#32116"
+msgid "Please wait and try again."
+msgstr ""
+
+#empty strings from id 32117 to 32138
+
+msgctxt "#32139"
+msgid "name your clone"
+msgstr ""
+
+msgctxt "#32140"
+msgid "An error occurred while creating the clone."
+msgstr ""
+
+msgctxt "#32141"
+msgid "Operation cancelled."
+msgstr ""
+
+msgctxt "#32142"
+msgid "This script creates a cloned version of the EasyTV user interface."
+msgstr ""
+
+msgctxt "#32143"
+msgid "It creates a new folder in your addons directory."
+msgstr ""
+
+msgctxt "#32144"
+msgid "Do you wish to continue?"
+msgstr ""
+
+msgctxt "#32145"
+msgid "That name is in use. Please try another."
+msgstr ""
+
+msgctxt "#32146"
+msgid "Cloning successful."
+msgstr ""
+
+msgctxt "#32147"
+msgid "Clone is now ready for use."
+msgstr ""
+
+msgctxt "#32148"
+msgid "An error occurred while updating the clone."
+msgstr ""
+
+msgctxt "#32149"
+msgid "Update successful."
+msgstr ""
+
+#empty strings from id 32150 to 32159
+
+msgctxt "#32160"
+msgid "EasyTV - there are previous unwatched episodes"
+msgstr ""
+
+msgctxt "#32161"
+msgid "%s (%sx%s) is in your library."
+msgstr ""
+
+msgctxt "#32162"
+msgid "Would you like to watch it now?"
+msgstr ""
+
+msgctxt "#32163"
+msgid "Now Playing"
+msgstr ""
+
+msgctxt "#32167"
+msgid "EasyTV   (auto-closing in %s seconds)"
+msgstr ""
+
+msgctxt "#32168"
+msgid "%s (%s) is in your library."
+msgstr ""
+
+msgctxt "#32170"
+msgid "Save"
+msgstr ""
+
+msgctxt "#32171"
+msgid "Select All"
+msgstr ""
+
+msgctxt "#32172"
+msgid "Unselect All"
+msgstr ""
+
+msgctxt "#32173"
+msgid "Database analysis complete"
+msgstr ""
+
+#empty strings from id 32174 to 32179
+
+msgctxt "#32180"
+msgid "Choose export location"
+msgstr ""
+
+msgctxt "#32181"
+msgid "Some files failed to transfer"
+msgstr ""
+
+msgctxt "#32182"
+msgid "Would you like to see them?"
+msgstr ""
+
+msgctxt "#32183"
+msgid "Retrieving file size..."
+msgstr ""
+
+msgctxt "#32184"
+msgid "File transfer in progress..."
+msgstr ""
+
+msgctxt "#32185"
+msgid "File export completed successfully"
+msgstr ""
+
+#empty strings from id 32186 to 32199
+
+msgctxt "#32200"
+msgid "Multi-Select (on)"
+msgstr ""
+
+msgctxt "#32201"
+msgid "Multi-Select (off)"
+msgstr ""
+
+msgctxt "#32202"
+msgid "Play Selection"
+msgstr ""
+
+msgctxt "#32203"
+msgid "Export Selection"
+msgstr ""
+
+msgctxt "#32204"
+msgid "Play Episode"
+msgstr ""
+
+msgctxt "#32205"
+msgid "Export Episode"
+msgstr ""
+
+msgctxt "#32206"
+msgid "Play From Here"
+msgstr ""
+
+msgctxt "#32207"
+msgid "Mark as Watched"
+msgstr ""
+
+msgctxt "#32208"
+msgid "Update Library"
+msgstr ""
+
+msgctxt "#32209"
+msgid "Refresh List"
+msgstr ""
+
+#empty strings from id 32210 to 32219
+
+msgctxt "#32220"
+msgid "Season"
+msgstr ""
+
+msgctxt "#32221"
+msgid "Episode"
+msgstr ""
+
+msgctxt "#32222"
+msgid "Progress"
+msgstr ""
+
+msgctxt "#32223"
+msgid "Available"
+msgstr ""
+
+msgctxt "#32224"
+msgid "Watched"
+msgstr ""
+
+msgctxt "#32225"
+msgid "Skipped"
+msgstr ""
+
+msgctxt "#32226"
+msgid "In this episode"
+msgstr ""
+
+#empty strings from id 32227 to 32249
+
+msgctxt "#32250"
+msgid "* Hidden to prevent spoilers *"
+msgstr ""
+
+#empty strings from id 32251 to 32299
+
+#. Addon metadata for Weblate sync
+msgctxt "#32300"
+msgid "Channel surf your own TV library"
+msgstr ""
+
+#. Description for addon.xml - synced via Weblate
+msgctxt "#32301"
+msgid "EasyTV finds the next unwatched episode for each TV show and lets you jump right in, or creates a randomized playlist for lean-back viewing. Built for Kodi 21 (Omega) and newer. Features include episode lists, random playlists, movie mixing, watch-in-any-order shows, next episode prompts, and auto-maintained smart playlists."
+msgstr ""
+
+#empty strings from id 32302 to 32399
+
+# =============================================================================
+# NEW HELP STRINGS (32400-32434) - Settings help text
+# =============================================================================
+
+msgctxt "#32400"
+msgid "Choose what happens when you launch EasyTV."
+msgstr ""
+
+msgctxt "#32401"
+msgid "When enabled, EasyTV only uses shows you've specifically chosen instead of your entire library."
+msgstr ""
+
+msgctxt "#32402"
+msgid "How to choose which shows EasyTV uses."
+msgstr ""
+
+msgctxt "#32403"
+msgid "Open selector to choose which TV shows EasyTV will use."
+msgstr ""
+
+msgctxt "#32404"
+msgid "Choose whether to pick a smart playlist each time, or use a default."
+msgstr ""
+
+msgctxt "#32405"
+msgid "Select a Kodi smart playlist (.xsp) file."
+msgstr ""
+
+msgctxt "#32406"
+msgid "Select shows where episode order doesn't matter."
+msgstr ""
+
+msgctxt "#32407"
+msgid "Include S01E01 episodes. Disable to hide shows you haven't started watching yet."
+msgstr ""
+
+msgctxt "#32408"
+msgid "Visual layout for the episode list."
+msgstr ""
+
+msgctxt "#32409"
+msgid "Return to the episode list after watching, instead of going back to where you were."
+msgstr ""
+
+msgctxt "#32410"
+msgid "How to sort shows. Applies to both episode list and random playlist modes."
+msgstr ""
+
+msgctxt "#32411"
+msgid "Flip the sort direction. Applies to both episode list and random playlist modes."
+msgstr ""
+
+msgctxt "#32412"
+msgid "Hide shuffle-friendly shows from the episode list. They'll still appear in random playlists."
+msgstr ""
+
+msgctxt "#32413"
+msgid "Cap the number of shows in the list. Can improve speed on slower systems."
+msgstr ""
+
+msgctxt "#32414"
+msgid "Maximum number of shows to display."
+msgstr ""
+
+msgctxt "#32415"
+msgid "Number of episodes (and movies, if enabled) in the playlist."
+msgstr ""
+
+msgctxt "#32416"
+msgid "Allow the same show to appear multiple times in a single playlist."
+msgstr ""
+
+msgctxt "#32417"
+msgid "Put your most recently started (but unfinished) episode first in the playlist."
+msgstr ""
+
+msgctxt "#32418"
+msgid "Continue partially watched episodes from your last position instead of restarting."
+msgstr ""
+
+# DEPRECATED: 32419 was help text for "Include unwatched movies" toggle, removed in 4.0.32
+msgctxt "#32419"
+msgid "Mix unwatched movies from your library into the playlist."
+msgstr ""
+
+msgctxt "#32420"
+msgid "Choose which movies to include: unwatched, watched, or both."
+msgstr ""
+
+msgctxt "#32421"
+msgid "Start watched movies at a random point, like catching a movie on TV."
+msgstr ""
+
+msgctxt "#32422"
+msgid "Balance between movies and TV episodes. 0 = no movies, 1.0 = equal mix of movies and shows."
+msgstr ""
+
+msgctxt "#32424"
+msgid "Display a notification when each episode or movie starts in the playlist."
+msgstr ""
+
+msgctxt "#32425"
+msgid "After an episode ends, show a dialog asking if you want to watch the next one."
+msgstr ""
+
+msgctxt "#32426"
+msgid "How long the prompt stays on screen. Maximum (60) waits indefinitely."
+msgstr ""
+
+msgctxt "#32427"
+msgid "What happens if you don't respond to the prompt."
+msgstr ""
+
+msgctxt "#32428"
+msgid "Show the prompt even during EasyTV's random playlists. Normally playlists continue automatically."
+msgstr ""
+
+msgctxt "#32429"
+msgid "If you start an episode but there's an earlier unwatched one, ask if you want to watch that instead."
+msgstr ""
+
+msgctxt "#32430"
+msgid "Display a notification when EasyTV finishes scanning your library after Kodi starts."
+msgstr ""
+
+msgctxt "#32431"
+msgid "Create and maintain three smart playlists: All Shows, Continue Watching, and Start Fresh. Useful for home screen widgets."
+msgstr ""
+
+msgctxt "#32432"
+msgid "Write detailed diagnostic information to a separate log file (addon_data/script.easytv/logs/easytv.log). Important events also appear in Kodi's log."
+msgstr ""
+
+msgctxt "#32433"
+msgid "Create a separate copy of EasyTV with its own settings. Useful for different configurations on your home screen."
+msgstr ""
+
+msgctxt "#32434"
+msgid "Copy your 'next episode' video files to another location for offline viewing."
+msgstr ""
+
+msgctxt "#32435"
+msgid "What to include in the random playlist."
+msgstr ""
+
+#empty strings from id 32436 to 32499
+
+# =============================================================================
+# NEW LABEL STRINGS (32500-32539) - Settings labels
+# =============================================================================
+
+msgctxt "#32500"
+msgid "When I open EasyTV"
+msgstr ""
+
+msgctxt "#32501"
+msgid "Show episode list"
+msgstr ""
+
+msgctxt "#32502"
+msgid "Play random playlist"
+msgstr ""
+
+msgctxt "#32503"
+msgid "Ask me"
+msgstr ""
+
+msgctxt "#32504"
+msgid "Use only selected shows"
+msgstr ""
+
+msgctxt "#32505"
+msgid "Selection method"
+msgstr ""
+
+msgctxt "#32506"
+msgid "Pick shows manually"
+msgstr ""
+
+msgctxt "#32507"
+msgid "Use a smart playlist"
+msgstr ""
+
+msgctxt "#32508"
+msgid "Select shows..."
+msgstr ""
+
+msgctxt "#32509"
+msgid "Smart playlist"
+msgstr ""
+
+msgctxt "#32510"
+msgid "Ask each time"
+msgstr ""
+
+msgctxt "#32511"
+msgid "Use default"
+msgstr ""
+
+msgctxt "#32512"
+msgid "Choose playlist file..."
+msgstr ""
+
+msgctxt "#32513"
+msgid "Choose shows..."
+msgstr ""
+
+msgctxt "#32514"
+msgid "Include series premieres"
+msgstr ""
+
+msgctxt "#32515"
+msgid "View style"
+msgstr ""
+
+msgctxt "#32516"
+msgid "Sort by"
+msgstr ""
+
+msgctxt "#32517"
+msgid "Reverse sort order"
+msgstr ""
+
+msgctxt "#32518"
+msgid "Hide shuffle-friendly shows"
+msgstr ""
+
+msgctxt "#32519"
+msgid "Limit shows displayed"
+msgstr ""
+
+msgctxt "#32520"
+msgid "Maximum shows"
+msgstr ""
+
+msgctxt "#32521"
+msgid "Playlist length"
+msgstr ""
+
+msgctxt "#32522"
+msgid "Start playlist with unfinished episode"
+msgstr ""
+
+msgctxt "#32523"
+msgid "Resume from last position"
+msgstr ""
+
+msgctxt "#32524"
+msgid "Start watched movies at random point"
+msgstr ""
+
+msgctxt "#32525"
+msgid "Movie ratio"
+msgstr ""
+
+msgctxt "#32527"
+msgid "Show info when playing"
+msgstr ""
+
+msgctxt "#32528"
+msgid "Ask to watch next episode"
+msgstr ""
+
+msgctxt "#32529"
+msgid "Prompt timeout (seconds)"
+msgstr ""
+
+msgctxt "#32530"
+msgid "If prompt times out"
+msgstr ""
+
+msgctxt "#32531"
+msgid "Don't play"
+msgstr ""
+
+msgctxt "#32532"
+msgid "Play next episode"
+msgstr ""
+
+msgctxt "#32533"
+msgid "Also prompt during random playlists"
+msgstr ""
+
+msgctxt "#32534"
+msgid "Warn about earlier unwatched episodes"
+msgstr ""
+
+msgctxt "#32535"
+msgid "Show notification when ready"
+msgstr ""
+
+msgctxt "#32536"
+msgid "Auto-create 'Next Episodes' playlists"
+msgstr ""
+
+msgctxt "#32537"
+msgid "Enable debug logging"
+msgstr ""
+
+msgctxt "#32538"
+msgid "Create EasyTV copy..."
+msgstr ""
+
+msgctxt "#32539"
+msgid "Export episodes to folder..."
+msgstr ""
+
+# =============================================================================
+# NEW CATEGORY STRINGS (32540-32551) - Settings categories
+# =============================================================================
+
+msgctxt "#32540"
+msgid "EasyTV"
+msgstr ""
+
+msgctxt "#32541"
+msgid "Shows"
+msgstr ""
+
+msgctxt "#32542"
+msgid "Episode List"
+msgstr ""
+
+msgctxt "#32543"
+msgid "Random Playlist"
+msgstr ""
+
+msgctxt "#32544"
+msgid "Playback"
+msgstr ""
+
+msgctxt "#32545"
+msgid "Advanced"
+msgstr ""
+
+msgctxt "#32546"
+msgid "Control which TV shows and episodes EasyTV uses."
+msgstr ""
+
+msgctxt "#32547"
+msgid "Settings for 'Show episode list' mode. These apply when browsing your next episodes."
+msgstr ""
+
+msgctxt "#32548"
+msgid "Settings for 'Play random playlist' mode. These apply when creating shuffled playlists."
+msgstr ""
+
+msgctxt "#32549"
+msgid "These settings work for all TV shows, not just EasyTV playback."
+msgstr ""
+
+msgctxt "#32550"
+msgid "Technical settings and utilities."
+msgstr ""
+
+msgctxt "#32551"
+msgid "On Launch"
+msgstr ""
+
+# =============================================================================
+# NEW GROUP STRINGS (32552-32567) - Settings groups
+# =============================================================================
+
+msgctxt "#32552"
+msgid "Show Filter"
+msgstr ""
+
+msgctxt "#32553"
+msgid "Shuffle-Friendly Shows"
+msgstr ""
+
+msgctxt "#32554"
+msgid "Discovery"
+msgstr ""
+
+msgctxt "#32555"
+msgid "Appearance"
+msgstr ""
+
+msgctxt "#32556"
+msgid "Sorting"
+msgstr ""
+
+msgctxt "#32557"
+msgid "Performance"
+msgstr ""
+
+msgctxt "#32558"
+msgid "Playlist"
+msgstr ""
+
+msgctxt "#32559"
+msgid "TV Episodes"
+msgstr ""
+
+msgctxt "#32560"
+msgid "Movies"
+msgstr ""
+
+msgctxt "#32561"
+msgid "Notifications"
+msgstr ""
+
+msgctxt "#32562"
+msgid "Next Episode Prompt"
+msgstr ""
+
+msgctxt "#32563"
+msgid "Warnings"
+msgstr ""
+
+msgctxt "#32564"
+msgid "Background Service"
+msgstr ""
+
+msgctxt "#32565"
+msgid "Debugging"
+msgstr ""
+
+msgctxt "#32566"
+msgid "Tools"
+msgstr ""
+
+msgctxt "#32567"
+msgid "Some shows like sitcoms or procedurals are fine to watch in any order. For these shows, EasyTV picks random episodes instead of the next one in sequence."
+msgstr ""
+
+msgctxt "#32568"
+msgid "Selected:"
+msgstr ""
+
+msgctxt "#32569"
+msgid "%d shows selected"
+msgstr ""
+
+msgctxt "#32570"
+msgid "No playlist selected"
+msgstr ""
+
+msgctxt "#32571"
+msgid "No shows selected"
+msgstr ""
+
+msgctxt "#32574"
+msgid "Channel surf your own TV library - never wonder what to watch again!"
+msgstr ""
+
+# ERROR STRINGS (32575-32577) - Playlist error messages
+msgctxt "#32575"
+msgid "Error: files not in playlist contents"
+msgstr ""
+
+msgctxt "#32576"
+msgid "Error: playlist contents empty"
+msgstr ""
+
+msgctxt "#32577"
+msgid "Error: no TV shows in playlist"
+msgstr ""
+
+# UI INDICATOR (32578) - Skipped episode indicator
+msgctxt "#32578"
+msgid "Skipped"
+msgstr ""
+
+# =============================================================================
+# PLAYLIST CONTENT SPINNER (32579-32582) - Settings for content type selection
+# =============================================================================
+
+msgctxt "#32579"
+msgid "Playlist content"
+msgstr ""
+
+msgctxt "#32580"
+msgid "TV episodes only"
+msgstr ""
+
+msgctxt "#32581"
+msgid "TV and movies"
+msgstr ""
+
+msgctxt "#32582"
+msgid "Movies only"
+msgstr ""
+
+msgctxt "#32583"
+msgid "Content Options"
+msgstr ""
+
+# MOVIE SELECTION SPINNER (32584-32586) - Options for which movies to include
+# =============================================================================
+msgctxt "#32584"
+msgid "Unwatched only"
+msgstr ""
+
+msgctxt "#32585"
+msgid "Watched only"
+msgstr ""
+
+msgctxt "#32586"
+msgid "Both"
+msgstr ""

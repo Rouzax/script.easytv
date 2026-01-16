@@ -1,0 +1,42 @@
+EasyTV Changelog
+================
+
+v1.0.0 (2026-01-16)
+-------------------
+Initial release as EasyTV - a fork and complete rewrite of LazyTV by KODeKarnage.
+
+What is EasyTV?
+  No scrolling. No deciding. Just watching.
+  EasyTV tracks your TV shows and always knows your next episode. When you're 
+  ready for something new, it suggests a show you haven't started. Mix in movies
+  if you want. Just sit down, press play, and enjoy.
+
+Major Changes from LazyTV:
+  - Complete rewrite for Kodi 21+ (Python 3.8+)
+  - Modernized settings system (Kodi 19+ format)
+  - Modular architecture for better maintainability
+  - Improved logging system with separate debug log file
+  - Enhanced error handling throughout
+
+Features:
+  - Episode List Mode: Browse next unwatched episodes for all your shows
+  - Random Playlist Mode: Channel-surf through episodes (and optionally movies)
+  - Smart Playlists: Auto-maintained playlists for use with other addons/skins
+    - EasyTV - All Shows
+    - EasyTV - Continue Watching  
+    - EasyTV - Start Fresh
+  - Random Order Shows: Designate shows to play episodes in any order
+  - Next Episode Prompts: Get notified when an episode ends
+  - Previous Episode Check: Warning if you're about to skip episodes
+  - Clone Support: Create multiple configurations for your home screen
+  - Episode Export: Copy episodes to external storage
+
+Credits:
+  Original LazyTV created by KODeKarnage (2013)
+  https://github.com/KODeKarnage/script.lazytv
+
+  Modernized and maintained by Rouzax (2024-2026)
+  https://github.com/Rouzax/script.easytv
+
+License:
+  GPL-3.0-or-later
