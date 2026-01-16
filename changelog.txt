@@ -1,6 +1,10 @@
 EasyTV Changelog
 ================
 
+v1.0.1 (2026-01-16)
+-------------------
+- Updated addon icon
+
 v1.0.0 (2026-01-16)
 -------------------
 Initial release as EasyTV - a fork and complete rewrite of LazyTV by KODeKarnage.
