@@ -74,8 +74,9 @@ class ServiceSettings:
     # Notification and display
     playlist_notifications: bool = True
     
-    # Playback behavior
-    resume_partials: bool = False
+    # Playback behavior - separate TV and movie resume settings
+    resume_partials_tv: bool = True
+    resume_partials_movies: bool = True
     nextprompt: bool = False
     nextprompt_in_playlist: bool = False
     previous_episode_check: bool = False
@@ -83,6 +84,10 @@ class ServiceSettings:
     # Prompt configuration
     promptduration: int = 0
     promptdefaultaction: int = 0
+    
+    # Playlist continuation
+    playlist_continuation: bool = False
+    playlist_continuation_duration: int = 20
     
     # Feature flags
     startup: bool = False
@@ -92,7 +97,7 @@ class ServiceSettings:
     random_order_shows: list[int] = field(default_factory=list)
     
     # Logging
-    keep_logs: bool = True  # TODO: Change back to False before release
+    keep_logs: bool = False
 
 
 def init_display_settings(addon: Optional[xbmcaddon.Addon] = None) -> None:
@@ -143,6 +148,18 @@ def init_display_settings(addon: Optional[xbmcaddon.Addon] = None) -> None:
         display_text = lang(32570)
     addon.setSetting(id="playlist_file_display", value=display_text)
     log.debug("Init playlist_file_display", value=display_text, path=playlist_path)
+    
+    # Movie playlist file display
+    movie_playlist_path = setting('movie_user_playlist_path')
+    if movie_playlist_path and movie_playlist_path != 'none' and movie_playlist_path != 'empty':
+        filename = os.path.basename(movie_playlist_path)
+        if filename.endswith('.xsp'):
+            filename = filename[:-4]
+        display_text = filename
+    else:
+        display_text = lang(32603)  # "All movies"
+    addon.setSetting(id="movie_playlist_file_display", value=display_text)
+    log.debug("Init movie_playlist_file_display", value=display_text, path=movie_playlist_path)
 
 
 def load_settings(
@@ -157,7 +174,6 @@ def load_settings(
     on_remove_show: Optional[RemoveShowCallback] = None,
     on_update_smartplaylist: Optional[UpdatePlaylistCallback] = None,
     shows_with_next_episodes: Optional[list[int]] = None,
-    current_maintainsmartplaylist: bool = False,
 ) -> ServiceSettings:
     """
     Load all settings from the addon configuration.
@@ -176,7 +192,6 @@ def load_settings(
         on_remove_show: Callback to remove a show from tracking.
         on_update_smartplaylist: Callback to update smart playlists.
         shows_with_next_episodes: Current list of tracked shows.
-        current_maintainsmartplaylist: Current value of maintainsmartplaylist setting.
     
     Returns:
         ServiceSettings containing all loaded settings.
@@ -196,7 +211,8 @@ def load_settings(
     # Load all settings
     settings = ServiceSettings(
         playlist_notifications=setting("notify") == 'true',
-        resume_partials=setting('resume_partials') == 'true',
+        resume_partials_tv=setting('resume_partials_tv') == 'true',
+        resume_partials_movies=setting('resume_partials_movies') == 'true',
         keep_logs=setting('logging') == 'true',
         nextprompt=setting('nextprompt') == 'true',
         nextprompt_in_playlist=setting('nextprompt_in_playlist') == 'true',
@@ -204,6 +220,8 @@ def load_settings(
         promptduration=int(float(setting('promptduration'))),
         previous_episode_check=setting('previous_episode_check') == 'true',
         promptdefaultaction=int(float(setting('promptdefaultaction'))),
+        playlist_continuation=setting('playlist_continuation') == 'true',
+        playlist_continuation_duration=int(float(setting('playlist_continuation_duration'))),
     )
     
     # Handle maintainsmartplaylist setting
@@ -309,7 +327,8 @@ def load_settings(
             prompt_duration=settings.promptduration,
             previous_check=settings.previous_episode_check,
             notifications=settings.playlist_notifications,
-            resume_partials=settings.resume_partials,
+            resume_partials_tv=settings.resume_partials_tv,
+            resume_partials_movies=settings.resume_partials_movies,
             maintain_smartplaylist=settings.maintainsmartplaylist,
         )
         

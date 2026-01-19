@@ -31,7 +31,7 @@ import time
 import traceback
 from contextlib import contextmanager
 from datetime import datetime as dt
-from typing import Any, Generator, Optional, TextIO
+from typing import Any, Dict, Generator, Optional, TextIO
 
 import xbmc
 import xbmcaddon
@@ -517,12 +517,10 @@ def get_logger(module_name: str) -> StructuredLogger:
     """
     # Lazy initialization - auto-init if not already done
     if not StructuredLogger._initialized:
-        # TODO: Change back to False before release
-        # For development/testing, default to True to capture diagnostic logs
         try:
             debug_enabled = get_bool_setting('logging')
         except RuntimeError:
-            debug_enabled = True  # Default ON for development
+            debug_enabled = False  # Default OFF when settings unavailable
         
         try:
             addon_id = get_addon().getAddonInfo('id')
@@ -534,17 +532,79 @@ def get_logger(module_name: str) -> StructuredLogger:
     return StructuredLogger(module_name)
 
 
+class TimedOperation:
+    """
+    Timer object for marking phases within a timed operation.
+    
+    Yielded by log_timing() to allow marking intermediate phases.
+    Each phase records the elapsed time since the operation started.
+    
+    Usage is optional - existing log_timing() calls that don't use the
+    yielded timer will continue to work unchanged.
+    
+    Example:
+        with log_timing(log, "bulk_refresh") as timer:
+            # ... do queries ...
+            timer.mark("queries")
+            # ... do playlists ...
+            timer.mark("playlists")
+        # Logs: "bulk_refresh completed | duration_ms=11600, queries_ms=9200, playlists_ms=2400"
+    """
+    
+    def __init__(self, start_time: float) -> None:
+        """
+        Initialize the timer.
+        
+        Args:
+            start_time: The perf_counter() value when the operation started.
+        """
+        self._start = start_time
+        self._phases: Dict[str, float] = {}
+        self._last_mark = start_time
+    
+    def mark(self, phase_name: str) -> None:
+        """
+        Record elapsed time for a phase.
+        
+        Records the time from the previous mark (or operation start) to now.
+        
+        Args:
+            phase_name: Name of the phase that just completed.
+        """
+        now = time.perf_counter()
+        # Record time since last mark (or start)
+        self._phases[phase_name] = now - self._last_mark
+        self._last_mark = now
+    
+    def _get_phase_kwargs(self) -> Dict[str, int]:
+        """
+        Get phase timings as keyword arguments for logging.
+        
+        Returns:
+            Dict mapping phase names (with _ms suffix) to duration in milliseconds.
+        """
+        return {
+            f"{name}_ms": int(duration * 1000) 
+            for name, duration in self._phases.items()
+        }
+
+
 @contextmanager
 def log_timing(
     logger: StructuredLogger, 
     operation: str, 
     **context: Any
-) -> Generator[None, None, None]:
+) -> Generator[TimedOperation, None, None]:
     """
-    Context manager for timing operations.
+    Context manager for timing operations with optional phase breakdown.
     
     Logs the duration of the wrapped code block at DEBUG level.
     Useful for performance monitoring without cluttering code with timing logic.
+    
+    Yields a TimedOperation object that can be used to mark phases within
+    the operation. Phase timings are included in the final log message.
+    Using the yielded timer is optional - existing code that ignores it
+    will continue to work unchanged.
     
     Args:
         logger: The logger instance to use.
@@ -552,20 +612,36 @@ def log_timing(
         **context: Additional context to include in the log.
     
     Yields:
-        None
+        TimedOperation: Timer object with .mark(phase_name) method for
+            recording intermediate phase timings.
     
-    Example:
+    Example (simple):
         log = get_logger('playback')
         with log_timing(log, "playlist_build", mode="random"):
             build_playlist()
         # Logs: "playlist_build completed | duration_ms=312, mode=random"
+    
+    Example (with phases):
+        with log_timing(log, "bulk_refresh") as timer:
+            do_queries()
+            timer.mark("queries")
+            build_playlists()
+            timer.mark("playlists")
+        # Logs: "bulk_refresh completed | duration_ms=11600, queries_ms=9200, playlists_ms=2400"
     """
     start = time.perf_counter()
+    timer = TimedOperation(start)
     try:
-        yield
+        yield timer
     finally:
         elapsed_ms = int((time.perf_counter() - start) * 1000)
-        logger.debug(f"{operation} completed", duration_ms=elapsed_ms, **context)
+        phase_kwargs = timer._get_phase_kwargs()
+        logger.debug(
+            f"{operation} completed", 
+            duration_ms=elapsed_ms, 
+            **phase_kwargs,
+            **context
+        )
 
 
 def json_query(query: dict[str, Any], return_result: bool = True) -> dict[str, Any]:
@@ -668,6 +744,93 @@ def get_playcount_minimum_percent() -> int:
         pass  # Invalid value - use default
     
     return DEFAULT_THRESHOLD
+
+
+def get_ignore_seconds_at_start() -> int:
+    """
+    Get Kodi's ignore seconds at start from advancedsettings.xml.
+    
+    This is the number of seconds at the start of a video that must
+    pass before Kodi will create a resume point. Allows users to
+    preview videos without creating resume marks.
+    
+    The setting is read from:
+        <advancedsettings>
+            <video>
+                <ignoresecondsatstart>180</ignoresecondsatstart>
+            </video>
+        </advancedsettings>
+    
+    Returns:
+        Seconds (0+). Default is 180 if not configured or on error.
+    """
+    from xml.etree import ElementTree as ET
+    
+    DEFAULT_SECONDS = 180
+    
+    try:
+        advanced_settings_path = xbmcvfs.translatePath(
+            'special://masterprofile/advancedsettings.xml'
+        )
+        tree = ET.parse(advanced_settings_path)
+        root = tree.getroot()
+        
+        element = root.find('video/ignoresecondsatstart')
+        if element is not None and element.text:
+            value = int(element.text)
+            if value >= 0:
+                return value
+    except FileNotFoundError:
+        pass  # File doesn't exist - use default
+    except ET.ParseError:
+        pass  # Malformed XML - use default
+    except (ValueError, AttributeError):
+        pass  # Invalid value - use default
+    
+    return DEFAULT_SECONDS
+
+
+def get_ignore_percent_at_end() -> int:
+    """
+    Get Kodi's ignore percent at end from advancedsettings.xml.
+    
+    This is the percentage at the end of a video where Kodi will
+    not create a resume point. Prevents resume marks during credits.
+    
+    The setting is read from:
+        <advancedsettings>
+            <video>
+                <ignorepercentatend>8</ignorepercentatend>
+            </video>
+        </advancedsettings>
+    
+    Returns:
+        Percentage (0-100). Default is 8 if not configured or on error.
+    """
+    from xml.etree import ElementTree as ET
+    
+    DEFAULT_PERCENT = 8
+    
+    try:
+        advanced_settings_path = xbmcvfs.translatePath(
+            'special://masterprofile/advancedsettings.xml'
+        )
+        tree = ET.parse(advanced_settings_path)
+        root = tree.getroot()
+        
+        element = root.find('video/ignorepercentatend')
+        if element is not None and element.text:
+            value = int(element.text)
+            if 0 <= value <= 100:
+                return value
+    except FileNotFoundError:
+        pass  # File doesn't exist - use default
+    except ET.ParseError:
+        pass  # Malformed XML - use default
+    except (ValueError, AttributeError):
+        pass  # Invalid value - use default
+    
+    return DEFAULT_PERCENT
 
 
 def sanitize_filename(dirty_string: str) -> str:

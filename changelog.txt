@@ -1,6 +1,72 @@
 EasyTV Changelog
 ================
 
+v1.1.0 (2026-01-19)
+-------------------
+New Features:
+  - Episode selection: Choose which TV episodes to include in random playlists
+    - Unwatched only (default - matches original behavior)
+    - Watched only (re-watch your favorites)
+    - Both (true channel surfing with any episode)
+  - Movie playlist filtering: Limit which movies appear in random playlists
+    - Use any Kodi smart playlist to filter movies by genre, year, rating, etc.
+    - Works with both "TV and movies" and "Movies only" content modes
+  - Season premieres setting: Control season premiere episodes (S02E01, S03E01, etc.)
+    independently from series premieres (S01E01)
+  - Playlist continuation: Option to prompt when a random playlist ends
+    - Configurable countdown timer (0-60 seconds)
+    - Generate another playlist with same settings or stop
+  - Playlist picker now filters by type (TV playlists for TV filter, movie 
+    playlists for movie filter)
+  - Default launch option changed to "Ask me" for new installs
+  - Separate partial/resume settings for TV and Movies:
+    - "Start playlist with unfinished episodes" - prioritize partial TV episodes
+    - "Start playlist with unfinished movies" - prioritize partial movies
+    - "Seek to resume point for episodes" - auto-resume TV episodes
+    - "Seek to resume point for movies" - auto-resume movies
+  - Enhanced partial prioritization:
+    - ALL partial items now moved to front of playlist (not just one)
+    - Partials sorted by recency (most recently watched first)
+    - Episodes from the same show maintain episode order
+
+Performance Improvements:
+  - Startup time reduced from ~11 seconds to <1 second for large libraries
+  - Replaced per-show episode queries with single bulk query
+  - Batched smart playlist writes: 831 file operations reduced to 3
+  - Server-side random sorting reduces data transfer and processing time
+
+Bug Fixes:
+  - Fixed "Both" mode episode selection when same show appears multiple times
+    - On-deck (next unwatched) episode now appears at most once per show
+    - Watched episodes no longer duplicate within a single playlist
+    - Playlist gracefully shortens when episodes are exhausted
+  - Fixed partial episode resume reliability
+    - Uses Kodi's actual resume data instead of stale window property flags
+    - Respects Kodi's advancedsettings.xml resume thresholds
+    - Deferred seek to onAVStarted when player is ready
+    - Uses absolute time for precise 10-second rewind
+  - Fixed repeated show selection when stopping/starting playlists quickly
+
+Settings Reorganization:
+  - "Episode List" category renamed to "Browse Mode" for clarity
+  - "TV Options" and "Movie Options" merged into "Content Options"
+  - Standardized terminology: "Shuffle-Friendly" → "Random-Order" throughout
+  - New "Playlist Continuation" group in Random Playlist settings
+  - Partial/resume settings split into TV and Movie variants (see Breaking Changes)
+
+Breaking Changes:
+  - Partial/resume settings replaced with separate TV and movie variants:
+    - "start_partials" → "start_partials_tv" + "start_partials_movies"
+    - "resume_partials" → "resume_partials_tv" + "resume_partials_movies"
+  - All partial settings now default to enabled (previously disabled)
+    - Existing users may want to disable if they preferred the old defaults
+
+Developer/Debugging:
+  - Added logging for Kodi's resume point thresholds at startup
+  - Enhanced log_timing utility with phase breakdown support
+  - Detailed timing instrumentation for performance monitoring
+  - Added playlist.continuation and playlist.regenerate events
+
 v1.0.1 (2026-01-16)
 -------------------
 - Updated addon icon

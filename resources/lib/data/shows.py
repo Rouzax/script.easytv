@@ -36,7 +36,7 @@ from typing import Any, Callable, Optional, Union
 import xbmc
 import xbmcgui
 
-from resources.lib.utils import json_query, get_logger, parse_lastplayed_date, lang
+from resources.lib.utils import json_query, get_logger, parse_lastplayed_date, lang, log_timing
 from resources.lib.constants import (
     KODI_HOME_WINDOW_ID,
     SEASON_START_EPISODE,
@@ -154,7 +154,7 @@ def find_next_episode(
     random_order_shows: list[int],
     epid: Optional[int] = None,
     eps: Optional[list[int]] = None
-) -> tuple[Union[int, str], list]:
+) -> tuple[Optional[int], Optional[list]]:
     """
     Determine the next episode to play for a given show.
     
@@ -169,7 +169,7 @@ def find_next_episode(
     
     Returns:
         Tuple of (next_episode_id, [season, episode, remaining_eps, ep_id])
-        Returns ('null', ['null', 'null', 'null', 'null']) if no next episode.
+        Returns (None, None) if no next episode.
     """
     if eps is None:
         eps = []
@@ -177,7 +177,7 @@ def find_next_episode(
     log.debug("Finding next episode", show_id=showid, random_mode=showid in random_order_shows)
     
     if not eps:
-        return 'null', ['null', 'null', 'null', 'null']
+        return None, None
     
     if showid in random_order_shows:
         # Random order: shuffle and pick, excluding current episode
@@ -186,7 +186,7 @@ def find_next_episode(
             available.remove(epid)
         
         if not available:
-            return 'null', ['null', 'null', 'null', 'null']
+            return None, None
         
         random.shuffle(available)
         next_ep = available[0]
@@ -197,7 +197,7 @@ def find_next_episode(
             next_ep = eps[1]
             remaining = eps[1:]
         except IndexError:
-            return 'null', ['null', 'null', 'null', 'null']
+            return None, None
     
     # Get details of next episode
     ep_details = json_query(build_episode_details_query(next_ep), True)
@@ -206,7 +206,7 @@ def find_next_episode(
         details = ep_details['episodedetails']
         return next_ep, [details['season'], details['episode'], remaining, next_ep]
     
-    return 'null', ['null', 'null', 'null', 'null']
+    return None, None
 
 
 # =============================================================================
@@ -319,53 +319,145 @@ def fetch_unwatched_shows(sort_by: int, sort_reverse: bool, language: str = 'Eng
     import sys
     import json
     
-    log.debug("Fetching TV shows", sort_by=sort_by)
+    with log_timing(log, "fetch_unwatched_shows", sort_by=sort_by) as timer:
+        log.debug("Fetching TV shows", sort_by=sort_by)
+        
+        # Query Kodi for shows with unwatched episodes
+        query = {
+            "jsonrpc": "2.0",
+            "method": "VideoLibrary.GetTVShows",
+            "params": {
+                "filter": {"field": "playcount", "operator": "is", "value": "0"},
+                "properties": ["lastplayed"],
+                "sort": {"order": "descending", "method": "lastplayed"}
+            },
+            "id": "1"
+        }
+        
+        response = xbmc.executeJSONRPC(json.dumps(query))
+        data = json.loads(response)
+        
+        if 'result' in data and 'tvshows' in data['result'] and data['result']['tvshows']:
+            shows_from_query = data['result']['tvshows']
+            log.debug("TV shows found", count=len(shows_from_query))
+        else:
+            log.warning("No unwatched TV shows in library", event="library.fallback")
+            shows_from_query = []
+        
+        timer.mark("query")
+        
+        # Get shows with cached next episodes from service
+        shows_str = WINDOW.getProperty("EasyTV.shows_with_next_episodes")
+        
+        if shows_str:
+            shows_from_service = [int(x) for x in ast.literal_eval(shows_str)]
+        else:
+            # Service not ready - this is handled by the caller
+            from resources.lib.utils import lang
+            dialog = xbmcgui.Dialog()
+            dialog.ok('EasyTV', lang(32115) + '\n' + lang(32116))
+            sys.exit()
+        
+        sorted_shows = merge_and_sort_shows(
+            shows_from_query, shows_from_service, sort_by, sort_reverse, language
+        )
+        
+        timer.mark("sort")
+        
+        # Add episode IDs from service cache
+        stored_data = [
+            [x[0], x[1], WINDOW.getProperty("EasyTV.%s.EpisodeID" % x[1])] 
+            for x in sorted_shows
+        ]
+        
+        timer.mark("property_lookup")
+        
+        log.debug("TV shows fetch complete", count=len(stored_data))
     
-    # Query Kodi for shows with unwatched episodes
-    query = {
-        "jsonrpc": "2.0",
-        "method": "VideoLibrary.GetTVShows",
-        "params": {
-            "filter": {"field": "playcount", "operator": "is", "value": "0"},
-            "properties": ["lastplayed"],
-            "sort": {"order": "descending", "method": "lastplayed"}
-        },
-        "id": "1"
-    }
+    return stored_data
+
+
+def fetch_shows_with_watched_episodes(
+    sort_by: int, 
+    sort_reverse: bool, 
+    language: str = 'English'
+) -> list[list]:
+    """
+    Fetch all TV shows that have at least one watched episode.
     
-    response = xbmc.executeJSONRPC(json.dumps(query))
-    data = json.loads(response)
+    Unlike fetch_unwatched_shows, this queries Kodi directly without relying
+    on the service cache. Used for "watched" and "both" episode selection modes.
     
-    if 'result' in data and 'tvshows' in data['result'] and data['result']['tvshows']:
-        shows_from_query = data['result']['tvshows']
-        log.debug("TV shows found", count=len(shows_from_query))
-    else:
-        log.warning("No unwatched TV shows in library", event="library.fallback")
-        shows_from_query = []
+    Args:
+        sort_by: Sort method (0=name, 1=lastplayed).
+        sort_reverse: If True, reverse the sort order.
+        language: User's language for article stripping.
     
-    # Get shows with cached next episodes from service
-    shows_str = WINDOW.getProperty("EasyTV.shows_with_next_episodes")
+    Returns:
+        List of [lastplayed_timestamp, showid, ''] triples. The episode_id
+        field is empty because watched episodes are selected on-demand.
+    """
+    import json
     
-    if shows_str:
-        shows_from_service = [int(x) for x in ast.literal_eval(shows_str)]
-    else:
-        # Service not ready - this is handled by the caller
-        from resources.lib.utils import lang
-        dialog = xbmcgui.Dialog()
-        dialog.ok('EasyTV', lang(32115) + '\n' + lang(32116))
-        sys.exit()
+    with log_timing(log, "fetch_shows_with_watched_episodes", sort_by=sort_by) as timer:
+        log.debug("Fetching shows with watched episodes", sort_by=sort_by)
+        
+        # Query Kodi for shows with watched episodes (playcount > 0)
+        query = {
+            "jsonrpc": "2.0",
+            "method": "VideoLibrary.GetTVShows",
+            "params": {
+                "filter": {"field": "playcount", "operator": "greaterthan", "value": "0"},
+                "properties": ["lastplayed"],
+                "sort": {"order": "descending", "method": "lastplayed"}
+            },
+            "id": "1"
+        }
+        
+        response = xbmc.executeJSONRPC(json.dumps(query))
+        data = json.loads(response)
+        
+        if 'result' in data and 'tvshows' in data['result'] and data['result']['tvshows']:
+            shows_from_query = data['result']['tvshows']
+            log.debug("Shows with watched episodes found", count=len(shows_from_query))
+        else:
+            log.debug("No shows with watched episodes found")
+            return []
+        
+        timer.mark("query")
+        
+        # Sort the shows
+        if sort_by == 0:
+            # Sort by show name
+            intermediate = [
+                [x['label'], 
+                 parse_lastplayed_date(x['lastplayed']) if x.get('lastplayed') else 0, 
+                 x['tvshowid']] 
+                for x in shows_from_query
+            ]
+            intermediate.sort(key=lambda x: generate_sort_key(x[0], language), reverse=sort_reverse)
+            sorted_shows = [[x[1], x[2]] for x in intermediate]
+        else:
+            # Default: sort by last played
+            intermediate = [
+                [parse_lastplayed_date(x['lastplayed']) if x.get('lastplayed') else 0, 
+                 x['tvshowid']] 
+                for x in shows_from_query
+            ]
+            
+            # Separate never-watched shows (timestamp == 0)
+            never_watched = [x for x in intermediate if x[0] == 0]
+            watched = [x for x in intermediate if x[0] != 0]
+            watched.sort(reverse=not sort_reverse)
+            sorted_shows = watched + never_watched
+        
+        timer.mark("sort")
+        
+        # Return with empty episode_id field (episodes selected on-demand)
+        stored_data = [[x[0], x[1], ''] for x in sorted_shows]
+        
+        log.debug("Shows with watched episodes fetch complete", count=len(stored_data))
     
-    sorted_shows = merge_and_sort_shows(
-        shows_from_query, shows_from_service, sort_by, sort_reverse, language
-    )
-    
-    # Add episode IDs from service cache
-    stored_data = [
-        [x[0], x[1], WINDOW.getProperty("EasyTV.%s.EpisodeID" % x[1])] 
-        for x in sorted_shows
-    ]
-    
-    log.debug("TV shows fetch complete", count=len(stored_data))
     return stored_data
 
 
@@ -374,19 +466,15 @@ def extract_showids_from_playlist(playlist_path: str) -> list[int]:
     Extract TV show IDs from a smart playlist file.
     
     Reads the contents of a video smart playlist and returns the IDs
-    of all TV shows contained within it.
+    of all TV shows contained within it. Shows an error dialog if the
+    playlist is empty or contains no TV shows.
     
     Args:
         playlist_path: Full path to the playlist file.
     
     Returns:
-        List of TV show IDs in the playlist.
-    
-    Raises:
-        SystemExit: If playlist is empty or contains no TV shows.
+        List of TV show IDs in the playlist, or empty list on error.
     """
-    import sys
-    
     # Normalize path to Kodi's special:// format
     filename = os.path.split(playlist_path)[1]
     clean_path = 'special://profile/playlists/video/' + filename
@@ -397,11 +485,11 @@ def extract_showids_from_playlist(playlist_path: str) -> list[int]:
     
     if 'files' not in playlist_contents:
         dialog.ok("EasyTV", lang(32575))
-        sys.exit()
+        return []
     
     if not playlist_contents['files']:
         dialog.ok("EasyTV", lang(32576))
-        sys.exit()
+        return []
     
     filtered_showids = [
         x['id'] for x in playlist_contents['files'] 
@@ -412,9 +500,54 @@ def extract_showids_from_playlist(playlist_path: str) -> list[int]:
     
     if not filtered_showids:
         dialog.ok("EasyTV", lang(32577))
-        sys.exit()
+        return []
     
     return filtered_showids
+
+
+def extract_movieids_from_playlist(playlist_path: str) -> list[int]:
+    """
+    Extract movie IDs from a smart playlist file.
+    
+    Reads the contents of a video smart playlist and returns the IDs
+    of all movies contained within it. Shows an error dialog if the
+    playlist is empty or contains no movies.
+    
+    Args:
+        playlist_path: Full path to the playlist file.
+    
+    Returns:
+        List of movie IDs in the playlist, or empty list on error.
+    """
+    # Normalize path to Kodi's special:// format
+    filename = os.path.split(playlist_path)[1]
+    clean_path = 'special://profile/playlists/video/' + filename
+    
+    playlist_contents = json_query(build_playlist_get_items_query(clean_path), True)
+    
+    dialog = xbmcgui.Dialog()
+    
+    if 'files' not in playlist_contents:
+        dialog.ok("EasyTV", lang(32575))
+        return []
+    
+    if not playlist_contents['files']:
+        dialog.ok("EasyTV", lang(32576))
+        return []
+    
+    filtered_movieids = [
+        x['id'] for x in playlist_contents['files'] 
+        if x.get('type') == 'movie'
+    ]
+    
+    log.debug("Movies extracted from playlist", movie_ids=filtered_movieids)
+    
+    if not filtered_movieids:
+        # 32605 = "Error: no movies in playlist"
+        dialog.ok("EasyTV", lang(32605))
+        return []
+    
+    return filtered_movieids
 
 
 # =============================================================================

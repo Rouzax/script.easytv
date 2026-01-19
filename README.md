@@ -76,12 +76,14 @@ Set the launch option to "Ask me" and EasyTV will prompt you each time:
 
 ### Playlist Enhancements
 
-| Feature               | Description                                                    |
-| --------------------- | -------------------------------------------------------------- |
-| **Movie Integration** | Mix unwatched (or watched) movies into your random playlist    |
-| **Movie Weighting**   | Control how often movies appear vs. TV episodes                |
-| **Show Filtering**    | Use a Kodi smart playlist to limit which shows are included    |
-| **Shuffle-Friendly**  | Mark shows like cartoons or sitcoms to pick any random episode |
+| Feature                | Description                                                       |
+| ---------------------- | ----------------------------------------------------------------- |
+| **Episode Selection**  | Include unwatched, watched, or all episodes in random playlist    |
+| **Movie Integration**  | Mix unwatched (or watched) movies into your random playlist       |
+| **Movie Weighting**    | Control how often movies appear vs. TV episodes                   |
+| **Movie Filtering**    | Use a Kodi smart playlist to limit which movies are included      |
+| **Show Filtering**     | Use a Kodi smart playlist to limit which shows are included       |
+| **Random-Order Shows** | Mark shows like cartoons or sitcoms to pick any random episode    |
 
 ### Notifications
 
@@ -122,8 +124,8 @@ Set the launch option to "Ask me" and EasyTV will prompt you each time:
 
 ### First Run
 On first launch, the background service analyzes your TV library:
-- ~30 seconds on Raspberry Pi (for ~100 shows)
-- ~2 seconds on a typical desktop
+- **Under 1 second** on a typical desktop (tested with 277 shows)
+- A few seconds on low-power devices (Raspberry Pi, Fire TV Stick)
 
 A notification appears when analysis is complete.
 
@@ -169,9 +171,9 @@ EasyTV's settings are organized into six categories. Open settings via **Add-ons
 
 ### EasyTV (Main)
 
-| Setting                | Description                                                             | Default           |
-| ---------------------- | ----------------------------------------------------------------------- | ----------------- |
-| **When I open EasyTV** | What happens on launch: show episode list, play random playlist, or ask | Show episode list |
+| Setting                | Description                                                             | Default |
+| ---------------------- | ----------------------------------------------------------------------- | ------- |
+| **When I open EasyTV** | What happens on launch: show episode list, play random playlist, or ask | Ask me  |
 
 ---
 
@@ -192,28 +194,24 @@ These settings apply to **both** Browse Mode and Random Playlist.
 > When "Use only selected shows" is **Off**, EasyTV uses your entire library.  
 > When **On**, additional options appear based on your chosen selection method.
 
-#### Shuffle-Friendly Shows
+#### Watch Order
 
-| Setting             | Description                                     | Default |
-| ------------------- | ----------------------------------------------- | ------- |
-| **Choose shows...** | Select shows where episode order doesn't matter | —       |
+| Setting                            | Description                                     | Default |
+| ---------------------------------- | ----------------------------------------------- | ------- |
+| **Select shows for random order...** | Select shows where episode order doesn't matter | —       |
 
-#### Discovery
+#### Episode Options
 
-| Setting                      | Description                                   | Default |
-| ---------------------------- | --------------------------------------------- | ------- |
-| **Include series premieres** | Include S01E01 from shows you haven't started | Off     |
+| Setting                       | Description                                                                 | Default |
+| ----------------------------- | --------------------------------------------------------------------------- | ------- |
+| **Include series premieres**  | Include S01E01 from shows you haven't started                               | Off     |
+| **Include season premieres**  | Include first episode of each season (S02E01, S03E01, etc.)                 | On      |
 
-#### Sorting
-
-| Setting                | Description                               | Default      |
-| ---------------------- | ----------------------------------------- | ------------ |
-| **Sort by**            | How to sort shows (applies to both modes) | Last Watched |
-| **Reverse sort order** | Flip the sort direction                   | Off          |
+> Disable "Include season premieres" if you prefer starting new seasons from where you left off rather than from episode 1.
 
 ---
 
-### Episode List
+### Browse Mode
 
 Settings for **Browse Mode** only ("Show episode list").
 
@@ -223,7 +221,14 @@ Settings for **Browse Mode** only ("Show episode list").
 | ----------------------------------- | ----------------------------------------------- | -------- |
 | **View style**                      | Visual layout: Standard, Posters, or Big Screen | Standard |
 | **Return to EasyTV after playback** | Come back to episode list after watching        | On       |
-| **Hide shuffle-friendly shows**     | Don't show shuffle-friendly shows in the list   | Off      |
+| **Hide random-order shows**         | Don't show random-order shows in the list       | Off      |
+
+#### Sorting
+
+| Setting                | Description                    | Default      |
+| ---------------------- | ------------------------------ | ------------ |
+| **Sort by**            | How to sort shows in the list  | Last Watched |
+| **Reverse sort order** | Flip the sort direction        | Off          |
 
 #### Performance
 
@@ -240,47 +245,73 @@ Settings for **Browse Mode** only ("Show episode list").
 
 Settings for **Random Playlist Mode** only ("Play random playlist").
 
-#### Playlist
+#### Basics
 
-| Setting              | Description                                                      | Default       |
-| -------------------- | ---------------------------------------------------------------- | ------------- |
-| **Playlist content** | What to include: TV episodes only, TV and movies, or Movies only | TV and movies |
-| **Playlist length**  | Number of items in the playlist (1-50)                           | 5             |
+| Setting                                     | Description                                                      | Default       |
+| ------------------------------------------- | ---------------------------------------------------------------- | ------------- |
+| **Playlist content**                        | What to include: TV episodes only, TV and movies, or Movies only | TV and movies |
+| **Playlist length**                         | Number of items in the playlist (1-50)                           | 5             |
+| **Allow multiple episodes of same TV Show** | Let the same show appear multiple times in playlist              | Off           |
 
-#### TV Episode Options
+> "Allow multiple episodes" is hidden when content is "Movies only".
 
-*These settings appear when playlist content includes TV episodes.*
+#### Content Options
 
-| Setting                                     | Description                                         | Default |
-| ------------------------------------------- | --------------------------------------------------- | ------- |
-| **Allow multiple episodes of same TV Show** | Let the same show appear multiple times in playlist | Off     |
-| **Start playlist with unfinished episode**  | Put your most recent in-progress episode first      | Off     |
+*Settings appear or hide based on your "Playlist content" selection.*
 
-#### Movie Options
-
-*These settings appear when playlist content includes movies.*
-
-| Setting                                  | Description                                                    | Default        |
-| ---------------------------------------- | -------------------------------------------------------------- | -------------- |
-| **Movie selection**                      | Which movies to include: Unwatched only, Watched only, or Both | Unwatched only |
-| **Start watched movies at random point** | Jump to a random point (5-75%) in watched movies               | Off            |
+| Setting                                      | Description                                                      | Default        | Visible when              |
+| -------------------------------------------- | ---------------------------------------------------------------- | -------------- | ------------------------- |
+| **Episode selection**                        | Which episodes to include: Unwatched only, Watched only, or Both | Unwatched only | TV episodes included      |
+| **Unwatched episode chance**                 | In "Both" mode, how often to pick unwatched vs. watched          | 50%            | Episode selection = Both  |
+| **Start playlist with unfinished episodes**  | Prioritize partially watched TV episodes at the start            | On             | TV episodes included      |
+| **Seek to resume point for episodes**        | Auto-skip to where you left off in partial episodes              | On             | TV episodes included      |
+| **Movie selection**                          | Which movies to include: Unwatched only, Watched only, or Both   | Unwatched only | Movies included           |
+| **Start playlist with unfinished movies**    | Prioritize partially watched movies at the start                 | On             | Movies included           |
+| **Seek to resume point for movies**          | Auto-skip to where you left off in partial movies                | On             | Movies included           |
+| **Start watched movies at random point**     | Jump to a random point (5-75%) in watched movies                 | Off            | Movies included + watched |
+| **Filter movies by playlist...**             | Limit which movies are included using a smart playlist           | All movies     | Movies included           |
+| **Movie ratio**                              | Balance between movies and TV (0 = no movies, 1 = equal mix)     | 1.0            | TV and movies             |
 
 > "Start watched movies at random point" is only available when "Movie selection" includes watched movies.
+> 
+> "Unwatched episode chance" controls the mix in "Both" mode: 80% means mostly new episodes with occasional rewatches, 20% means mostly rewatches with occasional new episodes. Unwatched episodes always play in order (next on-deck), while watched episodes are picked randomly.
 
-#### Mixed Content Options
+#### Partial Content Prioritization
 
-*This setting only appears when playlist content is "TV and movies".*
+When "Start playlist with unfinished episodes/movies" is enabled, EasyTV moves **all** partially watched content to the front of the playlist — not just the most recent item.
 
-| Setting         | Description                                                  | Default |
-| --------------- | ------------------------------------------------------------ | ------- |
-| **Movie ratio** | Balance between movies and TV (0 = no movies, 1 = equal mix) | 1.0     |
+**How it works:**
 
-#### Playback Behavior
+1. **All partials are prioritized** — If you have 3 shows with partial episodes and 2 partial movies, all 5 get moved to the front of the playlist
+2. **Sorted by recency** — Partials are ordered by when you last watched them (most recent first)
+3. **Same-show episodes stay in order** — If you have multiple partial episodes from the same show, they maintain episode order (S02E03 plays before S02E04)
+4. **Respects your selection filter** — A partial only counts if it matches your Episode/Movie selection setting. For example, if "Episode selection" is "Unwatched only", a watched partial episode won't be prioritized
 
-| Applies To | Setting                       | Description                                                | Default |
-| ---------- | ----------------------------- | ---------------------------------------------------------- | ------- |
-| Both       | **Resume from last position** | Continue partially watched content from where you left off | Off     |
-| Both       | **Show info when playing**    | Display notification when each item starts                 | On      |
+**Example:** You have partial episodes of Breaking Bad (watched yesterday), The Office (watched last week), and a partial movie Inception (watched 3 days ago). With both TV and movie partial settings enabled, the playlist starts:
+
+```
+1. Breaking Bad S02E05 (partial - most recent)
+2. Inception (partial - 3 days ago)  
+3. The Office S04E01 (partial - last week)
+4. [random content continues...]
+```
+
+The "Seek to resume point" settings work independently — you can prioritize partials without auto-seeking, or vice versa.
+
+#### Notifications
+
+| Setting                    | Description                             | Default |
+| -------------------------- | --------------------------------------- | ------- |
+| **Show info when playing** | Display notification when each item starts | On      |
+
+#### Playlist Continuation
+
+| Setting                       | Description                                                        | Default |
+| ----------------------------- | ------------------------------------------------------------------ | ------- |
+| **Prompt to continue playlist** | When playlist ends, ask whether to generate another with same settings | Off     |
+| **Countdown duration**        | Seconds before the prompt auto-dismisses (0 = wait indefinitely)   | 20      |
+
+> "Countdown duration" is only adjustable when "Prompt to continue playlist" is enabled.
 
 ---
 
@@ -377,17 +408,32 @@ These playlists work with:
 
 ---
 
-## Shuffle-Friendly Shows
+## Random-Order Shows
 
 Some shows don't need to be watched in order (sitcoms, cartoons, sketch comedy). For these shows:
 
-1. Go to **Settings → Shows → Shuffle-Friendly Shows**
+1. Go to **Settings → Shows → Watch Order**
 2. Click **Choose shows...** to select shows that can be watched in any order
 3. EasyTV will pick a random episode instead of the "next" episode
 
 When you add a show to this list, EasyTV immediately shuffles to a random episode.
 
-> **Note:** You can hide shuffle-friendly shows from the episode list in **Settings → Episode List → Appearance → Hide shuffle-friendly shows**. They'll still appear in random playlists.
+> **Note:** You can hide random-order shows from the episode list in **Settings → Browse Mode → Appearance → Hide random-order shows**. They'll still appear in random playlists.
+
+### How Episode Selection Interacts with Random-Order
+
+The **Episode selection** setting (Unwatched/Watched/Both) works differently for sequential vs. random-order shows:
+
+| Episode Selection | Sequential Shows | Random-Order Shows |
+|-------------------|------------------|-------------------|
+| **Unwatched** | Next episode in order (S02E05 → S02E06 → S02E07) | Random unwatched episode |
+| **Watched** | Random rewatch | Random rewatch |
+| **Both** | Mix of next-in-order + random rewatches | Mix of random unwatched + random rewatches |
+
+Key points:
+- **Unwatched mode** always picks from unwatched episodes only — random-order just means *which* unwatched episode is picked randomly instead of sequentially
+- **Watched mode** is the same for both — random rewatches
+- **Both mode** uses the "Unwatched episode chance" slider (configurable for both sequential and random-order shows) to balance the mix — for random-order shows, both sides of that mix are random (random unwatched vs. random watched)
 
 ---
 
@@ -431,7 +477,7 @@ EasyTV relies on Kodi's watch status. Check:
 
 ### Poor Performance
 On low-power devices (Raspberry Pi, older Fire TV):
-- Enable **Limit shows displayed** in **Settings → Episode List → Performance**
+- Enable **Limit shows displayed** in **Settings → Browse Mode → Performance**
 - Set maximum to 10-15 shows
 - Use **Standard** view style instead of Posters
 
@@ -481,6 +527,7 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 ### Current Maintainer  
 **Rouzax** — Modernized for Kodi 21+ (2024-2026)
 - Repository: https://github.com/Rouzax/script.easytv
+- Kodi forum thread: https://forum.kodi.tv/showthread.php?tid=383902
 
 ### License
 This project is licensed under the **GNU General Public License v3.0** (GPL-3.0-or-later).

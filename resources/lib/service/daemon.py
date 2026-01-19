@@ -35,14 +35,27 @@ Logging:
         - playback.fallback (WARNING): Episode not found in expected list
         - next.pick (DEBUG): Next episode selected
         - library.refresh (DEBUG): Show episodes refreshed
+    
+    Timing events (DEBUG):
+        - bulk_refresh: Startup/rescan with all shows
+            Phases: show_query_ms, episode_query_ms, processing_ms, playlists_ms
+            Example: bulk_refresh completed | duration_ms=1500, show_count=277,
+                     show_query_ms=50, episode_query_ms=800, processing_ms=600,
+                     playlists_ms=50
+        - show_refresh: Single show refresh (playback tracking)
+            Phases: show_query_ms, episode_query_ms, processing_ms
+            Example: show_refresh completed | duration_ms=45, show_count=1,
+                     show_query_ms=10, episode_query_ms=20, processing_ms=15
+    
     See LOGGING.md for full guidelines.
 """
 from __future__ import annotations
 
 import ast
+import json
 import random
 from dataclasses import dataclass, field
-from typing import Optional, TYPE_CHECKING, Union
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
 
 import xbmc
 import xbmcaddon
@@ -69,10 +82,15 @@ from resources.lib.constants import (
     PLAYLIST_NAME_CONTINUE_WATCHING,
     PLAYLIST_NAME_START_FRESH,
     CATEGORY_START_FRESH,
+    # Playlist continuation
+    PROP_PLAYLIST_CONFIG,
+    PROP_PLAYLIST_REGENERATE,
 )
 from resources.lib.utils import (
     get_logger,
     get_playcount_minimum_percent,
+    get_ignore_seconds_at_start,
+    get_ignore_percent_at_end,
     get_bool_setting,
     json_query,
     lang,
@@ -84,6 +102,7 @@ from resources.lib.data.queries import (
     get_unwatched_shows_query,
     get_shows_by_lastplayed_query,
     build_show_episodes_query,
+    build_all_episodes_query,
     build_episode_prompt_info_query,
 )
 from resources.lib.data.shows import (
@@ -93,6 +112,8 @@ from resources.lib.data.shows import (
 from resources.lib.data.smart_playlists import (
     remove_show_from_all_playlists,
     update_show_in_playlists,
+    start_playlist_batch,
+    flush_playlist_batch,
 )
 from resources.lib.service.settings import load_settings, ServiceSettings
 from resources.lib.service.library_monitor import LibraryMonitor
@@ -191,6 +212,14 @@ class ServiceDaemon:
             percent=int(self._playback_complete_threshold * 100)
         )
         
+        # Log Kodi's resume point settings (from advancedsettings.xml)
+        self._log.info(
+            "Resume point thresholds configured",
+            event="settings.resume_threshold",
+            ignore_seconds_at_start=get_ignore_seconds_at_start(),
+            ignore_percent_at_end=get_ignore_percent_at_end()
+        )
+        
         # Set initial window properties
         version_tuple = tuple(int(x) for x in self._addon.getAddonInfo('version').split('.'))
         self._window.setProperty("EasyTV.Version", str(version_tuple))
@@ -234,9 +263,9 @@ class ServiceDaemon:
             on_library_updated=lambda: setattr(self._state, 'on_lib_update', True),
             get_random_order_shows=lambda: self._settings.random_order_shows,
             on_refresh_show=self.refresh_show_episodes,
-            set_player_episode_id=lambda epid: setattr(PlaybackMonitor, 'playing_epid', epid),
-            set_player_show_id=lambda showid: setattr(PlaybackMonitor, 'playing_showid', showid),
-            get_player_episode_id=lambda: PlaybackMonitor.playing_epid,
+            set_player_episode_id=lambda epid: setattr(self._player, '_playing_epid', epid),
+            set_player_show_id=lambda showid: setattr(self._player, '_playing_showid', showid),
+            get_player_episode_id=lambda: self._player._playing_epid,
             set_monitor_override=lambda val: setattr(self._state, 'monitor_override', val),
             logger=self._log,
         )
@@ -249,7 +278,7 @@ class ServiceDaemon:
         )
         
         # Initialize playlist running property
-        self._window.setProperty("EasyTV.playlist_running", 'null')
+        self._window.setProperty("EasyTV.playlist_running", '')
         
         # Perform initial library scan with retry logic
         self._initial_library_scan()
@@ -323,7 +352,7 @@ class ServiceDaemon:
         if self._state.on_lib_update:
             self._state.on_lib_update = False
             self._retrieve_all_show_ids()
-            self.refresh_show_episodes(showids=self._all_shows_list)
+            self.refresh_show_episodes(showids=self._all_shows_list, bulk=True)
         
         # Handle random order shuffle request
         shuffle_request = self._window.getProperty("EasyTV.random_order_shuffle")
@@ -332,9 +361,15 @@ class ServiceDaemon:
             self._log.debug("Reshuffling random order shows")
             self._reshuffle_random_order_shows()
         
+        # Handle playlist regeneration request (from continuation prompt)
+        regen_request = self._window.getProperty(PROP_PLAYLIST_REGENERATE)
+        if regen_request == 'true':
+            self._window.setProperty(PROP_PLAYLIST_REGENERATE, 'false')
+            self._regenerate_playlist()
+        
         # Process episode playback if a tracked show is playing
-        if (PlaybackMonitor.playing_showid and 
-            PlaybackMonitor.playing_showid in self._state.shows_with_next_episodes):
+        if (self._player._playing_showid and 
+            self._player._playing_showid in self._state.shows_with_next_episodes):
             self._process_episode_playback()
         
         # Check playback position for swap over
@@ -342,7 +377,7 @@ class ServiceDaemon:
             self._check_playback_position()
         
         # Reset per-cycle state
-        PlaybackMonitor.playing_showid = False
+        self._player._playing_showid = False
         self._state.monitor_override = False
         self._is_random_show = False
     
@@ -358,10 +393,10 @@ class ServiceDaemon:
         """
         self._log.debug(
             "Episode playback detected",
-            show_id=PlaybackMonitor.playing_showid
+            show_id=self._player._playing_showid
         )
         
-        self._current_show_id = PlaybackMonitor.playing_showid
+        self._current_show_id = self._player._playing_showid
         
         # Retrieve ondeck and offdeck lists from window properties
         retrieved_ondeck_string = self._window.getProperty(
@@ -412,7 +447,7 @@ class ServiceDaemon:
         self._set_playback_target()
         
         # Reset player state so this section doesn't run again
-        PlaybackMonitor.playing_showid = False
+        self._player._playing_showid = False
     
     def _process_random_show_episode(
         self,
@@ -436,29 +471,29 @@ class ServiceDaemon:
         combined_episode_list = offdeck_list + ondeck_list
         
         if not combined_episode_list:
-            PlaybackMonitor.playing_epid = False
-            PlaybackMonitor.playing_showid = False
+            self._player._playing_epid = False
+            self._player._playing_showid = False
             return
         
-        if PlaybackMonitor.playing_epid not in combined_episode_list:
+        if self._player._playing_epid not in combined_episode_list:
             self._log.warning(
                 "Playing episode not in tracked list (random show)",
                 event="playback.fallback",
                 show_id=self._current_show_id,
-                episode_id=PlaybackMonitor.playing_epid
+                episode_id=self._player._playing_epid
             )
             self._pending_next_episode = False
-            PlaybackMonitor.playing_epid = False
-            PlaybackMonitor.playing_showid = False
+            self._player._playing_epid = False
+            self._player._playing_showid = False
             return
         
         self._log.debug("Random show episode found in ondeck")
         
         # Remove currently playing episode from the appropriate list
-        if PlaybackMonitor.playing_epid in ondeck_list:
-            ondeck_list.remove(PlaybackMonitor.playing_epid)
+        if self._player._playing_epid in ondeck_list:
+            ondeck_list.remove(self._player._playing_epid)
         else:
-            offdeck_list.remove(PlaybackMonitor.playing_epid)
+            offdeck_list.remove(self._player._playing_epid)
         
         # Shuffle remaining episodes and pick next
         combined_episode_list = offdeck_list + ondeck_list
@@ -475,14 +510,14 @@ class ServiceDaemon:
             is_skipped=False
         )
         
-        PlaybackMonitor.playing_epid = False
-        PlaybackMonitor.playing_showid = False
+        self._player._playing_epid = False
+        self._player._playing_showid = False
         
         # Handle monitor override (external watch marking)
         if self._state.monitor_override:
             self._log.debug("Monitor override: triggering swap (random show)")
             self._state.monitor_override = False
-            PlaybackMonitor.playing_epid = False
+            self._player._playing_epid = False
             self._state.target = False
             self._pending_next_episode = False
             self._episode_tracker.transition_to_next_episode(self._current_show_id)
@@ -512,19 +547,19 @@ class ServiceDaemon:
         if not combined_episode_list:
             return
         
-        if PlaybackMonitor.playing_epid not in combined_episode_list:
+        if self._player._playing_epid not in combined_episode_list:
             self._log.warning(
                 "Playing episode not in ondeck list",
                 event="playback.fallback",
                 show_id=self._current_show_id,
-                episode_id=PlaybackMonitor.playing_epid
+                episode_id=self._player._playing_epid
             )
             self._pending_next_episode = False
-            PlaybackMonitor.playing_showid = False
-            PlaybackMonitor.playing_epid = False
+            self._player._playing_showid = False
+            self._player._playing_epid = False
             return
         
-        episode_index = combined_episode_list.index(PlaybackMonitor.playing_epid)
+        episode_index = combined_episode_list.index(self._player._playing_epid)
         self._log.debug("Episode found in ondeck list", position=episode_index)
         
         if episode_index != len(combined_episode_list) - 1:
@@ -551,7 +586,7 @@ class ServiceDaemon:
                 self._log.debug("Monitor override: triggering swap (sequential show)")
                 self._episode_tracker.transition_to_next_episode(self._current_show_id)
                 self._state.monitor_override = False
-                PlaybackMonitor.playing_epid = False
+                self._player._playing_epid = False
                 self._state.target = False
                 self._pending_next_episode = False
         else:
@@ -645,7 +680,7 @@ class ServiceDaemon:
         # Trigger next episode prompt if configured
         if self._settings.nextprompt and self._state.nextprompt_info:
             self._log.debug("Next prompt trigger set")
-            PlaybackMonitor.nextprompt_trigger = True
+            self._player._nextprompt_trigger = True
         
         # Reset state
         self._current_show_id = False
@@ -768,6 +803,69 @@ class ServiceDaemon:
         
         self._log.debug("Shuffle completed")
     
+    def _regenerate_playlist(self) -> None:
+        """
+        Regenerate a random playlist from stored configuration.
+        
+        Called when the user accepts the playlist continuation prompt.
+        Retrieves the stored config from window properties and rebuilds
+        the playlist with the same settings.
+        """
+        self._log.info("Regenerating playlist", event="playlist.regenerate")
+        
+        # Get stored config
+        config_json = self._window.getProperty(PROP_PLAYLIST_CONFIG)
+        if not config_json:
+            self._log.warning("No stored playlist config found")
+            return
+        
+        try:
+            playlist_state = json.loads(config_json)
+        except (json.JSONDecodeError, ValueError) as e:
+            self._log.warning("Failed to parse playlist config", error=str(e))
+            self._window.clearProperty(PROP_PLAYLIST_CONFIG)
+            return
+        
+        # Import here to avoid potential circular imports at module level
+        from resources.lib.playback.random_player import (
+            RandomPlaylistConfig,
+            build_random_playlist,
+        )
+        
+        # Reconstruct the config and population
+        population = playlist_state.get('population', {'none': ''})
+        random_order_shows = playlist_state.get('random_order_shows', [])
+        config_dict = playlist_state.get('config', {})
+        
+        # Build config from stored dict
+        config = RandomPlaylistConfig(
+            length=config_dict.get('length', 10),
+            playlist_content=config_dict.get('playlist_content', 1),
+            episode_selection=config_dict.get('episode_selection', 0),
+            movie_selection=config_dict.get('movie_selection', 0),
+            movieweight=config_dict.get('movieweight', 0.5),
+            start_partials_tv=config_dict.get('start_partials_tv', True),
+            start_partials_movies=config_dict.get('start_partials_movies', True),
+            premieres=config_dict.get('premieres', True),
+            season_premieres=config_dict.get('season_premieres', True),
+            multiple_shows=config_dict.get('multiple_shows', False),
+            sort_by=config_dict.get('sort_by', 0),
+            sort_reverse=config_dict.get('sort_reverse', False),
+            language=config_dict.get('language', 'English'),
+            movie_playlist=config_dict.get('movie_playlist'),
+            unwatched_ratio=config_dict.get('unwatched_ratio', 50),
+        )
+        
+        # Rebuild the playlist
+        build_random_playlist(
+            population=population,
+            random_order_shows=random_order_shows,
+            config=config,
+            logger=self._log
+        )
+        
+        self._log.info("Playlist regenerated", event="playlist.regenerated")
+    
     def _initial_library_scan(self) -> None:
         """
         Perform initial library scan with retry logic.
@@ -810,7 +908,7 @@ class ServiceDaemon:
                     attempts=attempt + 1
                 )
                 # Load episode data for all shows
-                self.refresh_show_episodes(showids=self._all_shows_list)
+                self.refresh_show_episodes(showids=self._all_shows_list, bulk=True)
                 return
             
             # No shows found - wait and retry
@@ -853,6 +951,7 @@ class ServiceDaemon:
     def refresh_show_episodes(
         self,
         showids: list[int] | Optional[int] = None,
+        bulk: bool = False,
     ) -> None:
         """
         Retrieve and process next episodes for the specified TV shows.
@@ -872,145 +971,201 @@ class ServiceDaemon:
         
         Args:
             showids: List of show IDs to process, single ID, or None.
+            bulk: If True, suppress per-show debug logging (for startup/library scans).
         """
         # Normalize showids to a list
         if showids is None:
             showids = []
         showids = showids if isinstance(showids, list) else [showids]
         
-        self._log.debug("Processing episodes for shows", show_count=len(showids))
+        if not bulk:
+            self._log.debug("Processing episodes for shows", show_count=len(showids))
         
-        # Get shows sorted by last played
-        lshows_result = json_query(get_shows_by_lastplayed_query(), True)
-        
-        if 'tvshows' not in lshows_result:
-            show_lw = []
-        else:
-            show_lw = [
-                x['tvshowid'] for x in lshows_result['tvshows']
-                if x['tvshowid'] in showids
-            ]
-        
-        for my_showid in show_lw:
-            service_heartbeat()
-            
-            ep_result = json_query(build_show_episodes_query(my_showid), True)
-            
-            if 'episodes' not in ep_result:
-                continue
-            
-            eps = ep_result['episodes']
-            
-            all_unplayed = []
-            season = FIRST_REGULAR_SEASON
-            episode = EPISODE_INITIAL_VALUE
-            watched_showcount = 0
-            on_deck_epid: Optional[int] = None
-            
-            # Find highest watched episode and collect unwatched
-            for ep in eps:
-                if ep['playcount'] != 0:
-                    watched_showcount += 1
-                    if ((ep['season'] == season and ep['episode'] > episode) or
-                            ep['season'] > season):
-                        season = ep['season']
-                        episode = ep['episode']
-                else:
-                    all_unplayed.append(ep)
-            
-            # Sort by season/episode before dedup to ensure multi-episode files
-            # consistently select the lowest episode number as representative
-            all_unplayed.sort(key=lambda x: (x['season'], x['episode']))
-            
-            # Remove duplicate files (double episodes) using set for O(1) lookup
-            seen_files: set[str] = set()
-            unique_unplayed = []
-            for ep in all_unplayed:
-                if ep['file'] and ep['file'] not in seen_files:
-                    seen_files.add(ep['file'])
-                    unique_unplayed.append(ep)
-            all_unplayed = unique_unplayed
-            del seen_files, unique_unplayed
-            
-            # Separate into ondeck and offdeck
-            unordered_ondeck_eps = [
-                x for x in all_unplayed
-                if x['season'] > season or
-                (x['season'] == season and x['episode'] > episode)
-            ]
-            # Use set for O(1) lookup instead of O(n) list membership
-            ondeck_ep_ids = {ep['episodeid'] for ep in unordered_ondeck_eps}
-            offdeck_eps = [
-                x for x in all_unplayed
-                if x['episodeid'] not in ondeck_ep_ids
-            ]
-            
-            # Calculate counts
-            count_eps = len(eps)
-            count_weps = watched_showcount
-            count_uweps = count_eps - count_weps
-            
-            # Sort ondeck by season/episode
-            ondeck_eps = [
-                ep for ep in sorted(unordered_ondeck_eps, key=lambda x: (x['season'], x['episode']))
-                if ep
-            ]
-            
-            if not ondeck_eps and not offdeck_eps:
-                if my_showid in self._state.shows_with_next_episodes:
-                    self._remove_from_shows_with_next_episodes(my_showid)
-                continue
-            
-            # Determine if this is a skipped episode selection
-            is_skipped_episode = False
-            
-            # Select the next episode
-            if my_showid in self._settings.random_order_shows:
-                # Random shows: combine and shuffle all episodes
-                combined_deck_list = ondeck_eps + offdeck_eps
-                random.shuffle(combined_deck_list)
-                on_deck_epid = combined_deck_list[0]['episodeid']
-            elif ondeck_eps:
-                # Sequential show with ondeck episodes: pick first
-                on_deck_epid = ondeck_eps[0]['episodeid']
-            else:
-                # Sequential show with ONLY offdeck episodes: pick earliest skipped
-                # (offdeck_eps is already sorted by season/episode from earlier sort)
-                on_deck_epid = offdeck_eps[0]['episodeid']
-                is_skipped_episode = True
-                self._log.debug(
-                    "Selecting skipped episode (no ondeck available)",
-                    show_id=my_showid,
-                    episode_id=on_deck_epid
-                )
-            
-            # Build episode ID lists
-            on_deck_list = [
-                x['episodeid'] for x in ondeck_eps
-            ] if ondeck_eps else []
-            off_deck_list = [
-                x['episodeid'] for x in offdeck_eps
-            ] if offdeck_eps else []
-            
-            # Cache episode data in window properties
-            self._episode_tracker.cache_next_episode(
-                on_deck_epid, my_showid,
-                on_deck_list, off_deck_list,
-                count_uweps, count_weps,
-                is_skipped=is_skipped_episode
-            )
-            
-            # Add to tracked shows
-            if my_showid not in self._state.shows_with_next_episodes:
-                self._state.shows_with_next_episodes.append(my_showid)
-        
-        # Update window property with tracked shows
-        self._window.setProperty(
-            "EasyTV.shows_with_next_episodes",
-            str(self._state.shows_with_next_episodes)
+        # Use timing context for both bulk and non-bulk operations
+        timing_ctx = (
+            log_timing(self._log, "bulk_refresh", show_count=len(showids))
+            if bulk else log_timing(self._log, "show_refresh", show_count=len(showids))
         )
         
-        self._log.debug("Episode processing complete")
+        with timing_ctx as timer:
+            # Get shows sorted by last played
+            lshows_result = json_query(get_shows_by_lastplayed_query(), True)
+            
+            if 'tvshows' not in lshows_result:
+                show_lw = []
+            else:
+                show_lw = [
+                    x['tvshowid'] for x in lshows_result['tvshows']
+                    if x['tvshowid'] in showids
+                ]
+            
+            # Mark end of show query phase
+            if timer is not None:
+                timer.mark("show_query")
+            
+            # For bulk operations, fetch all episodes in one query
+            episodes_by_show: Dict[int, List[Dict[str, Any]]] = {}
+            if bulk and show_lw:
+                showids_set = set(show_lw)
+                all_episodes_result = json_query(build_all_episodes_query(), True)
+                
+                # Group episodes by show ID
+                for ep in all_episodes_result.get('episodes', []):
+                    show_id = ep['tvshowid']
+                    if show_id in showids_set:
+                        episodes_by_show.setdefault(show_id, []).append(ep)
+            
+            # Mark end of episode query phase
+            if timer is not None:
+                timer.mark("episode_query")
+            
+            # Start batch mode for playlist writes in bulk mode
+            if bulk and self._settings.maintainsmartplaylist:
+                start_playlist_batch()
+            
+            for my_showid in show_lw:
+                service_heartbeat()
+                
+                # Get episodes: from pre-fetched bulk data or per-show query
+                if bulk:
+                    eps = episodes_by_show.get(my_showid, [])
+                else:
+                    ep_result = json_query(build_show_episodes_query(my_showid), True)
+                    if 'episodes' not in ep_result:
+                        continue
+                    eps = ep_result['episodes']
+                
+                if not eps:
+                    continue
+                
+                all_unplayed = []
+                season = FIRST_REGULAR_SEASON
+                episode = EPISODE_INITIAL_VALUE
+                watched_showcount = 0
+                on_deck_epid: Optional[int] = None
+                
+                # Find highest watched episode and collect unwatched
+                for ep in eps:
+                    if ep['playcount'] != 0:
+                        watched_showcount += 1
+                        if ((ep['season'] == season and ep['episode'] > episode) or
+                                ep['season'] > season):
+                            season = ep['season']
+                            episode = ep['episode']
+                    else:
+                        all_unplayed.append(ep)
+                
+                # Sort by season/episode before dedup to ensure multi-episode files
+                # consistently select the lowest episode number as representative
+                all_unplayed.sort(key=lambda x: (x['season'], x['episode']))
+                
+                # Remove duplicate files (double episodes) using set for O(1) lookup
+                seen_files: set[str] = set()
+                unique_unplayed = []
+                for ep in all_unplayed:
+                    if ep['file'] and ep['file'] not in seen_files:
+                        seen_files.add(ep['file'])
+                        unique_unplayed.append(ep)
+                all_unplayed = unique_unplayed
+                del seen_files, unique_unplayed
+                
+                # Separate into ondeck and offdeck
+                unordered_ondeck_eps = [
+                    x for x in all_unplayed
+                    if x['season'] > season or
+                    (x['season'] == season and x['episode'] > episode)
+                ]
+                # Use set for O(1) lookup instead of O(n) list membership
+                ondeck_ep_ids = {ep['episodeid'] for ep in unordered_ondeck_eps}
+                offdeck_eps = [
+                    x for x in all_unplayed
+                    if x['episodeid'] not in ondeck_ep_ids
+                ]
+                
+                # Calculate counts
+                count_eps = len(eps)
+                count_weps = watched_showcount
+                count_uweps = count_eps - count_weps
+                
+                # Sort ondeck by season/episode
+                ondeck_eps = [
+                    ep for ep in sorted(unordered_ondeck_eps, key=lambda x: (x['season'], x['episode']))
+                    if ep
+                ]
+                
+                if not ondeck_eps and not offdeck_eps:
+                    if my_showid in self._state.shows_with_next_episodes:
+                        self._remove_from_shows_with_next_episodes(my_showid)
+                    continue
+                
+                # Determine if this is a skipped episode selection
+                is_skipped_episode = False
+                selected_ep_data: Optional[Dict[str, Any]] = None
+                
+                # Select the next episode
+                if my_showid in self._settings.random_order_shows:
+                    # Random shows: combine and shuffle all episodes
+                    combined_deck_list = ondeck_eps + offdeck_eps
+                    random.shuffle(combined_deck_list)
+                    on_deck_epid = combined_deck_list[0]['episodeid']
+                    selected_ep_data = combined_deck_list[0] if bulk else None
+                elif ondeck_eps:
+                    # Sequential show with ondeck episodes: pick first
+                    on_deck_epid = ondeck_eps[0]['episodeid']
+                    selected_ep_data = ondeck_eps[0] if bulk else None
+                else:
+                    # Sequential show with ONLY offdeck episodes: pick earliest skipped
+                    # (offdeck_eps is already sorted by season/episode from earlier sort)
+                    on_deck_epid = offdeck_eps[0]['episodeid']
+                    selected_ep_data = offdeck_eps[0] if bulk else None
+                    is_skipped_episode = True
+                    if not bulk:
+                        self._log.debug(
+                            "Selecting skipped episode (no ondeck available)",
+                            show_id=my_showid,
+                            episode_id=on_deck_epid
+                        )
+                
+                # Build episode ID lists
+                on_deck_list = [
+                    x['episodeid'] for x in ondeck_eps
+                ] if ondeck_eps else []
+                off_deck_list = [
+                    x['episodeid'] for x in offdeck_eps
+                ] if offdeck_eps else []
+                
+                # Cache episode data in window properties
+                self._episode_tracker.cache_next_episode(
+                    on_deck_epid, my_showid,
+                    on_deck_list, off_deck_list,
+                    count_uweps, count_weps,
+                    is_skipped=is_skipped_episode,
+                    quiet=bulk,
+                    ep_data=selected_ep_data
+                )
+                
+                # Add to tracked shows
+                if my_showid not in self._state.shows_with_next_episodes:
+                    self._state.shows_with_next_episodes.append(my_showid)
+            
+            # Mark end of main processing loop (for bulk timing breakdown)
+            if timer is not None:
+                timer.mark("processing")
+            
+            # Flush batched playlist writes
+            if bulk and self._settings.maintainsmartplaylist:
+                flush_playlist_batch()
+                if timer is not None:
+                    timer.mark("playlists")
+            
+            # Update window property with tracked shows
+            self._window.setProperty(
+                "EasyTV.shows_with_next_episodes",
+                str(self._state.shows_with_next_episodes)
+            )
+        
+        if not bulk:
+            self._log.debug("Episode processing complete")
     
     # =========================================================================
     # Smart Playlist Management
@@ -1020,6 +1175,7 @@ class ServiceDaemon:
         self,
         tvshowid: Union[int, str],
         remove: bool = False,
+        quiet: bool = False,
     ) -> None:
         """
         Update smart playlists for a TV show.
@@ -1032,16 +1188,18 @@ class ServiceDaemon:
         Args:
             tvshowid: The TV show ID.
             remove: If True, remove show from all playlists.
+            quiet: If True, suppress debug logging (for bulk operations).
         """
         if not self._settings.maintainsmartplaylist or tvshowid == 'temp':
             return
         
         show_data = fetch_show_episode_data(tvshowid)
         if not show_data:
-            self._log.debug(
-                "Smart playlist update skipped - no show data",
-                show_id=tvshowid
-            )
+            if not quiet:
+                self._log.debug(
+                    "Smart playlist update skipped - no show data",
+                    show_id=tvshowid
+                )
             return
         
         showname = show_data['showname']
@@ -1054,13 +1212,15 @@ class ServiceDaemon:
                 showname,
                 PLAYLIST_ALL_SHOWS, PLAYLIST_NAME_ALL_SHOWS,
                 PLAYLIST_CONTINUE_WATCHING, PLAYLIST_NAME_CONTINUE_WATCHING,
-                PLAYLIST_START_FRESH, PLAYLIST_NAME_START_FRESH
+                PLAYLIST_START_FRESH, PLAYLIST_NAME_START_FRESH,
+                quiet=quiet
             )
-            self._log.debug(
-                "Show removed from smart playlists",
-                show_id=tvshowid,
-                show_name=showname
-            )
+            if not quiet:
+                self._log.debug(
+                    "Show removed from smart playlists",
+                    show_id=tvshowid,
+                    show_name=showname
+                )
         else:
             category = get_show_category(episode_number)
             
@@ -1070,15 +1230,17 @@ class ServiceDaemon:
                 PLAYLIST_CONTINUE_WATCHING, PLAYLIST_NAME_CONTINUE_WATCHING,
                 PLAYLIST_START_FRESH, PLAYLIST_NAME_START_FRESH,
                 CATEGORY_START_FRESH,
-                episodeno=episodeno
+                episodeno=episodeno,
+                quiet=quiet
             )
-            self._log.debug(
-                "Show added to smart playlists",
-                show_id=tvshowid,
-                show_name=showname,
-                category=category,
-                episode=episodeno
-            )
+            if not quiet:
+                self._log.debug(
+                    "Show added to smart playlists",
+                    show_id=tvshowid,
+                    show_name=showname,
+                    category=category,
+                    episode=episodeno
+                )
     
     # =========================================================================
     # Settings and Callbacks
@@ -1096,10 +1258,13 @@ class ServiceDaemon:
             nextprompt=self._settings.nextprompt,
             nextprompt_in_playlist=self._settings.nextprompt_in_playlist,
             playlist_notifications=self._settings.playlist_notifications,
-            resume_partials=self._settings.resume_partials,
+            resume_partials_tv=self._settings.resume_partials_tv,
+            resume_partials_movies=self._settings.resume_partials_movies,
             movies_random_start=get_bool_setting('movies_random_start'),
             promptdefaultaction=self._settings.promptdefaultaction,
             promptduration=self._settings.promptduration,
+            playlist_continuation=self._settings.playlist_continuation,
+            playlist_continuation_duration=self._settings.playlist_continuation_duration,
         )
     
     def _on_settings_changed(self) -> None:
@@ -1122,7 +1287,6 @@ class ServiceDaemon:
             on_remove_show=self._remove_from_shows_with_next_episodes,
             on_update_smartplaylist=self._update_smartplaylist,
             shows_with_next_episodes=self._state.shows_with_next_episodes,
-            current_maintainsmartplaylist=old_maintainsmartplaylist,
         )
         
         # Check if smart playlist setting was just enabled
@@ -1134,7 +1298,7 @@ class ServiceDaemon:
                 show_count=len(self._state.shows_with_next_episodes)
             )
             for show_id in self._state.shows_with_next_episodes:
-                self._update_smartplaylist(show_id)
+                self._update_smartplaylist(show_id, quiet=True)
     
     def load_initial_settings(self) -> None:
         """
@@ -1154,7 +1318,6 @@ class ServiceDaemon:
             on_remove_show=self._remove_from_shows_with_next_episodes,
             on_update_smartplaylist=lambda *args: None,  # Not ready yet
             shows_with_next_episodes=self._state.shows_with_next_episodes,
-            current_maintainsmartplaylist=False,
         )
         
         self._log.info("Initial settings loaded", event="settings.load")

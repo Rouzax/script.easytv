@@ -40,6 +40,8 @@ from resources.lib.constants import (
     RANDOM_PERCENT_MAX,
     RESUME_REWIND_SECONDS,
     SECONDS_TO_MS_MULTIPLIER,
+    PROP_PLAYLIST_CONFIG,
+    PROP_PLAYLIST_REGENERATE,
 )
 from resources.lib.utils import (
     get_logger,
@@ -50,6 +52,7 @@ from resources.lib.utils import (
 from resources.lib.data.queries import (
     build_add_episode_query,
     build_player_seek_query,
+    build_player_seek_time_query,
     get_playing_item_query,
 )
 from resources.lib.data.shows import (
@@ -72,10 +75,13 @@ class PlaybackSettings:
     nextprompt: bool = False
     nextprompt_in_playlist: bool = False
     playlist_notifications: bool = True
-    resume_partials: bool = False
+    resume_partials_tv: bool = True
+    resume_partials_movies: bool = True
     movies_random_start: bool = False
     promptdefaultaction: int = 0
     promptduration: int = 0
+    playlist_continuation: bool = False
+    playlist_continuation_duration: int = 20
 
 
 # Type aliases for callbacks
@@ -111,15 +117,6 @@ class PlaybackMonitor(xbmc.Player):
         logger: Optional logger instance.
     """
     
-    # Class-level state for backward compatibility with code that accesses
-    # LazyPlayer.playing_showid, LazyPlayer.playing_epid, etc.
-    pending_next_episode: Union[int, bool] = False
-    pl_running: str = 'null'
-    playing_showid: Union[int, bool] = False
-    playing_epid: Union[int, bool] = False
-    nextprompt_trigger: bool = False
-    nextprompt_trigger_override: bool = True
-    
     def __init__(
         self,
         window: xbmcgui.Window,
@@ -145,18 +142,19 @@ class PlaybackMonitor(xbmc.Player):
         self._set_nextprompt_info = set_nextprompt_info
         self._log = logger or get_logger('playback_monitor')
         
-        # Reset class-level state
-        PlaybackMonitor.pending_next_episode = False
-        PlaybackMonitor.pl_running = 'null'
-        PlaybackMonitor.playing_showid = False
-        PlaybackMonitor.playing_epid = False
-        PlaybackMonitor.nextprompt_trigger = False
-        PlaybackMonitor.nextprompt_trigger_override = True
+        # Playback tracking state
+        self._pending_next_episode: Union[int, bool] = False
+        self._pl_running: str = ''
+        self._playing_showid: Union[int, bool] = False
+        self._playing_epid: Union[int, bool] = False
+        self._nextprompt_trigger: bool = False
+        self._nextprompt_trigger_override: bool = True
         
-        # Instance-level state
+        # Additional instance state
         self._ep_details: dict = {}
-        self._pl_running_local: str = 'null'
+        self._pl_running_local: str = ''
         self._pending_movie_random_start: bool = False
+        self._pending_resume_seek: Optional[int] = None
     
     def onPlayBackStarted(self) -> None:
         """
@@ -173,7 +171,7 @@ class PlaybackMonitor(xbmc.Player):
         settings = self._get_settings()
         
         self._clear_target()
-        PlaybackMonitor.nextprompt_trigger_override = True
+        self._nextprompt_trigger_override = True
         
         # Check what is playing
         self._ep_details = json_query(get_playing_item_query(), True)
@@ -194,7 +192,7 @@ class PlaybackMonitor(xbmc.Player):
             settings.nextprompt_in_playlist
         ]):
             self._log.debug("Next prompt suppressed (playlist mode)")
-            PlaybackMonitor.nextprompt_trigger_override = False
+            self._nextprompt_trigger_override = False
         
         item_type = self._ep_details['item']['type']
         
@@ -210,9 +208,18 @@ class PlaybackMonitor(xbmc.Player):
         Handle audio/video stream start.
         
         This fires when the actual A/V stream begins, at which point
-        video metadata like duration is available. Used for movie
-        random start seeking.
+        video metadata like duration is available. Used for deferred
+        seeking operations (resume points, movie random start).
         """
+        # Handle pending resume seek (uses absolute time)
+        if self._pending_resume_seek is not None:
+            seek_seconds = self._pending_resume_seek
+            self._pending_resume_seek = None
+            self._log.debug("AV started - executing resume seek", seek_seconds=seek_seconds)
+            json_query(build_player_seek_time_query(seek_seconds), True)
+            return
+        
+        # Handle pending movie random start (uses percentage)
         if not self._pending_movie_random_start:
             return
         
@@ -283,17 +290,17 @@ class PlaybackMonitor(xbmc.Player):
             )
         
         # Handle resume point
-        if (self._pl_running_local == 'true' and settings.resume_partials) or \
+        if (self._pl_running_local == 'true' and settings.resume_partials_tv) or \
            self._pl_running_local == 'listview':
             self._handle_resume_point()
         
         # Set up episode tracking
-        PlaybackMonitor.playing_epid = now_playing_episode_id
-        PlaybackMonitor.playing_showid = now_playing_show_id
+        self._playing_epid = now_playing_episode_id
+        self._playing_showid = now_playing_show_id
         self._log.debug(
             "PlaybackMonitor detected episode",
-            show_id=PlaybackMonitor.playing_showid,
-            episode_id=PlaybackMonitor.playing_epid
+            show_id=self._playing_showid,
+            episode_id=self._playing_epid
         )
     
     def _check_previous_episode(
@@ -364,24 +371,23 @@ class PlaybackMonitor(xbmc.Player):
     def _handle_resume_point(self) -> None:
         """Handle resuming playback from a saved position with slight rewind."""
         res_point = self._ep_details['item'].get('resume', {})
-        if res_point.get('position', 0) > 0:
+        if res_point.get('position', 0) > 0 and res_point.get('total', 0) > 0:
             # Rewind slightly to help catch context
-            position = max(0, res_point['position'] - RESUME_REWIND_SECONDS)
-            seek_point = int((position / float(res_point['total'])) * 100)
+            seek_seconds = int(max(0, res_point['position'] - RESUME_REWIND_SECONDS))
             self._log.debug(
-                "Resuming with rewind",
-                original_position=res_point['position'],
-                rewound_position=position,
-                seek_percent=seek_point
+                "Resume seek pending",
+                resume_position=res_point['position'],
+                seek_seconds=seek_seconds
             )
-            json_query(build_player_seek_query(seek_point), True)
+            # Defer seek to onAVStarted when player is ready
+            self._pending_resume_seek = seek_seconds
     
     def _handle_movie_playback(self, settings: PlaybackSettings) -> None:
         """
         Handle movie playback in EasyTV playlist.
         
         Shows notification and handles resume/random start.
-        Random start is deferred to onAVStarted when video metadata is available.
+        Seeking is deferred to onAVStarted when video metadata is available.
         
         Args:
             settings: Current playback settings.
@@ -397,17 +403,16 @@ class PlaybackMonitor(xbmc.Player):
         
         resume_info = self._ep_details['item'].get('resume', {})
         
-        if settings.resume_partials and resume_info.get('position', 0) > 0:
+        if settings.resume_partials_movies and resume_info.get('position', 0) > 0 and resume_info.get('total', 0) > 0:
             # Rewind slightly to help catch context
-            position = max(0, resume_info['position'] - RESUME_REWIND_SECONDS)
-            seek_point = int((position / float(resume_info['total'])) * 100)
+            seek_seconds = int(max(0, resume_info['position'] - RESUME_REWIND_SECONDS))
             self._log.debug(
-                "Movie resuming with rewind",
-                original_position=resume_info['position'],
-                rewound_position=position,
-                seek_percent=seek_point
+                "Movie resume seek pending",
+                resume_position=resume_info['position'],
+                seek_seconds=seek_seconds
             )
-            json_query(build_player_seek_query(seek_point), True)
+            # Defer seek to onAVStarted when player is ready
+            self._pending_resume_seek = seek_seconds
         elif settings.movies_random_start and self._ep_details['item'].get('playcount', 0) != 0:
             # Defer random seek to onAVStarted when duration is available
             self._pending_movie_random_start = True
@@ -416,13 +421,7 @@ class PlaybackMonitor(xbmc.Player):
     def onPlayBackStopped(self) -> None:
         """Handle playback stopped events."""
         self._pending_movie_random_start = False  # Reset any pending random start
-        
-        nextprompt_info = self._get_nextprompt_info()
-        pre_showid = nextprompt_info.get('tvshowid')
-        
-        if pre_showid:
-            self._window.setProperty(f"EasyTV.{pre_showid}.Resume", 'true')
-        
+        self._pending_resume_seek = None  # Reset any pending resume seek
         self.onPlayBackEnded()
     
     def onPlayBackEnded(self) -> None:
@@ -430,7 +429,36 @@ class PlaybackMonitor(xbmc.Player):
         Handle playback ended events.
         
         Shows next episode prompt if configured and conditions are met.
+        Also handles playlist continuation prompt when a playlist ends.
         """
+        self._log.debug("Playback ended")
+        
+        # Give the playlist a chance to start the next item
+        xbmc.sleep(PLAYLIST_START_DELAY_MS)
+        
+        # Check if something new is playing
+        now_name = xbmc.getInfoLabel('VideoPlayer.TVShowTitle')
+        now_title = xbmc.getInfoLabel('VideoPlayer.Title')
+        is_something_playing = now_name != '' or now_title != ''
+        
+        # Get current settings
+        settings = self._get_settings()
+        
+        # Check if playlist truly ended (nothing playing + was EasyTV playlist)
+        if not is_something_playing and self._pl_running_local == 'true':
+            self._window.setProperty("EasyTV.playlist_running", 'false')
+            
+            # Show playlist continuation prompt if enabled and config is stored
+            if settings.playlist_continuation:
+                stored_config = self._window.getProperty(PROP_PLAYLIST_CONFIG)
+                if stored_config:
+                    self._show_playlist_continuation_prompt(settings)
+        
+        # If no episode was being tracked (e.g., movie playback), we're done
+        if self._playing_showid is False:
+            self._set_nextprompt_info({})
+            return
+        
         # Get info for previously played episode while still available
         nextprompt_info = self._get_nextprompt_info()
         pre_seas = nextprompt_info.get('season', None)
@@ -447,30 +475,15 @@ class PlaybackMonitor(xbmc.Player):
             self._set_nextprompt_info({})
             return
         
-        self._log.debug("Playback ended")
-        
-        PlaybackMonitor.playing_epid = False
-        
-        # Give the playlist a chance to start the next item
-        xbmc.sleep(PLAYLIST_START_DELAY_MS)
-        
-        # Get current settings
-        settings = self._get_settings()
-        
-        # Check if something new is playing
-        now_name = xbmc.getInfoLabel('VideoPlayer.TVShowTitle')
+        self._playing_epid = False
         
         # If nothing playing, or playlist mode with next prompt enabled
-        if now_name == '' or all([
+        if not is_something_playing or all([
             self._pl_running_local == 'true', 
             settings.nextprompt_in_playlist
         ]):
-            # Clear playlist running flag if nothing playing and was a playlist
-            if now_name == '' and self._pl_running_local == 'true':
-                self._window.setProperty("EasyTV.playlist_running", 'false')
-            
             # Show next episode prompt if conditions are met
-            if PlaybackMonitor.nextprompt_trigger and PlaybackMonitor.nextprompt_trigger_override:
+            if self._nextprompt_trigger and self._nextprompt_trigger_override:
                 self._show_next_episode_prompt(
                     now_name, pre_seas, pre_ep, pre_title, pre_epid, settings
                 )
@@ -510,7 +523,7 @@ class PlaybackMonitor(xbmc.Player):
             )
             paused = True
         
-        PlaybackMonitor.nextprompt_trigger = False
+        self._nextprompt_trigger = False
         
         SE = str(int(pre_seas)) + 'x' + str(int(pre_ep))
         
@@ -578,3 +591,50 @@ class PlaybackMonitor(xbmc.Player):
                 '{"jsonrpc":"2.0","method":"Player.PlayPause",'
                 '"params":{"playerid":1,"play":true},"id":1}'
             )
+    
+    def _show_playlist_continuation_prompt(self, settings: PlaybackSettings) -> None:
+        """
+        Show the playlist continuation prompt dialog.
+        
+        Asks the user whether to generate another playlist with the same settings.
+        If accepted, sets the PROP_PLAYLIST_REGENERATE window property for the
+        daemon to pick up and regenerate the playlist.
+        
+        Args:
+            settings: Current playback settings.
+        """
+        self._log.debug("Showing playlist continuation prompt")
+        
+        # String IDs: 32617=heading, 32618=message, 32619=Generate, 32620=Stop
+        heading = lang(32617)  # "Playlist Finished"
+        message = lang(32618)  # "Generate another playlist with the same settings?"
+        yes_label = lang(32619)  # "Generate"
+        no_label = lang(32620)  # "Stop"
+        
+        duration = settings.playlist_continuation_duration
+        
+        if duration > 0:
+            # Show with autoclose
+            result = self._dialog.yesno(
+                heading, message,
+                nolabel=no_label, yeslabel=yes_label,
+                autoclose=int(duration * SECONDS_TO_MS_MULTIPLIER)
+            )
+        else:
+            # Show without autoclose
+            result = self._dialog.yesno(
+                heading, message,
+                nolabel=no_label, yeslabel=yes_label
+            )
+        
+        self._log.debug("Continuation prompt result", result=result)
+        
+        if result:
+            # User chose to generate another playlist
+            # Set the trigger property for daemon to regenerate
+            self._window.setProperty(PROP_PLAYLIST_REGENERATE, 'true')
+            self._log.info("Playlist continuation requested", event="playlist.continuation")
+        else:
+            # User declined or timeout - clear the stored config
+            self._window.clearProperty(PROP_PLAYLIST_CONFIG)
+            self._log.debug("Playlist continuation declined, config cleared")

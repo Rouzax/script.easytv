@@ -29,6 +29,7 @@ import sys
 import xbmc
 import xbmcaddon
 import xbmcgui
+import xbmcvfs
 
 from resources.lib.constants import (
     KODI_HOME_WINDOW_ID, ADDON_RESTART_DELAY_MS,
@@ -38,7 +39,7 @@ from resources.lib.utils import (
     lang, get_logger, get_bool_setting, get_int_setting, get_float_setting
 )
 from resources.lib.ui.dialogs import show_playlist_selection
-from resources.lib.playback.episode_list import EpisodeListConfig, build_episode_list
+from resources.lib.playback.browse_mode import EpisodeListConfig, build_episode_list
 from resources.lib.playback.random_player import (
     RandomPlaylistConfig, filter_shows_by_population, build_random_playlist
 )
@@ -51,8 +52,20 @@ def _get_population(filter_enabled, populate_by, playlist_source,
         return {'none': ''}
     if populate_by == '1':
         if playlist_source == '0':
-            return {'playlist': show_playlist_selection(dialog=dialog, logger=log)}
-        return {'playlist': user_playlist_path} if user_playlist_path else {'none': ''}
+            # Ask each time - pass tvshows filter for TV show playlists
+            return {'playlist': show_playlist_selection(
+                dialog=dialog, logger=log, playlist_type='tvshows'
+            )}
+        # Use default playlist - check file exists first
+        if user_playlist_path and user_playlist_path != 'none':
+            if not xbmcvfs.exists(user_playlist_path):
+                log.warning("TV show playlist file not found", 
+                           event="playlist.missing", path=user_playlist_path)
+                # 32607 = "TV show playlist not found. Please update your settings."
+                dialog.ok("EasyTV", lang(32607))
+                sys.exit()
+            return {'playlist': user_playlist_path}
+        return {'none': ''}
     return {'usersel': selected_shows}
 
 
@@ -114,29 +127,77 @@ def main_entry(addon, log):
 
     if choice == 1:
         # Random playlist mode
+        playlist_content = get_int_setting('playlist_content')
+        
+        # Get movie playlist setting if movies are included
+        movie_playlist = None
+        # playlist_content: 0=TV only, 1=mixed, 2=movies only
+        if playlist_content != 0:  # Not TV-only mode
+            movie_playlist_path = addon.getSetting('movie_user_playlist_path')
+            if movie_playlist_path and movie_playlist_path not in ('none', 'empty', ''):
+                # Check file exists
+                if not xbmcvfs.exists(movie_playlist_path):
+                    log.warning("Movie playlist file not found", 
+                               event="playlist.missing", path=movie_playlist_path)
+                    # 32606 = "Movie playlist not found. Please update your settings."
+                    dialog.ok("EasyTV", lang(32606))
+                    sys.exit()
+                movie_playlist = movie_playlist_path
+        
         build_random_playlist(
             population=population,
             random_order_shows=random_order_shows,
             config=RandomPlaylistConfig(
                 length=get_int_setting('length'),
-                playlist_content=get_int_setting('playlist_content'),
+                playlist_content=playlist_content,
+                episode_selection=get_int_setting('episode_selection'),
                 movie_selection=get_int_setting('movie_selection'),
                 movieweight=get_float_setting('movieweight'),
-                start_partials=get_bool_setting('start_partials'),
+                start_partials_tv=get_bool_setting('start_partials_tv'),
+                start_partials_movies=get_bool_setting('start_partials_movies'),
                 premieres=get_bool_setting('premieres'),
+                season_premieres=get_bool_setting('season_premieres'),
                 multiple_shows=get_bool_setting('multiple_shows'),
-                sort_by=sort_by, sort_reverse=sort_reverse, language=language
+                sort_by=sort_by, sort_reverse=sort_reverse, language=language,
+                movie_playlist=movie_playlist,
+                unwatched_ratio=get_int_setting('unwatched_ratio')
             ),
             logger=log
         )
     else:
-        # Browse mode
-        show_data = filter_shows_by_population(population, sort_by, sort_reverse, language, log)
+        # Browse mode - always uses unwatched episodes (primary use case)
+        show_data = filter_shows_by_population(
+            population, sort_by, sort_reverse, language, logger=log
+        )
         
-        # Filter out premieres (S01E01) if setting is disabled
-        if not get_bool_setting('premieres'):
-            show_data = [x for x in show_data 
-                         if window.getProperty(f"EasyTV.{x[1]}.EpisodeNo") != 's01e01']
+        # Filter out premieres based on settings
+        include_series_premieres = get_bool_setting('premieres')
+        include_season_premieres = get_bool_setting('season_premieres')
+        
+        if not include_series_premieres or not include_season_premieres:
+            def should_include(show_entry):
+                """Check if episode should be included based on premiere settings."""
+                episode_no = window.getProperty(f"EasyTV.{show_entry[1]}.EpisodeNo")
+                if not episode_no or len(episode_no) < 6:
+                    return True
+                
+                # Check if this is episode 1
+                try:
+                    episode_num = int(episode_no[4:6])
+                    if episode_num != 1:
+                        return True
+                    
+                    season_num = int(episode_no[1:3])
+                    if season_num == 1:
+                        # Series premiere (S01E01)
+                        return include_series_premieres
+                    else:
+                        # Season premiere (S02E01, S03E01, etc.)
+                        return include_season_premieres
+                except (ValueError, IndexError):
+                    return True
+            
+            show_data = [x for x in show_data if should_include(x)]
         
         build_episode_list(
             show_data=show_data,
@@ -159,18 +220,33 @@ def _handle_special_modes(mode, addon, log):
     import os
 
     if mode == 'playlist':
-        log.debug("Playlist selection mode")
-        pl = show_playlist_selection(dialog=xbmcgui.Dialog(), logger=log)
+        # Parse optional playlist type from argv[2]
+        playlist_type = sys.argv[2] if len(sys.argv) > 2 else None
+        log.debug("Playlist selection mode", playlist_type=playlist_type)
+        pl = show_playlist_selection(
+            dialog=xbmcgui.Dialog(), 
+            logger=log,
+            playlist_type=playlist_type
+        )
         if pl != 'empty':
             # With <close>true</close>, settings dialog is already closed
             # so we can use setSetting() directly
-            addon.setSetting(id="user_playlist_path", value=pl)
+            # Determine which settings to update based on playlist type
+            if playlist_type == 'movies':
+                path_setting = "movie_user_playlist_path"
+                display_setting = "movie_playlist_file_display"
+            else:
+                path_setting = "user_playlist_path"
+                display_setting = "playlist_file_display"
+            
+            addon.setSetting(id=path_setting, value=pl)
             # Update display setting with filename only
             filename = os.path.basename(pl)
             if filename.endswith('.xsp'):
                 filename = filename[:-4]
-            addon.setSetting(id="playlist_file_display", value=filename)
-            log.info("Playlist saved", event="playlist.save", path=pl, display=filename)
+            addon.setSetting(id=display_setting, value=filename)
+            log.info("Playlist saved", event="playlist.save", path=pl, 
+                     display=filename, playlist_type=playlist_type)
         
         # Force-close any lingering dialog instances to prevent stale cache
         # Then reopen settings as a fresh instance after a short delay
@@ -183,7 +259,7 @@ def _handle_special_modes(mode, addon, log):
     elif mode == 'selector':
         log.debug("Selector mode")
         from resources import selector
-        _ = selector  # Import runs selector at module level
+        selector.Main()
         
         # Force-close any lingering dialog instances to prevent stale cache
         # Then reopen settings as a fresh instance after a short delay

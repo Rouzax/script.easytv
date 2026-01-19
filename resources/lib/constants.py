@@ -16,6 +16,13 @@ to improve maintainability and make the code self-documenting.
 """
 
 # =============================================================================
+# Episode Selection Modes (parallel to movie_selection)
+# =============================================================================
+EPISODE_SELECTION_UNWATCHED = 0
+EPISODE_SELECTION_WATCHED = 1
+EPISODE_SELECTION_BOTH = 2
+
+# =============================================================================
 # Kodi Window IDs
 # =============================================================================
 KODI_HOME_WINDOW_ID = 10000
@@ -213,3 +220,11 @@ LOG_MAX_VALUE_LENGTH = 200  # Truncate long values in log output
 
 # Default addon ID (fallback when context unavailable)
 DEFAULT_ADDON_ID = "script.easytv"
+
+# =============================================================================
+# Playlist Continuation Window Properties
+# =============================================================================
+# JSON-encoded config for regenerating playlist
+PROP_PLAYLIST_CONFIG = "EasyTV.playlist_config"
+# Flag to trigger playlist regeneration from daemon
+PROP_PLAYLIST_REGENERATE = "EasyTV.playlist_regenerate"

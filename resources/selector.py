@@ -211,9 +211,9 @@ class xGUI(xbmcgui.WindowXMLDialog):
                     self.name_list.getListItem(itm).select(False)
 
 
-def selection_func():
+def Main():
     """
-    Main function to display the show selection dialog.
+    Main entry point for the show selection dialog.
     
     Queries the Kodi library for all TV shows and displays them in a
     selection dialog. The user's selections are saved to addon settings
@@ -267,6 +267,6 @@ def selection_func():
     
     del creation
 
-selection_func()
-# Note: openSettings() is called from default.py after this module finishes
+# Note: Main() is called explicitly from default.py
+# openSettings() is called from default.py after this module finishes
 # to ensure consistent behavior with other settings actions

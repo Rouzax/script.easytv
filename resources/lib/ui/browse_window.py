@@ -158,7 +158,7 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         super().__init__(*args, **kwargs)
         
         # Instance state
-        self._selected_show: Union[str, int, list] = 'null'
+        self._selected_show: Optional[Union[int, list]] = None
         self._load_items: bool = True
         self._play_requested: bool = False
         self._should_close: bool = False
@@ -552,106 +552,17 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
     
     def data_refresh(self) -> None:
         """
-        Refresh episode data for all items currently displayed in the list.
+        Signal that episode data needs to be refreshed.
         
-        When Called:
-            - Called by BrowseModePlayer when playback ends while the list window is open
-            - This allows the list to reflect watched episodes without full reload
-            - User sees updated "next episode" info after watching something
-        
-        What Gets Updated:
-            For each list item, refreshes from window properties:
-            - Episode title, season, episode number
-            - Artwork (poster, thumb, fanart)
-            - Plot summary
-            - Percent played / resume position
-            - Episode counts (watched, on-deck, skipped)
-            - File path and Episode ID
-            
-        This avoids a full window refresh which would reset scroll position
-        and selection state. The service updates window properties when
-        playback completes, and this method syncs those changes to the UI.
+        Called by BrowseModePlayer when playback ends. Sets the refresh flag
+        which causes the browse mode loop to close and reopen the window with
+        fresh data from the service's updated window properties.
         """
-        self._log.debug("Refreshing episode data")
+        self._log.debug("Data refresh requested")
         self._needs_refresh = True
-        
-        skin = self._config.skin
-        item_count = self.name_list.size()
-        
-        for item_position in range(item_count):
-            try:
-                list_item = self.name_list.getListItem(item_position)
-            except ValueError:
-                self._log.warning(
-                    "List item position out of range",
-                    event="ui.fallback",
-                    position=item_position
-                )
-                continue
-            
-            show_id = list_item.getProperty('ID')
-            if not show_id:
-                continue
-            
-            prop_prefix = f"EasyTV.{show_id}"
-            
-            pct_played = WINDOW.getProperty(f"{prop_prefix}.PercentPlayed")
-            poster = WINDOW.getProperty(f"{prop_prefix}.Art(tvshow.poster)")
-            thumb = WINDOW.getProperty(f"{prop_prefix}.Art(thumb)")
-            eptitle = WINDOW.getProperty(f"{prop_prefix}.Title")
-            plot = WINDOW.getProperty(f"{prop_prefix}.Plot")
-            season = WINDOW.getProperty(f"{prop_prefix}.Season")
-            episode = WINDOW.getProperty(f"{prop_prefix}.Episode")
-            episode_id = WINDOW.getProperty(f"{prop_prefix}.EpisodeID")
-            filename = WINDOW.getProperty(f"{prop_prefix}.File")
-            
-            if skin != 0:
-                # Custom skin - update all properties
-                title = WINDOW.getProperty(f"{prop_prefix}.TVshowTitle")
-                fanart = WINDOW.getProperty(f"{prop_prefix}.Art(tvshow.fanart)")
-                num_watched = WINDOW.getProperty(f"{prop_prefix}.CountWatchedEps")
-                num_ondeck = WINDOW.getProperty(f"{prop_prefix}.CountonDeckEps")
-                
-                try:
-                    num_unwatched = int(WINDOW.getProperty(f"{prop_prefix}.CountUnwatchedEps"))
-                    num_ondeck_int = int(num_ondeck) if num_ondeck else 0
-                    num_skipped = str(num_unwatched - num_ondeck_int)
-                except ValueError:
-                    num_skipped = '0'
-                
-                list_item.setLabel(title)
-                list_item.setLabel2(eptitle)
-                list_item.setArt({'thumb': poster})
-                list_item.setProperty("Fanart_Image", fanart)
-                list_item.setProperty("Backup_Image", thumb)
-                list_item.setProperty("numwatched", num_watched)
-                list_item.setProperty("numondeck", num_ondeck)
-                list_item.setProperty("numskipped", num_skipped)
-                list_item.setProperty("percentplayed", pct_played)
-                list_item.setProperty("watched", 'false')
-            else:
-                # DialogSelect skin
-                ep_no = WINDOW.getProperty(f"{prop_prefix}.EpisodeNo")
-                show_title = WINDOW.getProperty(f"{prop_prefix}.TVshowTitle")
-                title = f"{show_title} {ep_no}"
-                
-                list_item.setLabel(title)
-                list_item.setLabel2(eptitle)
-                list_item.setArt({'thumb': poster})
-            
-            list_item.setProperty("file", filename)
-            list_item.setProperty("EpisodeID", episode_id)
-            list_item.setInfo('video', {
-                'season': season,
-                'episode': episode,
-                'plot': plot,
-                'title': eptitle
-            })
-            list_item.setLabel(title)
-            list_item.setArt({'icon': poster})
     
     @property
-    def selected_show(self) -> Union[str, int, list]:
+    def selected_show(self) -> Optional[Union[int, list]]:
         """Get the selected show/episode ID(s)."""
         return self._selected_show
     
@@ -677,7 +588,7 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
     
     def reset_state(self) -> None:
         """Reset state for re-showing the window."""
-        self._selected_show = 'null'
+        self._selected_show = None
         self._play_requested = False
         self._should_close = False
         self._needs_refresh = False

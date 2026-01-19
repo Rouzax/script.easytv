@@ -31,7 +31,7 @@ import ast
 import json
 import random
 from dataclasses import dataclass
-from typing import Optional, TYPE_CHECKING
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import xbmc
 import xbmcgui
@@ -39,21 +39,30 @@ import xbmcgui
 from resources.lib.constants import (
     KODI_HOME_WINDOW_ID,
     PLAYLIST_BUILD_BREAK_VALUE,
+    EPISODE_SELECTION_UNWATCHED,
+    EPISODE_SELECTION_WATCHED,
+    EPISODE_SELECTION_BOTH,
+    PROP_PLAYLIST_CONFIG,
 )
 from resources.lib.data.queries import (
     get_clear_video_playlist_query,
     build_add_episode_query,
     build_add_movie_query,
-    get_unwatched_movies_query,
-    get_watched_movies_query,
-    get_all_movies_query,
+    build_random_movies_query,
+    build_random_episodes_query,
+    build_show_episodes_with_resume_query,
+    build_all_movies_with_resume_query,
+    get_episode_filter,
+    get_movie_filter,
 )
 from resources.lib.data.shows import (
     find_next_episode,
     fetch_unwatched_shows,
+    fetch_shows_with_watched_episodes,
     extract_showids_from_playlist,
+    extract_movieids_from_playlist,
 )
-from resources.lib.utils import get_logger, json_query
+from resources.lib.utils import get_logger, json_query, log_timing
 
 if TYPE_CHECKING:
     from resources.lib.utils import StructuredLogger
@@ -88,25 +97,35 @@ class RandomPlaylistConfig:
     Attributes:
         length: Target number of items in the playlist
         playlist_content: Content type (CONTENT_TV_ONLY=0, CONTENT_MIXED=1, CONTENT_MOVIES_ONLY=2)
+        episode_selection: Which episodes to include (0=unwatched, 1=watched, 2=both)
         movie_selection: Which movies to include (0=unwatched, 1=watched, 2=both)
         movieweight: Ratio of movies to shows (0.0-1.0), only applies to CONTENT_MIXED
-        start_partials: Whether to prioritize partially watched episodes
-        premieres: Whether to include premiere episodes (S01E01)
+        start_partials_tv: Whether to prioritize partially watched TV episodes
+        start_partials_movies: Whether to prioritize partially watched movies
+        premieres: Whether to include series premiere episodes (S01E01)
+        season_premieres: Whether to include season premiere episodes (S02E01, S03E01, etc.)
         multiple_shows: Whether the same show can appear multiple times
         sort_by: Sort method for shows (0=name, 1=last played, 2=random)
         sort_reverse: Whether to reverse the sort order
         language: System language for sorting
+        movie_playlist: Optional path to movie playlist filter (None = all movies)
+        unwatched_ratio: Chance of picking unwatched vs watched in "Both" mode (0-100)
     """
     length: int = 10
     playlist_content: int = CONTENT_MIXED
+    episode_selection: int = 0  # 0=unwatched, 1=watched, 2=both
     movie_selection: int = 0  # 0=unwatched, 1=watched, 2=both
     movieweight: float = 0.5
-    start_partials: bool = False
+    start_partials_tv: bool = True
+    start_partials_movies: bool = True
     premieres: bool = True
+    season_premieres: bool = True
     multiple_shows: bool = False
     sort_by: int = 0
     sort_reverse: bool = False
     language: str = 'English'
+    movie_playlist: Optional[str] = None
+    unwatched_ratio: int = 50  # 0-100, used when episode_selection is BOTH
 
 
 def filter_shows_by_population(
@@ -114,13 +133,14 @@ def filter_shows_by_population(
     sort_by: int,
     sort_reverse: bool,
     language: str,
+    episode_selection: int = EPISODE_SELECTION_UNWATCHED,
     logger: Optional[StructuredLogger] = None
 ) -> list:
     """
-    Filter shows based on population criteria (playlist or user selection).
+    Filter shows based on population criteria and episode selection mode.
     
-    Retrieves all unwatched shows and optionally filters them based on
-    a smart playlist or user-selected show list.
+    Retrieves shows based on the episode_selection mode and optionally filters
+    them based on a smart playlist or user-selected show list.
     
     Args:
         population: Dict with one of:
@@ -130,25 +150,58 @@ def filter_shows_by_population(
         sort_by: Sort method (0=name, 1=last played, 2=random)
         sort_reverse: Whether to reverse sort order
         language: System language for sorting
+        episode_selection: Which episodes to include:
+            - 0 (UNWATCHED): Only shows with unwatched episodes
+            - 1 (WATCHED): Only shows with watched episodes  
+            - 2 (BOTH): Shows with either unwatched or watched episodes
         logger: Optional logger instance
     
     Returns:
         List of [lastplayed_timestamp, showid, episode_id] for matching shows.
+        For watched-only shows, episode_id will be empty (selected on-demand).
     """
     log = logger or _get_log()
     
-    stored_data = fetch_unwatched_shows(sort_by, sort_reverse, language)
+    # Fetch shows based on episode selection mode
+    if episode_selection == EPISODE_SELECTION_UNWATCHED:
+        # Unwatched only - use service cache (fast path)
+        stored_data = fetch_unwatched_shows(sort_by, sort_reverse, language)
+        log.debug("Fetched shows with unwatched episodes", count=len(stored_data))
+        
+    elif episode_selection == EPISODE_SELECTION_WATCHED:
+        # Watched only - query directly
+        stored_data = fetch_shows_with_watched_episodes(sort_by, sort_reverse, language)
+        log.debug("Fetched shows with watched episodes", count=len(stored_data))
+        
+    else:
+        # Both - merge unwatched and watched show lists
+        unwatched_shows = fetch_unwatched_shows(sort_by, sort_reverse, language)
+        watched_shows = fetch_shows_with_watched_episodes(sort_by, sort_reverse, language)
+        
+        # Merge lists, avoiding duplicates (prefer unwatched entry as it has episode_id)
+        unwatched_ids = {x[1] for x in unwatched_shows}
+        watched_only = [x for x in watched_shows if x[1] not in unwatched_ids]
+        
+        stored_data = unwatched_shows + watched_only
+        log.debug("Fetched shows for both mode", 
+                 unwatched=len(unwatched_shows), 
+                 watched_only=len(watched_only),
+                 total=len(stored_data))
     
     log.debug("Processing stored show data")
     
     if 'playlist' in population:
         extracted_showlist = extract_showids_from_playlist(population['playlist'])
+        # If playlist extraction returned empty, return empty (filter failed)
+        if not extracted_showlist:
+            log.debug("Playlist extraction returned no shows, returning empty")
+            return []
     elif 'usersel' in population:
         extracted_showlist = population['usersel']
     else:
-        extracted_showlist = False
+        extracted_showlist = None  # No filter configured
     
-    if extracted_showlist:
+    if extracted_showlist is not None:
         stored_data_filtered = [x for x in stored_data if x[1] in extracted_showlist]
     else:
         stored_data_filtered = stored_data
@@ -159,122 +212,297 @@ def filter_shows_by_population(
 
 
 def _fetch_movies(
-    include_unwatched: bool,
-    include_watched: bool,
-    logger: StructuredLogger
+    movie_selection: int,
+    limit: Optional[int] = None,
+    movie_ids: Optional[list[int]] = None,
+    logger: Optional[StructuredLogger] = None
 ) -> list[int]:
     """
     Fetch movie IDs based on watch status settings.
     
+    Uses server-side random sorting for better performance when a limit
+    is specified, avoiding the need to fetch and shuffle all movies.
+    
+    When movie_ids is provided (from a playlist filter), fetches all movies
+    matching watch status (ignoring limit), then intersects with the playlist.
+    This ensures the limit doesn't exclude valid playlist matches.
+    
     Args:
-        include_unwatched: Include unwatched movies
-        include_watched: Include watched movies
+        movie_selection: Which movies to include (0=unwatched, 1=watched, 2=both)
+        limit: Optional maximum number of movies to return (ignored when movie_ids provided)
+        movie_ids: Optional list of movie IDs to filter by (from playlist)
         logger: Logger instance
     
     Returns:
-        List of movie IDs, shuffled randomly.
+        List of movie IDs, randomly sorted by the server.
     """
-    if include_unwatched and include_watched:
-        mov = json_query(get_all_movies_query(), True)
-    elif include_unwatched:
-        mov = json_query(get_unwatched_movies_query(), True)
-    elif include_watched:
-        mov = json_query(get_watched_movies_query(), True)
-    else:
-        return []
+    log = logger or _get_log()
+    
+    # Get the appropriate filter for the selection mode
+    watch_filter = get_movie_filter(movie_selection)
+    filters = [watch_filter] if watch_filter else []
+    
+    # When playlist filter is active, don't limit the query - we need to
+    # fetch all movies matching watch status, then intersect with playlist.
+    # Otherwise the limit could exclude valid playlist matches.
+    query_limit = None if movie_ids is not None else limit
+    
+    # Use optimized query with server-side random sort
+    query = build_random_movies_query(filters=filters, limit=query_limit)
+    mov = json_query(query, True)
     
     if 'movies' in mov and mov['movies']:
         movie_list = [x['movieid'] for x in mov['movies']]
-        logger.debug("Movies found", count=len(movie_list))
-        if movie_list:
-            random.shuffle(movie_list)
+        
+        # If movie_ids filter is provided, intersect with fetched list
+        if movie_ids is not None:
+            movie_id_set = set(movie_ids)
+            movie_list = [m for m in movie_list if m in movie_id_set]
+            log.debug("Movies filtered by playlist", 
+                     total_fetched=len(mov['movies']), 
+                     after_filter=len(movie_list))
+        else:
+            log.debug("Movies found", count=len(movie_list), limit=limit)
+        
         return movie_list
     
     return []
 
 
-def _find_partial_episode_start(
-    candidate_list: list[str],
-    logger: StructuredLogger
+def _fetch_random_episode_for_show(
+    show_id: int,
+    episode_selection: int,
+    exclude_episode_ids: Optional[list[int]] = None,
+    logger: Optional[StructuredLogger] = None
 ) -> Optional[int]:
     """
-    Find the index of the most recently watched partial episode.
+    Fetch a random episode ID from a specific show based on episode selection.
     
-    Checks all TV show candidates for resume points and returns the
-    index of the one with the most recent lastplayed timestamp.
+    Uses server-side random sorting and the episode selection filter to
+    efficiently get a random episode without loading all episodes.
+    
+    This is used when episode_selection is WATCHED or BOTH, since the
+    service only caches unwatched episodes in Window properties.
     
     Args:
-        candidate_list: List of candidate IDs (prefixed with 't' or 'm')
+        show_id: The TV show ID
+        episode_selection: Which episodes to include (0=unwatched, 1=watched, 2=both)
+        exclude_episode_ids: Optional list of episode IDs to exclude
         logger: Logger instance
     
     Returns:
-        Index into candidate_list of the partial episode to start with,
-        or None if no partial episodes found.
+        Episode ID or None if no matching episodes found.
     """
-    if not candidate_list:
-        return None
+    log = logger or _get_log()
     
-    # Get show IDs from TV candidates
-    shows_with_partial_progress = [
-        int(x[1:]) for x in candidate_list if x[0] == 't'
-    ]
+    # Get the appropriate filter for the selection mode
+    watch_filter = get_episode_filter(episode_selection)
+    filters = [watch_filter] if watch_filter else []
     
-    if not shows_with_partial_progress:
-        return None
+    # Query with server-side random sort, get a few extras in case we need to exclude some
+    limit = 5 if exclude_episode_ids else 1
+    query = build_random_episodes_query(tvshowid=show_id, filters=filters, limit=limit)
+    result = json_query(query, True)
     
-    # Build batch query for episodes with resume points
+    if 'episodes' in result and result['episodes']:
+        for ep in result['episodes']:
+            episode_id = ep['episodeid']
+            if exclude_episode_ids and episode_id in exclude_episode_ids:
+                continue
+            log.debug("Random episode fetched", show_id=show_id, episode_id=episode_id)
+            return episode_id
+    
+    return None
+
+
+def _find_all_partial_episodes(
+    show_ids: List[int],
+    episode_selection: int,
+    logger: StructuredLogger
+) -> List[Tuple[str, int, int, int, str]]:
+    """
+    Find all TV episodes with resume points from the given shows.
+    
+    Queries each show for episodes matching the watch status filter,
+    then filters client-side for those with actual resume points.
+    
+    Args:
+        show_ids: List of TV show IDs to check
+        episode_selection: Watch status filter (0=unwatched, 1=watched, 2=both)
+        logger: Logger instance
+    
+    Returns:
+        List of tuples: (lastplayed, tvshowid, season, episode, episodeid)
+        for episodes with resume.position > 0.
+    """
+    if not show_ids:
+        return []
+    
+    # Build batch query for all shows
+    watch_filter = get_episode_filter(episode_selection)
+    filters = [watch_filter] if watch_filter else []
+    
     queries = []
-    for showid in shows_with_partial_progress:
-        if WINDOW.getProperty(f"EasyTV.{showid}.Resume") == 'true':
-            temp_ep = WINDOW.getProperty(f"EasyTV.{showid}.EpisodeID")
-            if temp_ep:
-                queries.append({
-                    "jsonrpc": "2.0",
-                    "method": "VideoLibrary.GetEpisodeDetails",
-                    "params": {
-                        "properties": ["lastplayed", "tvshowid"],
-                        "episodeid": int(temp_ep)
-                    },
-                    "id": "1"
-                })
+    for show_id in show_ids:
+        query = build_show_episodes_with_resume_query(show_id, filters)
+        queries.append(query)
     
     if not queries:
-        return None
+        return []
     
     # Execute batch query
     xbmc_request = json.dumps(queries)
     result = xbmc.executeJSONRPC(xbmc_request)
     
     if not result:
-        return None
+        return []
     
-    # Parse results and sort by lastplayed
-    last_watched_sorted = []
+    # Parse results and collect episodes with resume points
+    partial_episodes: List[Tuple[str, int, int, int, str]] = []
     try:
-        reslist = ast.literal_eval(result)
+        reslist = json.loads(result)
         for res in reslist:
-            if 'result' in res and 'episodedetails' in res['result']:
-                last_watched_sorted.append((
-                    res['result']['episodedetails']['lastplayed'],
-                    res['result']['episodedetails']['tvshowid']
-                ))
-    except (ValueError, SyntaxError):
-        logger.warning("Failed to parse partial episode results", event="playlist.parse_fail")
-        return None
+            if 'result' in res and 'episodes' in res['result']:
+                for ep in res['result']['episodes']:
+                    resume = ep.get('resume', {})
+                    if resume.get('position', 0) > 0:
+                        partial_episodes.append((
+                            ep.get('lastplayed', ''),
+                            ep.get('tvshowid', 0),
+                            ep.get('season', 0),
+                            ep.get('episode', 0),
+                            str(ep.get('episodeid', 0))
+                        ))
+    except (ValueError, json.JSONDecodeError) as e:
+        logger.warning("Failed to parse partial episode results", 
+                      event="playlist.parse_fail", error=str(e))
+        return []
     
-    if not last_watched_sorted:
-        return None
+    logger.debug("Found partial episodes", count=len(partial_episodes))
+    return partial_episodes
+
+
+def _find_all_partial_movies(
+    movie_ids: Optional[List[int]],
+    movie_selection: int,
+    logger: StructuredLogger
+) -> List[Tuple[str, int]]:
+    """
+    Find all movies with resume points.
     
-    last_watched_sorted.sort(reverse=True)
+    Queries all movies matching the watch status filter, optionally
+    filtered by a playlist, then filters for those with resume points.
     
-    # Find index of most recently watched show
-    target_tag = 't' + str(last_watched_sorted[0][1])
-    try:
-        index = candidate_list.index(target_tag)
-        logger.debug("Starting with partial episode", index=index)
-        return index
-    except ValueError:
-        return None
+    Args:
+        movie_ids: Optional list of movie IDs to filter by (from playlist).
+                   If None, checks all movies matching watch status.
+        movie_selection: Watch status filter (0=unwatched, 1=watched, 2=both)
+        logger: Logger instance
+    
+    Returns:
+        List of tuples: (lastplayed, movieid)
+        for movies with resume.position > 0.
+    """
+    # Build query with watch status filter
+    watch_filter = get_movie_filter(movie_selection)
+    filters = [watch_filter] if watch_filter else []
+    
+    query = build_all_movies_with_resume_query(filters)
+    result = json_query(query, True)
+    
+    if 'movies' not in result or not result['movies']:
+        return []
+    
+    # Filter for resume points and optionally by playlist
+    partial_movies: List[Tuple[str, int]] = []
+    movie_id_set = set(movie_ids) if movie_ids is not None else None
+    
+    for movie in result['movies']:
+        movie_id = movie.get('movieid', 0)
+        
+        # Skip if not in playlist filter
+        if movie_id_set is not None and movie_id not in movie_id_set:
+            continue
+        
+        resume = movie.get('resume', {})
+        if resume.get('position', 0) > 0:
+            partial_movies.append((
+                movie.get('lastplayed', ''),
+                movie_id
+            ))
+    
+    logger.debug("Found partial movies", count=len(partial_movies))
+    return partial_movies
+
+
+def _sort_partials_for_priority(
+    partial_episodes: List[Tuple[str, int, int, int, str]],
+    partial_movies: List[Tuple[str, int]],
+    logger: StructuredLogger
+) -> List[str]:
+    """
+    Sort partial items for playlist prioritization.
+    
+    Combines TV episodes and movies, sorts by recency (lastplayed descending).
+    For episodes from the same show, maintains episode order (season, episode).
+    
+    Args:
+        partial_episodes: List of (lastplayed, tvshowid, season, episode, episodeid)
+        partial_movies: List of (lastplayed, movieid)
+        logger: Logger instance
+    
+    Returns:
+        List of candidate tags in priority order: 't{showid}' or 'm{movieid}'
+    """
+    if not partial_episodes and not partial_movies:
+        return []
+    
+    # Group episodes by show and find most recent per show
+    show_episodes: Dict[int, List[Tuple[str, int, int, str]]] = {}
+    show_most_recent: Dict[int, str] = {}
+    
+    for lastplayed, showid, season, episode, epid in partial_episodes:
+        if showid not in show_episodes:
+            show_episodes[showid] = []
+            show_most_recent[showid] = lastplayed
+        show_episodes[showid].append((lastplayed, season, episode, epid))
+        # Track most recent lastplayed for this show
+        if lastplayed > show_most_recent[showid]:
+            show_most_recent[showid] = lastplayed
+    
+    # Sort episodes within each show by episode order (season, episode)
+    for showid in show_episodes:
+        show_episodes[showid].sort(key=lambda x: (x[1], x[2]))  # season, episode
+    
+    # Build combined list with recency info
+    # For TV: use show's most recent lastplayed for sorting, but keep all episodes
+    # Format: (lastplayed, type, id, sub_items)
+    combined: List[Tuple[str, str, int, List]] = []
+    
+    for showid, most_recent in show_most_recent.items():
+        # sub_items contains episode info for maintaining order
+        combined.append((most_recent, 't', showid, show_episodes[showid]))
+    
+    for lastplayed, movieid in partial_movies:
+        combined.append((lastplayed, 'm', movieid, []))
+    
+    # Sort by recency (descending)
+    combined.sort(key=lambda x: x[0], reverse=True)
+    
+    # Build final candidate list
+    result: List[str] = []
+    for _, item_type, item_id, sub_items in combined:
+        if item_type == 't':
+            # For TV shows with multiple partial episodes, add show once
+            # (the playlist building logic handles multiple episodes)
+            result.append(f't{item_id}')
+        else:
+            result.append(f'm{item_id}')
+    
+    logger.debug("Sorted partials for priority", 
+                 tv_shows=len([x for x in result if x.startswith('t')]),
+                 movies=len([x for x in result if x.startswith('m')]))
+    return result
 
 
 def _process_tv_candidate(
@@ -293,7 +521,7 @@ def _process_tv_candidate(
         added_ep_dict: Dict tracking added episodes per show
         candidate_list: List of remaining candidates (modified in place)
         random_order_shows: List of show IDs with random episode order
-        config: Playlist configuration
+        config: Playlist configuration (includes episode_selection)
         logger: Logger instance
     
     Returns:
@@ -303,43 +531,140 @@ def _process_tv_candidate(
     
     if show_id in added_ep_dict:
         # Show already added to playlist
-        logger.debug("Show already in playlist", show_id=show_id)
-        
         if config.multiple_shows:
             # Find next episode for multi-episode mode
-            tmp_episode_id, tmp_details = find_next_episode(
-                show_id, random_order_shows,
-                epid=added_ep_dict[show_id][3],
-                eps=added_ep_dict[show_id][2]
-            )
-            
-            if tmp_episode_id == 'null':
-                if candidate_tag in candidate_list:
-                    candidate_list.remove(candidate_tag)
-                    logger.debug("Show abandoned (no next episode)", show_id=show_id)
-                return None, False
-            
-            return int(tmp_episode_id), True
+            # For watched/both mode, use library query; for unwatched, use cached data
+            if config.episode_selection == EPISODE_SELECTION_UNWATCHED:
+                # Use existing sequential/random order logic with cached data
+                tmp_episode_id, tmp_details = find_next_episode(
+                    show_id, random_order_shows,
+                    epid=added_ep_dict[show_id][3],
+                    eps=added_ep_dict[show_id][2]
+                )
+                
+                if tmp_episode_id is None:
+                    if candidate_tag in candidate_list:
+                        candidate_list.remove(candidate_tag)
+                    return None, False
+                
+                return int(tmp_episode_id), True
+            elif config.episode_selection == EPISODE_SELECTION_WATCHED:
+                # Query for another random watched episode
+                # Exclude already-used episodes from this show
+                used_episodes = added_ep_dict[show_id][2] if added_ep_dict[show_id][2] else []
+                if added_ep_dict[show_id][3]:
+                    used_episodes = [added_ep_dict[show_id][3]] + list(used_episodes)
+                
+                tmp_episode_id = _fetch_random_episode_for_show(
+                    show_id, EPISODE_SELECTION_WATCHED,
+                    exclude_episode_ids=used_episodes, logger=logger
+                )
+                
+                if tmp_episode_id is None:
+                    if candidate_tag in candidate_list:
+                        candidate_list.remove(candidate_tag)
+                    return None, False
+                
+                return tmp_episode_id, True
+            else:
+                # BOTH mode: use state dict to track on-deck and watched usage
+                state = added_ep_dict[show_id]
+                
+                # Handle legacy list format (upgrade safety)
+                if isinstance(state, list):
+                    # Convert old format to new state dict
+                    state = {
+                        'ondeck_used': True,  # Assume used since we can't know
+                        'ondeck_id': state[3] if state[3] else None,
+                        'watched_used': list(state[2]) if state[2] else []
+                    }
+                    added_ep_dict[show_id] = state
+                
+                # Get on-deck episode ID from window property (may still be available)
+                ondeck_id_str = WINDOW.getProperty(f"EasyTV.{show_id}.EpisodeID")
+                ondeck_available = bool(ondeck_id_str) and not state.get('ondeck_used', False)
+                ondeck_id = int(ondeck_id_str) if ondeck_id_str else None
+                
+                # Get watched exclusion list
+                watched_used = state.get('watched_used', [])
+                
+                # Use unwatched_ratio setting (0-100) to determine preference
+                prefer_unwatched = random.randint(1, 100) <= config.unwatched_ratio
+                
+                if prefer_unwatched and ondeck_available:
+                    # Use the on-deck episode (appears only once per show)
+                    state['ondeck_used'] = True
+                    return ondeck_id, True
+                else:
+                    # Try to get a random watched episode
+                    tmp_episode_id = _fetch_random_episode_for_show(
+                        show_id, EPISODE_SELECTION_WATCHED,
+                        exclude_episode_ids=watched_used, logger=logger
+                    )
+                    
+                    if tmp_episode_id is not None:
+                        return tmp_episode_id, True
+                    elif ondeck_available:
+                        # No more watched episodes, fall back to on-deck
+                        state['ondeck_used'] = True
+                        return ondeck_id, True
+                    else:
+                        # Both sources exhausted - remove from candidates
+                        if candidate_tag in candidate_list:
+                            candidate_list.remove(candidate_tag)
+                        return None, False
         else:
             # Not multi-episode mode, skip this show
             return None, False
     else:
         # First episode from this show
-        logger.debug("Show not yet in playlist", show_id=show_id)
         
-        episode_id_str = WINDOW.getProperty(f"EasyTV.{show_id}.EpisodeID")
-        if not episode_id_str:
-            if candidate_tag in candidate_list:
-                candidate_list.remove(candidate_tag)
-            return None, False
-        
-        tmp_episode_id = int(episode_id_str)
+        # Get episode based on selection mode
+        if config.episode_selection == EPISODE_SELECTION_UNWATCHED:
+            # Use cached next unwatched episode from service
+            episode_id_str = WINDOW.getProperty(f"EasyTV.{show_id}.EpisodeID")
+            if not episode_id_str:
+                if candidate_tag in candidate_list:
+                    candidate_list.remove(candidate_tag)
+                return None, False
+            tmp_episode_id = int(episode_id_str)
+        elif config.episode_selection == EPISODE_SELECTION_WATCHED:
+            # Query library for a random watched episode
+            tmp_episode_id = _fetch_random_episode_for_show(
+                show_id, EPISODE_SELECTION_WATCHED, logger=logger
+            )
+            if tmp_episode_id is None:
+                if candidate_tag in candidate_list:
+                    candidate_list.remove(candidate_tag)
+                return None, False
+        else:
+            # BOTH mode: randomly choose between on-deck unwatched OR random watched
+            # This preserves sequential order for unwatched episodes
+            episode_id_str = WINDOW.getProperty(f"EasyTV.{show_id}.EpisodeID")
+            has_unwatched = bool(episode_id_str)
+            
+            # Use unwatched_ratio setting (0-100) to determine choice
+            if has_unwatched and random.randint(1, 100) <= config.unwatched_ratio:
+                # Use the next sequential unwatched episode
+                tmp_episode_id = int(episode_id_str)
+            else:
+                # Query for a random watched episode
+                tmp_episode_id = _fetch_random_episode_for_show(
+                    show_id, EPISODE_SELECTION_WATCHED, logger=logger
+                )
+                if tmp_episode_id is None:
+                    # No watched episodes, fall back to unwatched if available
+                    if has_unwatched:
+                        tmp_episode_id = int(episode_id_str)
+                    else:
+                        if candidate_tag in candidate_list:
+                            candidate_list.remove(candidate_tag)
+                        return None, False
         
         if not config.multiple_shows:
             # Remove from candidates if not allowing multiple
             if candidate_tag in candidate_list:
                 candidate_list.remove(candidate_tag)
-            logger.debug("Show abandoned (no multi-episode)", show_id=show_id)
         
         return tmp_episode_id, False
 
@@ -351,7 +676,11 @@ def _check_premiere_exclusion(
     logger: StructuredLogger
 ) -> bool:
     """
-    Check if episode should be excluded due to premiere setting.
+    Check if episode should be excluded due to premiere settings.
+    
+    Handles two independent settings:
+    - premieres: Controls series premieres (S01E01)
+    - season_premieres: Controls season premieres (S02E01, S03E01, etc.)
     
     Args:
         show_id: The TV show ID
@@ -362,16 +691,45 @@ def _check_premiere_exclusion(
     Returns:
         True if episode should be excluded, False otherwise.
     """
-    if config.premieres:
+    # If both premiere types are allowed, nothing to exclude
+    if config.premieres and config.season_premieres:
         return False
     
     episode_no = WINDOW.getProperty(f"EasyTV.{show_id}.EpisodeNo")
-    if episode_no == 's01e01':
-        candidate_tag = f't{show_id}'
-        if candidate_tag in candidate_list:
-            candidate_list.remove(candidate_tag)
-        logger.debug("Show abandoned (premiere excluded)", show_id=show_id)
-        return True
+    if not episode_no:
+        return False
+    
+    # Parse episode number (format: 's01e01', 's02e05', etc.)
+    # Extract season and episode numbers
+    try:
+        # episode_no is lowercase like 's01e01'
+        season_str = episode_no[1:3]  # '01' from 's01e01'
+        episode_str = episode_no[4:6]  # '01' from 's01e01'
+        season_num = int(season_str)
+        episode_num = int(episode_str)
+    except (ValueError, IndexError):
+        # Can't parse, don't exclude
+        return False
+    
+    # Check if this is episode 1 (a premiere of some kind)
+    if episode_num != 1:
+        return False
+    
+    # Determine if we should exclude based on season number
+    candidate_tag = f't{show_id}'
+    
+    if season_num == 1:
+        # Series premiere (S01E01) - check premieres setting
+        if not config.premieres:
+            if candidate_tag in candidate_list:
+                candidate_list.remove(candidate_tag)
+            return True
+    else:
+        # Season premiere (S02E01, S03E01, etc.) - check season_premieres setting
+        if not config.season_premieres:
+            if candidate_tag in candidate_list:
+                candidate_list.remove(candidate_tag)
+            return True
     
     return False
 
@@ -382,46 +740,98 @@ def _update_added_dict(
     random_order_shows: list[int],
     is_multi: bool,
     tmp_details: Optional[list],
-    config: RandomPlaylistConfig
+    config: RandomPlaylistConfig,
+    episode_id: Optional[int] = None
 ) -> None:
     """
     Update the added episodes dictionary after adding an episode.
+    
+    The dict structure varies by episode_selection mode:
+    - Unwatched: [season, episode, eps_list, episode_id] for sequential tracking
+    - Watched: [season, episode, used_list, episode_id] for duplicate prevention  
+    - Both: {'ondeck_used': bool, 'ondeck_id': int, 'watched_used': list}
+      This state dict ensures on-deck appears at most once and watched episodes
+      don't repeat within a single playlist.
     
     Args:
         show_id: The TV show ID
         added_ep_dict: Dict tracking added episodes (modified in place)
         random_order_shows: List of show IDs with random episode order
         is_multi: Whether this is a multi-episode add
-        tmp_details: Details from find_next_episode if multi
+        tmp_details: Details from find_next_episode if multi (unwatched mode only)
         config: Playlist configuration
+        episode_id: The episode ID that was just added (for watched/both modes)
     """
     if is_multi and tmp_details:
+        # Multi-episode with details from find_next_episode (unwatched mode)
         added_ep_dict[show_id] = [
             tmp_details[0], tmp_details[1],
             tmp_details[2], tmp_details[3]
         ]
+    elif is_multi and config.episode_selection == EPISODE_SELECTION_BOTH:
+        # Multi-episode for Both mode - update watched_used in state dict
+        # Note: ondeck_used is already updated in _process_tv_candidate
+        if show_id in added_ep_dict and isinstance(added_ep_dict[show_id], dict):
+            state = added_ep_dict[show_id]
+            watched_used = state.get('watched_used', [])
+            # Only add to watched_used if this is a watched episode (not on-deck)
+            ondeck_id = state.get('ondeck_id')
+            if episode_id and episode_id != ondeck_id and episode_id not in watched_used:
+                state['watched_used'] = watched_used + [episode_id]
+    elif is_multi and config.episode_selection == EPISODE_SELECTION_WATCHED:
+        # Multi-episode for Watched mode - track used episodes
+        if show_id in added_ep_dict and added_ep_dict[show_id]:
+            # Add the new episode to the used list
+            used_list = added_ep_dict[show_id][2] or []
+            if episode_id and episode_id not in used_list:
+                used_list = list(used_list) + [episode_id]
+            added_ep_dict[show_id][2] = used_list
+            added_ep_dict[show_id][3] = episode_id
     elif config.multiple_shows:
-        # Build episode list for future multi-episode lookups
-        if show_id in random_order_shows:
-            ondeck = WINDOW.getProperty(f"EasyTV.{show_id}.ondeck_list")
-            offdeck = WINDOW.getProperty(f"EasyTV.{show_id}.offdeck_list")
-            try:
-                eps_list = ast.literal_eval(ondeck) + ast.literal_eval(offdeck)
-            except (ValueError, SyntaxError):
-                eps_list = []
+        # First episode from this show, set up for potential future additions
+        if config.episode_selection == EPISODE_SELECTION_UNWATCHED:
+            # Use cached episode lists from service
+            if show_id in random_order_shows:
+                ondeck = WINDOW.getProperty(f"EasyTV.{show_id}.ondeck_list")
+                offdeck = WINDOW.getProperty(f"EasyTV.{show_id}.offdeck_list")
+                try:
+                    eps_list = ast.literal_eval(ondeck) + ast.literal_eval(offdeck)
+                except (ValueError, SyntaxError):
+                    eps_list = []
+            else:
+                ondeck = WINDOW.getProperty(f"EasyTV.{show_id}.ondeck_list")
+                try:
+                    eps_list = ast.literal_eval(ondeck)
+                except (ValueError, SyntaxError):
+                    eps_list = []
+            
+            added_ep_dict[show_id] = [
+                WINDOW.getProperty(f"EasyTV.{show_id}.Season"),
+                WINDOW.getProperty(f"EasyTV.{show_id}.Episode"),
+                eps_list,
+                WINDOW.getProperty(f"EasyTV.{show_id}.EpisodeID")
+            ]
+        elif config.episode_selection == EPISODE_SELECTION_BOTH:
+            # Both mode: use state dict to track on-deck and watched usage
+            ondeck_id_str = WINDOW.getProperty(f"EasyTV.{show_id}.EpisodeID")
+            ondeck_id = int(ondeck_id_str) if ondeck_id_str else None
+            
+            # Determine if the first episode used was the on-deck
+            used_ondeck = (episode_id == ondeck_id) if episode_id and ondeck_id else False
+            
+            added_ep_dict[show_id] = {
+                'ondeck_used': used_ondeck,
+                'ondeck_id': ondeck_id,
+                'watched_used': [] if used_ondeck else ([episode_id] if episode_id else [])
+            }
         else:
-            ondeck = WINDOW.getProperty(f"EasyTV.{show_id}.ondeck_list")
-            try:
-                eps_list = ast.literal_eval(ondeck)
-            except (ValueError, SyntaxError):
-                eps_list = []
-        
-        added_ep_dict[show_id] = [
-            WINDOW.getProperty(f"EasyTV.{show_id}.Season"),
-            WINDOW.getProperty(f"EasyTV.{show_id}.Episode"),
-            eps_list,
-            WINDOW.getProperty(f"EasyTV.{show_id}.EpisodeID")
-        ]
+            # Watched mode: track the first episode
+            # We'll query for more episodes as needed
+            added_ep_dict[show_id] = [
+                '', '',  # Season/episode not needed for library queries
+                [episode_id] if episode_id else [],  # Used episodes list
+                episode_id
+            ]
     else:
         added_ep_dict[show_id] = ''
 
@@ -438,25 +848,38 @@ def build_random_playlist(
     Creates a "channel surfing" experience by randomly selecting episodes
     from available TV shows and movies, then playing them as a playlist.
     
+    Episode Selection:
+        The episode_selection setting controls which TV episodes are included:
+        - 0 (unwatched): Only unwatched episodes (default, matches original behavior)
+        - 1 (watched): Only watched episodes (for re-watching favorites)
+        - 2 (both): Any episode regardless of watch status
+        
+        For unwatched mode, uses cached data from the service for efficiency.
+        For watched/both modes, queries the library directly with server-side
+        random sorting for optimal performance.
+    
     Weighting Algorithm:
         The movieweight setting (0.0-1.0) controls the movie-to-TV-show ratio:
         - movieweight = 0.0: No movies, only TV episodes
         - movieweight = 0.5: Half as many movies as TV shows
-        - movieweight = 1.0: Equal number of movies as TV shows with unwatched eps
+        - movieweight = 1.0: Equal number of movies as TV shows
         
-        Formula: movie_limit = min(max(show_count * movieweight, 1), total_movies)
+        Formula: movie_limit = max(show_count * movieweight, 1)
         This ensures at least 1 movie (if available) when movies are enabled.
     
     Candidate Selection:
         1. Filters shows based on population parameter (playlist/user selection)
-        2. Retrieves movies based on settings (unwatched/watched/all)
+        2. Retrieves movies based on movie_selection (unwatched/watched/both)
         3. Creates candidate list with prefixed IDs: 't123' for TV, 'm456' for movie
         4. Shuffles combined list for random order
-        5. Optionally prioritizes shows with partial progress (start_partials)
+        5. Optionally prioritizes items with partial progress (start_partials_tv/movies)
+           - Finds all TV episodes and movies with resume points
+           - Sorts by recency (lastplayed), same-show episodes in episode order
+           - Moves all partials to front of candidate list
     
     Playlist Building:
         - Loops until 'length' items added or all candidates exhausted
-        - For TV: adds episode, tracks show in added_ep_dict for multi-episode
+        - For TV: adds episode based on episode_selection, tracks for multi-episode
         - For movies: adds movie, removes from candidate pool (no duplicates)
         - Skips premiere episodes (S01E01) if 'premieres' setting is false
         - For 'multiple_shows' mode: same show can appear multiple times
@@ -467,7 +890,7 @@ def build_random_playlist(
             - {'usersel': [ids]} - Filter by user selection
             - {'none': ''} - No filtering
         random_order_shows: List of show IDs with random episode ordering
-        config: RandomPlaylistConfig with all playlist settings
+        config: RandomPlaylistConfig with all playlist settings (including episode_selection)
         logger: Optional logger instance
     
     Side Effects:
@@ -478,143 +901,220 @@ def build_random_playlist(
     """
     log = logger or _get_log()
     
-    # Get filtered show data
-    stored_data_filtered = filter_shows_by_population(
-        population, config.sort_by, config.sort_reverse, config.language, log
-    )
-    
-    log.info("Building random playlist", event="playlist.create")
-    
-    # Clear existing playlist
-    json_query(get_clear_video_playlist_query(), False)
-    
-    added_ep_dict: dict = {}
-    count = 0
-    
-    # Determine movie inclusion based on playlist content type
-    include_movies = config.playlist_content != CONTENT_TV_ONLY
-    movies_enabled = include_movies
-    
-    # Fetch movies if enabled
-    movie_list: list[int] = []
-    if include_movies:
-        # Convert movie_selection (0=unwatched, 1=watched, 2=both) to booleans
-        include_unwatched = config.movie_selection in (0, 2)
-        include_watched = config.movie_selection in (1, 2)
-        movie_list = _fetch_movies(include_unwatched, include_watched, log)
-        movies_enabled = bool(movie_list)
-    
-    stored_show_count = len(stored_data_filtered)
-    moviecount = len(movie_list)
-    
-    # Handle content-type specific logic
-    local_movieweight = config.movieweight
-    if config.playlist_content == CONTENT_MOVIES_ONLY:
-        # Movies only: clear TV shows, set weight to 0 (no ratio calculation)
-        local_movieweight = 0.0
-        stored_data_filtered = []
-        stored_show_count = 0
-    elif config.playlist_content == CONTENT_TV_ONLY:
-        # TV only: ensure no movies
-        movie_list = []
-        moviecount = 0
-    
-    # Calculate movie limit based on weight (only applies to mixed mode)
-    if local_movieweight == 0.0:
-        movie_limit_count = 0
-    else:
-        # movies = shows * weight, but at least 1 and at most available
-        movie_limit_count = min(
-            max(int(round(stored_show_count * local_movieweight, 0)), 1),
-            moviecount
-        )
-    
-    if movies_enabled and movie_limit_count > 0:
-        movie_list = movie_list[:movie_limit_count]
-        log.debug("Movie list truncated", limit=movie_limit_count)
-    
-    # Build candidate list with type prefixes
-    candidate_list = (
-        [f't{x[1]}' for x in stored_data_filtered] +
-        [f'm{x}' for x in movie_list]
-    )
-    random.shuffle(candidate_list)
-    
-    # Handle start_partials - find most recent partial episode
-    partial_start_index: Optional[int] = None
-    if config.start_partials:
-        partial_start_index = _find_partial_episode_start(candidate_list, log)
-    
-    # Main playlist building loop
-    use_partial_start = partial_start_index is not None
-    
-    while count < config.length and candidate_list:
-        log.debug("Processing candidates", remaining=len(candidate_list))
-        
-        # Select candidate index
-        if use_partial_start and partial_start_index is not None:
-            random_index = partial_start_index
-            use_partial_start = False
+    with log_timing(log, "random_playlist_build", 
+                   playlist_content=config.playlist_content,
+                   length=config.length) as outer_timer:
+        # Skip TV show fetching for Movies Only mode
+        if config.playlist_content == CONTENT_MOVIES_ONLY:
+            stored_data_filtered = []
         else:
-            random_index = random.randint(0, len(candidate_list) - 1)
-        
-        log.debug("Selected candidate", index=random_index)
-        
-        candidate = candidate_list[random_index]
-        candidate_type = candidate[0]
-        candidate_id = int(candidate[1:])
-        
-        if candidate_type == 't':
-            # TV episode candidate
-            log.debug("TV episode candidate", show_id=candidate_id)
-            
-            episode_id, is_multi = _process_tv_candidate(
-                candidate_id, added_ep_dict, candidate_list,
-                random_order_shows, config, log
+            # Get filtered show data based on episode selection mode
+            stored_data_filtered = filter_shows_by_population(
+                population, config.sort_by, config.sort_reverse, config.language,
+                episode_selection=config.episode_selection, logger=log
             )
+        
+        outer_timer.mark("show_fetch")
+        
+        log.info("Building random playlist", event="playlist.create")
+        
+        # Clear existing playlist
+        json_query(get_clear_video_playlist_query(), False)
+        
+        added_ep_dict: dict = {}
+        count = 0
+        iterations = 0  # Track total iterations for summary
+        
+        # Determine movie inclusion based on playlist content type
+        include_movies = config.playlist_content != CONTENT_TV_ONLY
+        
+        # Get show count for movie limit calculation
+        stored_show_count = len(stored_data_filtered)
+        
+        # Fetch movies if enabled, with appropriate limit
+        movie_list: list[int] = []
+        if include_movies:
+            # Calculate movie limit based on content type and weight
+            if config.playlist_content == CONTENT_MOVIES_ONLY:
+                # Movies only: fetch up to playlist length
+                movie_limit = config.length
+            else:
+                # Mixed mode: calculate based on show count and weight
+                if config.movieweight == 0.0:
+                    movie_limit = 0
+                else:
+                    # movies = shows * weight, but at least 1
+                    movie_limit = max(int(round(stored_show_count * config.movieweight, 0)), 1)
             
-            if episode_id is None:
-                continue
-            
-            # Check premiere exclusion
-            if _check_premiere_exclusion(candidate_id, candidate_list, config, log):
-                continue
-            
-            # Add episode to playlist
-            json_query(build_add_episode_query(episode_id), False)
-            log.debug("Episode added to playlist", episode_id=episode_id)
-            
-            # Update tracking dict
-            tmp_details = None
-            if is_multi:
-                # Get details from find_next_episode result
-                _, tmp_details = find_next_episode(
-                    candidate_id, random_order_shows,
-                    epid=added_ep_dict.get(candidate_id, ['', '', [], ''])[3],
-                    eps=added_ep_dict.get(candidate_id, ['', '', [], ''])[2]
+            if movie_limit > 0:
+                # Extract movie IDs from playlist if filter is set
+                playlist_movie_ids: Optional[list[int]] = None
+                if config.movie_playlist:
+                    playlist_movie_ids = extract_movieids_from_playlist(config.movie_playlist)
+                    log.debug("Movie playlist filter applied", 
+                             playlist=config.movie_playlist, 
+                             movie_count=len(playlist_movie_ids))
+                
+                # Use optimized fetch with server-side random and limit
+                movie_list = _fetch_movies(
+                    config.movie_selection, 
+                    limit=movie_limit, 
+                    movie_ids=playlist_movie_ids,
+                    logger=log
                 )
-            
-            _update_added_dict(
-                candidate_id, added_ep_dict, random_order_shows,
-                is_multi, tmp_details, config
-            )
-            
-        elif candidate_type == 'm':
-            # Movie candidate
-            log.debug("Movie candidate", movie_id=candidate_id)
-            json_query(build_add_movie_query(candidate_id), False)
-            candidate_list.remove(f'm{candidate_id}')
-            
-        else:
-            # Unknown type - break out
-            count = PLAYLIST_BUILD_BREAK_VALUE
         
-        count += 1
-    
-    # Notify service that playlist is running
-    WINDOW.setProperty("EasyTV.playlist_running", 'true')
-    WINDOW.setProperty("EasyTV.random_order_shuffle", 'true')
-    
-    # Start playback
-    xbmc.Player().play(xbmc.PlayList(1))
-    log.info("Random playlist created and started", event="playlist.start", item_count=count)
+        # Handle content-type specific logic
+        if config.playlist_content == CONTENT_MOVIES_ONLY:
+            # Movies only: clear TV shows
+            stored_data_filtered = []
+            stored_show_count = 0
+        elif config.playlist_content == CONTENT_TV_ONLY:
+            # TV only: ensure no movies
+            movie_list = []
+        
+        log.debug("Candidates prepared", shows=stored_show_count, movies=len(movie_list))
+        
+        outer_timer.mark("movie_fetch")
+        
+        # Build candidate list with type prefixes
+        candidate_list = (
+            [f't{x[1]}' for x in stored_data_filtered] +
+            [f'm{x}' for x in movie_list]
+        )
+        random.shuffle(candidate_list)
+        
+        # Handle partial prioritization - find all partial items and move to front
+        if config.start_partials_tv or config.start_partials_movies:
+            with log_timing(log, "partial_prioritization", 
+                           tv_enabled=config.start_partials_tv,
+                           movies_enabled=config.start_partials_movies) as timer:
+                # Get show IDs for TV partial search
+                tv_show_ids = [int(x[1:]) for x in candidate_list if x.startswith('t')]
+                
+                # Find partial episodes (if TV partials enabled and we have TV content)
+                partial_episodes: List[Tuple[str, int, int, int, str]] = []
+                if config.start_partials_tv and tv_show_ids:
+                    partial_episodes = _find_all_partial_episodes(
+                        tv_show_ids, config.episode_selection, log
+                    )
+                    timer.mark("tv_episodes_query")
+                
+                # Find partial movies (if movie partials enabled and we have movies)
+                partial_movies: List[Tuple[str, int]] = []
+                if config.start_partials_movies and movie_list:
+                    # Get movie IDs from playlist filter if set
+                    playlist_movie_ids: Optional[List[int]] = None
+                    if config.movie_playlist:
+                        playlist_movie_ids = extract_movieids_from_playlist(config.movie_playlist)
+                    partial_movies = _find_all_partial_movies(
+                        playlist_movie_ids, config.movie_selection, log
+                    )
+                    timer.mark("movies_query")
+                
+                # Sort partials by recency and rebuild candidate list
+                if partial_episodes or partial_movies:
+                    sorted_partials = _sort_partials_for_priority(
+                        partial_episodes, partial_movies, log
+                    )
+                    timer.mark("sort")
+                    
+                    # Remove partial items from shuffled list and prepend sorted partials
+                    partial_set = set(sorted_partials)
+                    non_partial_candidates = [c for c in candidate_list if c not in partial_set]
+                    candidate_list = sorted_partials + non_partial_candidates
+                    
+                    log.debug("Partials prioritized", 
+                             partial_count=len(sorted_partials),
+                             remaining=len(non_partial_candidates))
+        
+        outer_timer.mark("partial_priority")
+        
+        # Main playlist building loop
+        # Candidates are ordered: partials first (priority sorted), then shuffled non-partials
+        # Always pick from front (index 0) to respect this ordering
+        while count < config.length and candidate_list:
+            iterations += 1
+            
+            # Always pick from front of list (partials are prioritized there)
+            candidate = candidate_list[0]
+            candidate_type = candidate[0]
+            candidate_id = int(candidate[1:])
+            
+            if candidate_type == 't':
+                # TV episode candidate
+                episode_id, is_multi = _process_tv_candidate(
+                    candidate_id, added_ep_dict, candidate_list,
+                    random_order_shows, config, log
+                )
+                
+                if episode_id is None:
+                    continue
+                
+                # Check premiere exclusion
+                if _check_premiere_exclusion(candidate_id, candidate_list, config, log):
+                    continue
+                
+                # Add episode to playlist
+                json_query(build_add_episode_query(episode_id), False)
+                
+                # Update tracking dict
+                tmp_details = None
+                if is_multi and config.episode_selection == EPISODE_SELECTION_UNWATCHED:
+                    # Get details from find_next_episode result (only for unwatched mode)
+                    _, tmp_details = find_next_episode(
+                        candidate_id, random_order_shows,
+                        epid=added_ep_dict.get(candidate_id, ['', '', [], ''])[3],
+                        eps=added_ep_dict.get(candidate_id, ['', '', [], ''])[2]
+                    )
+                
+                _update_added_dict(
+                    candidate_id, added_ep_dict, random_order_shows,
+                    is_multi, tmp_details, config, episode_id=episode_id
+                )
+                
+            elif candidate_type == 'm':
+                # Movie candidate
+                json_query(build_add_movie_query(candidate_id), False)
+                candidate_list.remove(f'm{candidate_id}')
+                
+            else:
+                # Unknown type - break out
+                count = PLAYLIST_BUILD_BREAK_VALUE
+            
+            count += 1
+        
+        outer_timer.mark("playlist_build")
+        
+        # Notify service that playlist is running
+        WINDOW.setProperty("EasyTV.playlist_running", 'true')
+        WINDOW.setProperty("EasyTV.random_order_shuffle", 'true')
+        
+        # Store config for potential playlist continuation
+        # Serialize config and population for regeneration
+        playlist_state = {
+            'population': population,
+            'random_order_shows': random_order_shows,
+            'config': {
+                'length': config.length,
+                'playlist_content': config.playlist_content,
+                'episode_selection': config.episode_selection,
+                'movie_selection': config.movie_selection,
+                'movieweight': config.movieweight,
+                'start_partials_tv': config.start_partials_tv,
+                'start_partials_movies': config.start_partials_movies,
+                'premieres': config.premieres,
+                'season_premieres': config.season_premieres,
+                'multiple_shows': config.multiple_shows,
+                'sort_by': config.sort_by,
+                'sort_reverse': config.sort_reverse,
+                'language': config.language,
+                'movie_playlist': config.movie_playlist,
+                'unwatched_ratio': config.unwatched_ratio,
+            }
+        }
+        WINDOW.setProperty(PROP_PLAYLIST_CONFIG, json.dumps(playlist_state))
+        
+        # Start playback
+        xbmc.Player().play(xbmc.PlayList(1))
+        log.info("Random playlist created and started", event="playlist.start", 
+                 item_count=count, iterations=iterations)

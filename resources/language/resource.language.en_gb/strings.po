@@ -32,10 +32,6 @@ msgstr ""
 
 #empty strings from id 32033 to 32035
 
-# DEPRECATED: 32036 was "Include unwatched movies" toggle, replaced by movie_selection dropdown in 4.0.32
-msgctxt "#32036"
-msgid "Include unwatched movies"
-msgstr ""
 
 msgctxt "#32037"
 msgid "Movie selection"
@@ -320,39 +316,15 @@ msgstr ""
 
 #empty strings from id 32210 to 32219
 
-msgctxt "#32220"
-msgid "Season"
-msgstr ""
 
-msgctxt "#32221"
-msgid "Episode"
-msgstr ""
 
-msgctxt "#32222"
-msgid "Progress"
-msgstr ""
 
-msgctxt "#32223"
-msgid "Available"
-msgstr ""
 
-msgctxt "#32224"
-msgid "Watched"
-msgstr ""
 
-msgctxt "#32225"
-msgid "Skipped"
-msgstr ""
 
-msgctxt "#32226"
-msgid "In this episode"
-msgstr ""
 
 #empty strings from id 32227 to 32249
 
-msgctxt "#32250"
-msgid "* Hidden to prevent spoilers *"
-msgstr ""
 
 #empty strings from id 32251 to 32299
 
@@ -413,15 +385,15 @@ msgid "Return to the episode list after watching, instead of going back to where
 msgstr ""
 
 msgctxt "#32410"
-msgid "How to sort shows. Applies to both episode list and random playlist modes."
+msgid "How to sort shows in the episode list."
 msgstr ""
 
 msgctxt "#32411"
-msgid "Flip the sort direction. Applies to both episode list and random playlist modes."
+msgid "Flip the sort direction."
 msgstr ""
 
 msgctxt "#32412"
-msgid "Hide shuffle-friendly shows from the episode list. They'll still appear in random playlists."
+msgid "Hide random-order shows from the episode list. They'll still appear in random playlists."
 msgstr ""
 
 msgctxt "#32413"
@@ -438,19 +410,6 @@ msgstr ""
 
 msgctxt "#32416"
 msgid "Allow the same show to appear multiple times in a single playlist."
-msgstr ""
-
-msgctxt "#32417"
-msgid "Put your most recently started (but unfinished) episode first in the playlist."
-msgstr ""
-
-msgctxt "#32418"
-msgid "Continue partially watched episodes from your last position instead of restarting."
-msgstr ""
-
-# DEPRECATED: 32419 was help text for "Include unwatched movies" toggle, removed in 4.0.32
-msgctxt "#32419"
-msgid "Mix unwatched movies from your library into the playlist."
 msgstr ""
 
 msgctxt "#32420"
@@ -513,7 +472,11 @@ msgctxt "#32435"
 msgid "What to include in the random playlist."
 msgstr ""
 
-#empty strings from id 32436 to 32499
+msgctxt "#32436"
+msgid "Which TV episodes to include in random playlists: unwatched, watched, or both."
+msgstr ""
+
+#empty strings from id 32437 to 32499
 
 # =============================================================================
 # NEW LABEL STRINGS (32500-32539) - Settings labels
@@ -572,7 +535,7 @@ msgid "Choose playlist file..."
 msgstr ""
 
 msgctxt "#32513"
-msgid "Choose shows..."
+msgid "Select shows for random order..."
 msgstr ""
 
 msgctxt "#32514"
@@ -592,7 +555,7 @@ msgid "Reverse sort order"
 msgstr ""
 
 msgctxt "#32518"
-msgid "Hide shuffle-friendly shows"
+msgid "Hide random-order shows"
 msgstr ""
 
 msgctxt "#32519"
@@ -605,14 +568,6 @@ msgstr ""
 
 msgctxt "#32521"
 msgid "Playlist length"
-msgstr ""
-
-msgctxt "#32522"
-msgid "Start playlist with unfinished episode"
-msgstr ""
-
-msgctxt "#32523"
-msgid "Resume from last position"
 msgstr ""
 
 msgctxt "#32524"
@@ -687,9 +642,6 @@ msgctxt "#32541"
 msgid "Shows"
 msgstr ""
 
-msgctxt "#32542"
-msgid "Episode List"
-msgstr ""
 
 msgctxt "#32543"
 msgid "Random Playlist"
@@ -735,13 +687,9 @@ msgctxt "#32552"
 msgid "Show Filter"
 msgstr ""
 
-msgctxt "#32553"
-msgid "Shuffle-Friendly Shows"
-msgstr ""
+# UNUSED: 32553 was intended for a group label but never implemented
 
-msgctxt "#32554"
-msgid "Discovery"
-msgstr ""
+# UNUSED: 32554 was intended for a group label but never implemented
 
 msgctxt "#32555"
 msgid "Appearance"
@@ -755,17 +703,8 @@ msgctxt "#32557"
 msgid "Performance"
 msgstr ""
 
-msgctxt "#32558"
-msgid "Playlist"
-msgstr ""
 
-msgctxt "#32559"
-msgid "TV Episodes"
-msgstr ""
 
-msgctxt "#32560"
-msgid "Movies"
-msgstr ""
 
 msgctxt "#32561"
 msgid "Notifications"
@@ -791,9 +730,6 @@ msgctxt "#32566"
 msgid "Tools"
 msgstr ""
 
-msgctxt "#32567"
-msgid "Some shows like sitcoms or procedurals are fine to watch in any order. For these shows, EasyTV picks random episodes instead of the next one in sequence."
-msgstr ""
 
 msgctxt "#32568"
 msgid "Selected:"
@@ -828,10 +764,6 @@ msgctxt "#32577"
 msgid "Error: no TV shows in playlist"
 msgstr ""
 
-# UI INDICATOR (32578) - Skipped episode indicator
-msgctxt "#32578"
-msgid "Skipped"
-msgstr ""
 
 # =============================================================================
 # PLAYLIST CONTENT SPINNER (32579-32582) - Settings for content type selection
@@ -869,4 +801,160 @@ msgstr ""
 
 msgctxt "#32586"
 msgid "Both"
+msgstr ""
+
+# =============================================================================
+# EasyTV 1.1.0 - Settings Restructure Strings (32590-32599)
+# =============================================================================
+
+# Category label (renamed from "Episode List")
+msgctxt "#32590"
+msgid "Browse Mode"
+msgstr ""
+
+# Group labels (renamed/new)
+msgctxt "#32591"
+msgid "Random Episode Order"
+msgstr ""
+
+
+msgctxt "#32593"
+msgid "Basics"
+msgstr ""
+
+
+
+# New setting label
+msgctxt "#32596"
+msgid "Episode selection"
+msgstr ""
+
+# Group help texts
+msgctxt "#32597"
+msgid "Configure which shows play episodes in random order instead of sequentially."
+msgstr ""
+
+
+# =============================================================================
+# SMART PLAYLIST FILTERING STRINGS (32600-32607)
+# =============================================================================
+
+# Error messages for playlist type filtering
+msgctxt "#32600"
+msgid "No TV show playlists found"
+msgstr ""
+
+msgctxt "#32601"
+msgid "No movie playlists found"
+msgstr ""
+
+# Movie playlist filter settings
+msgctxt "#32602"
+msgid "Filter movies by playlist..."
+msgstr ""
+
+msgctxt "#32603"
+msgid "All movies"
+msgstr ""
+
+msgctxt "#32604"
+msgid "Optionally limit which movies are included using a smart playlist."
+msgstr ""
+
+# Error messages for missing playlist files
+msgctxt "#32605"
+msgid "Error: no movies in playlist"
+msgstr ""
+
+msgctxt "#32606"
+msgid "Movie playlist not found. Please update your settings."
+msgstr ""
+
+msgctxt "#32607"
+msgid "TV show playlist not found. Please update your settings."
+msgstr ""
+
+msgctxt "#32608"
+msgid "Unwatched episode chance"
+msgstr ""
+
+msgctxt "#32609"
+msgid "When using 'Both', this controls how often unwatched episodes are picked vs. watched episodes. 50% means equal chance, 80% means mostly unwatched."
+msgstr ""
+
+msgctxt "#32610"
+msgid "Include season premieres"
+msgstr ""
+
+msgctxt "#32611"
+msgid "Include first episode of each season (S02E01, S03E01, etc.). Disable if you prefer starting seasons from where you left off."
+msgstr ""
+
+# PLAYLIST CONTINUATION STRINGS (32612-32620)
+msgctxt "#32612"
+msgid "Playlist Continuation"
+msgstr ""
+
+msgctxt "#32613"
+msgid "Prompt to continue playlist"
+msgstr ""
+
+msgctxt "#32614"
+msgid "When a random playlist ends, show a prompt asking whether to generate another playlist with the same settings."
+msgstr ""
+
+msgctxt "#32615"
+msgid "Countdown duration"
+msgstr ""
+
+msgctxt "#32616"
+msgid "Seconds before the continuation prompt auto-dismisses. Set to 0 for no automatic dismissal."
+msgstr ""
+
+msgctxt "#32617"
+msgid "Playlist Finished"
+msgstr ""
+
+msgctxt "#32618"
+msgid "Generate another playlist with the same settings?"
+msgstr ""
+
+msgctxt "#32619"
+msgid "Generate"
+msgstr ""
+
+msgctxt "#32620"
+msgid "Stop"
+msgstr ""
+
+msgctxt "#32621"
+msgid "Start playlist with unfinished episodes"
+msgstr ""
+
+msgctxt "#32622"
+msgid "Prioritize partially watched TV episodes at the start of the playlist."
+msgstr ""
+
+msgctxt "#32623"
+msgid "Seek to resume point for episodes"
+msgstr ""
+
+msgctxt "#32624"
+msgid "When playing a partial TV episode, automatically skip to where you left off."
+msgstr ""
+
+msgctxt "#32625"
+msgid "Start playlist with unfinished movies"
+msgstr ""
+
+msgctxt "#32626"
+msgid "Prioritize partially watched movies at the start of the playlist."
+msgstr ""
+
+msgctxt "#32627"
+msgid "Seek to resume point for movies"
+msgstr ""
+
+msgctxt "#32628"
+msgid "When playing a partial movie, automatically skip to where you left off."
 msgstr ""

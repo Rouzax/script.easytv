@@ -19,15 +19,302 @@ Naming Convention:
     - get_*_query(): Returns a ready-to-use query dict
     - build_*_query(param): Returns a query dict with parameter substituted
 
+Filter Constants:
+    - FILTER_UNWATCHED: Filter for unwatched content (playcount = 0)
+    - FILTER_WATCHED: Filter for watched content (playcount > 0)
+
 Usage:
-    from resources.lib.data.queries import get_unwatched_shows_query
+    from resources.lib.data.queries import (
+        get_unwatched_shows_query,
+        build_random_episodes_query,
+        get_episode_filter,
+        FILTER_UNWATCHED,
+    )
     from resources.lib.utils import json_query
     
+    # Simple query
     result = json_query(get_unwatched_shows_query())
+    
+    # Random episodes with filter
+    episode_filter = get_episode_filter(EPISODE_SELECTION_UNWATCHED)
+    filters = [episode_filter] if episode_filter else []
+    query = build_random_episodes_query(tvshowid=123, filters=filters, limit=10)
+    result = json_query(query)
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
+
+from resources.lib.constants import (
+    EPISODE_SELECTION_UNWATCHED,
+    EPISODE_SELECTION_WATCHED,
+    EPISODE_SELECTION_BOTH,
+)
+
+
+# =============================================================================
+# Filter Constants
+# =============================================================================
+# Reusable filter definitions for playcount-based filtering.
+# These are used by episode and movie query builders for consistency.
+
+FILTER_UNWATCHED: Dict[str, str] = {
+    'field': 'playcount',
+    'operator': 'is',
+    'value': '0'
+}
+
+FILTER_WATCHED: Dict[str, str] = {
+    'field': 'playcount',
+    'operator': 'greaterthan',
+    'value': '0'
+}
+
+
+def get_episode_filter(selection_mode: int) -> Optional[Dict[str, str]]:
+    """
+    Get the appropriate playcount filter for the given episode selection mode.
+    
+    Args:
+        selection_mode: One of EPISODE_SELECTION_UNWATCHED (0),
+                       EPISODE_SELECTION_WATCHED (1), or EPISODE_SELECTION_BOTH (2).
+    
+    Returns:
+        Filter dict for unwatched/watched, or None for "both" (no filter needed).
+    
+    Example:
+        >>> get_episode_filter(EPISODE_SELECTION_UNWATCHED)
+        {'field': 'playcount', 'operator': 'is', 'value': '0'}
+        >>> get_episode_filter(EPISODE_SELECTION_BOTH)
+        None
+    """
+    if selection_mode == EPISODE_SELECTION_UNWATCHED:
+        return FILTER_UNWATCHED.copy()
+    elif selection_mode == EPISODE_SELECTION_WATCHED:
+        return FILTER_WATCHED.copy()
+    elif selection_mode == EPISODE_SELECTION_BOTH:
+        return None
+    else:
+        # Unknown mode, default to no filter (same as BOTH)
+        return None
+
+
+def get_movie_filter(selection_mode: int) -> Optional[Dict[str, str]]:
+    """
+    Get the appropriate playcount filter for the given movie selection mode.
+    
+    This is the movie equivalent of get_episode_filter() for consistency.
+    Movie selection uses the same constants as episode selection.
+    
+    Args:
+        selection_mode: One of EPISODE_SELECTION_UNWATCHED (0),
+                       EPISODE_SELECTION_WATCHED (1), or EPISODE_SELECTION_BOTH (2).
+    
+    Returns:
+        Filter dict for unwatched/watched, or None for "both" (no filter needed).
+    """
+    return get_episode_filter(selection_mode)
+
+
+def build_random_episodes_query(
+    tvshowid: int,
+    filters: Optional[List[Dict[str, Any]]] = None,
+    limit: Optional[int] = None
+) -> Dict[str, Any]:
+    """
+    Build a query for random episodes from a specific TV show.
+    
+    Uses server-side randomization and optional limit for efficient
+    retrieval of random episode subsets.
+    
+    Args:
+        tvshowid: The Kodi TV show ID.
+        filters: Optional list of filter dicts to combine with AND.
+                 Use get_episode_filter() to generate watch status filters.
+        limit: Optional maximum number of episodes to return.
+               When set, uses Kodi's limits parameter for efficiency.
+    
+    Returns:
+        Query dict for VideoLibrary.GetEpisodes with random sort.
+    
+    Example:
+        # Get 10 random unwatched episodes from show 123
+        watch_filter = get_episode_filter(EPISODE_SELECTION_UNWATCHED)
+        query = build_random_episodes_query(
+            tvshowid=123,
+            filters=[watch_filter] if watch_filter else [],
+            limit=10
+        )
+    """
+    params: Dict[str, Any] = {
+        "tvshowid": tvshowid,
+        "properties": [
+            "season", "episode", "runtime", "resume",
+            "playcount", "tvshowid", "lastplayed", "file"
+        ],
+        "sort": {"method": "random"}
+    }
+    
+    # Add filter if provided
+    if filters:
+        if len(filters) == 1:
+            params["filter"] = filters[0]
+        else:
+            params["filter"] = {"and": filters}
+    
+    # Add limit if provided
+    if limit is not None and limit > 0:
+        params["limits"] = {"end": limit}
+    
+    return {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "VideoLibrary.GetEpisodes",
+        "params": params
+    }
+
+
+def build_random_movies_query(
+    filters: Optional[List[Dict[str, Any]]] = None,
+    limit: Optional[int] = None
+) -> Dict[str, Any]:
+    """
+    Build a query for random movies from the library.
+    
+    Uses server-side randomization and optional limit for efficient
+    retrieval of random movie subsets.
+    
+    Args:
+        filters: Optional list of filter dicts to combine with AND.
+                 Use get_movie_filter() to generate watch status filters.
+        limit: Optional maximum number of movies to return.
+               When set, uses Kodi's limits parameter for efficiency.
+    
+    Returns:
+        Query dict for VideoLibrary.GetMovies with random sort.
+    
+    Example:
+        # Get 5 random watched movies
+        watch_filter = get_movie_filter(EPISODE_SELECTION_WATCHED)
+        query = build_random_movies_query(
+            filters=[watch_filter] if watch_filter else [],
+            limit=5
+        )
+    """
+    params: Dict[str, Any] = {
+        "properties": ["playcount", "title", "runtime", "resume", "file"],
+        "sort": {"method": "random"}
+    }
+    
+    # Add filter if provided
+    if filters:
+        if len(filters) == 1:
+            params["filter"] = filters[0]
+        else:
+            params["filter"] = {"and": filters}
+    
+    # Add limit if provided
+    if limit is not None and limit > 0:
+        params["limits"] = {"end": limit}
+    
+    return {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "VideoLibrary.GetMovies",
+        "params": params
+    }
+
+
+def build_show_episodes_with_resume_query(
+    tvshowid: int,
+    filters: Optional[List[Dict[str, Any]]] = None
+) -> Dict[str, Any]:
+    """
+    Build a query for all episodes from a TV show with resume data.
+    
+    Used for finding partial (in-progress) episodes. Includes all properties
+    needed for partial detection and sorting.
+    
+    Args:
+        tvshowid: The Kodi TV show ID.
+        filters: Optional list of filter dicts to combine with AND.
+                 Use get_episode_filter() to generate watch status filters.
+    
+    Returns:
+        Query dict for VideoLibrary.GetEpisodes with resume data.
+    
+    Example:
+        # Get all unwatched episodes from show 123 with resume data
+        watch_filter = get_episode_filter(EPISODE_SELECTION_UNWATCHED)
+        query = build_show_episodes_with_resume_query(
+            tvshowid=123,
+            filters=[watch_filter] if watch_filter else []
+        )
+    """
+    params: Dict[str, Any] = {
+        "tvshowid": tvshowid,
+        "properties": [
+            "season", "episode", "playcount", "tvshowid",
+            "lastplayed", "resume"
+        ]
+    }
+    
+    # Add filter if provided
+    if filters:
+        if len(filters) == 1:
+            params["filter"] = filters[0]
+        else:
+            params["filter"] = {"and": filters}
+    
+    return {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "VideoLibrary.GetEpisodes",
+        "params": params
+    }
+
+
+def build_all_movies_with_resume_query(
+    filters: Optional[List[Dict[str, Any]]] = None
+) -> Dict[str, Any]:
+    """
+    Build a query for all movies with resume data.
+    
+    Used for finding partial (in-progress) movies. Includes all properties
+    needed for partial detection and sorting by recency.
+    
+    Args:
+        filters: Optional list of filter dicts to combine with AND.
+                 Use get_movie_filter() to generate watch status filters.
+    
+    Returns:
+        Query dict for VideoLibrary.GetMovies with resume data.
+    
+    Example:
+        # Get all unwatched movies with resume data
+        watch_filter = get_movie_filter(EPISODE_SELECTION_UNWATCHED)
+        query = build_all_movies_with_resume_query(
+            filters=[watch_filter] if watch_filter else []
+        )
+    """
+    params: Dict[str, Any] = {
+        "properties": ["playcount", "lastplayed", "resume"]
+    }
+    
+    # Add filter if provided
+    if filters:
+        if len(filters) == 1:
+            params["filter"] = filters[0]
+        else:
+            params["filter"] = {"and": filters}
+    
+    return {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "VideoLibrary.GetMovies",
+        "params": params
+    }
+
 
 # =============================================================================
 # Video Playlist Directory
@@ -277,9 +564,40 @@ def build_show_details_query(tvshowid: int) -> dict[str, Any]:
 # Episode Queries
 # =============================================================================
 
+def build_all_episodes_query() -> dict[str, Any]:
+    """
+    Get all episodes from all TV shows with full details.
+    
+    Used for bulk refresh at startup/rescan to minimize JSON-RPC calls.
+    Returns episodes for ALL shows; caller filters to relevant show IDs.
+    
+    Properties included:
+        - For next-episode calculation: season, episode, playcount, tvshowid, file
+        - For display caching: title, showtitle, plot, firstaired, resume, art
+    
+    Returns:
+        Query for all episodes with calculation and display fields.
+    """
+    return {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "VideoLibrary.GetEpisodes",
+        "params": {
+            "properties": [
+                # For next-episode calculation
+                "season", "episode", "playcount", "tvshowid", "file",
+                # For display caching
+                "title", "showtitle", "plot", "firstaired", "resume", "art"
+            ]
+        }
+    }
+
+
 def build_show_episodes_query(tvshowid: int) -> dict[str, Any]:
     """
     Get all episodes for a TV show.
+    
+    Used for non-bulk episode queries (single show refresh after playback).
     
     Args:
         tvshowid: The Kodi TV show ID.
@@ -294,8 +612,7 @@ def build_show_episodes_query(tvshowid: int) -> dict[str, Any]:
         "params": {
             "tvshowid": tvshowid,
             "properties": [
-                "season", "episode", "runtime", "resume",
-                "playcount", "tvshowid", "lastplayed", "file"
+                "season", "episode", "playcount", "tvshowid", "file"
             ]
         }
     }
@@ -418,7 +735,7 @@ def get_playing_item_query() -> dict[str, Any]:
 
 def build_player_seek_query(position: float) -> dict[str, Any]:
     """
-    Seek to a position in the current video.
+    Seek to a position in the current video by percentage.
     
     Args:
         position: Percentage position (0.0 - 100.0).
@@ -433,6 +750,38 @@ def build_player_seek_query(position: float) -> dict[str, Any]:
         "params": {
             "playerid": 1,
             "value": {"percentage": position}
+        }
+    }
+
+
+def build_player_seek_time_query(seconds: int) -> dict[str, Any]:
+    """
+    Seek to an absolute time position in the current video.
+    
+    Args:
+        seconds: Time in seconds from start of video.
+    
+    Returns:
+        Query to seek to the specified time.
+    """
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    secs = seconds % 60
+    
+    return {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "Player.Seek",
+        "params": {
+            "playerid": 1,
+            "value": {
+                "time": {
+                    "hours": hours,
+                    "minutes": minutes,
+                    "seconds": secs,
+                    "milliseconds": 0
+                }
+            }
         }
     }
 

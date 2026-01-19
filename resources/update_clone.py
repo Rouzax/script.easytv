@@ -58,6 +58,10 @@ from xml.etree import ElementTree as et
 import fileinput
 
 # Import shared utilities
+# NOTE: This script is executed via RunScript() from default.py, which sets
+# the working directory to the addon's resources/ folder. Therefore we use
+# "from lib." instead of "from resources.lib." which is used elsewhere.
+# See clone.py for contrast - it's imported as a module, not executed directly.
 from lib.utils import lang, get_logger
 from lib.constants import ADDON_ENABLE_DELAY_MS
 

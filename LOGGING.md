@@ -181,6 +181,48 @@ with log_timing(log, "retrieve_show_ids"):
 
 This logs operation start and duration at DEBUG level.
 
+For operations with multiple phases, use the `timer.mark()` method:
+
+```python
+with log_timing(log, "bulk_refresh", show_count=277) as timer:
+    # Phase 1: Query shows
+    result = json_query(get_shows_by_lastplayed_query(), True)
+    timer.mark("show_query")
+    
+    # Phase 2: Query episodes
+    episodes = json_query(build_all_episodes_query(), True)
+    timer.mark("episode_query")
+    
+    # Phase 3: Process data
+    process_episodes(episodes)
+    timer.mark("processing")
+
+# Logs: bulk_refresh completed | duration_ms=1500, show_count=277,
+#       show_query_ms=50, episode_query_ms=800, processing_ms=650
+```
+
+### Standard Timing Events
+
+The following timing events are defined in the daemon module:
+
+| Event | Description | Phases |
+|-------|-------------|--------|
+| `bulk_refresh` | Startup/rescan with all shows | `show_query_ms`, `episode_query_ms`, `processing_ms`, `playlists_ms` |
+| `show_refresh` | Single show refresh (playback tracking) | `show_query_ms`, `episode_query_ms`, `processing_ms` |
+| `retrieve_show_ids` | Fetching show IDs from library | (no phases) |
+
+**Example bulk_refresh output:**
+```
+bulk_refresh completed | duration_ms=1500, show_count=277,
+    show_query_ms=50, episode_query_ms=800, processing_ms=600, playlists_ms=50
+```
+
+**Example show_refresh output:**
+```
+show_refresh completed | duration_ms=45, show_count=1,
+    show_query_ms=10, episode_query_ms=20, processing_ms=15
+```
+
 ### Module Docstrings
 
 Every module with logging should include a Logging section:
