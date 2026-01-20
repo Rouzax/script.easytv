@@ -1,6 +1,43 @@
 EasyTV Changelog
 ================
 
+v1.1.1 (2026-01-20)
+-------------------
+Bug Fixes:
+  - Fixed clone settings showing blank labels (no text visible)
+    - Clone settings.xml section ID now matches clone addon ID
+    - Clone strings.po header now matches clone addon ID
+    - Clone now built in temp folder before moving to addons (helps with caching)
+  - Fixed clone missing v1.1.0 settings (season premieres, unwatched ratio, 
+    movie playlist filter, playlist continuation, random order shows)
+  - Fixed clone version now inherits parent version (was always 1.0.0)
+  - Fixed clone default settings now match parent defaults
+  - Clone startup logs now include addon_id for identification
+  - Clone naming keyboard now pre-fills with "EasyTV - " prefix
+  - Added safeguards to prevent overwriting existing addons during clone creation
+
+Performance Improvements:
+  - Partial prioritization 99% faster (14.6s → 0.2s on test library)
+    - TV partial episode query: 14,200ms → 94ms (99.3% faster)
+    - Movie partial query: 427ms → 109ms (74% faster)
+  - Total random playlist build time reduced from ~18s to ~4s (78% faster)
+  - Uses Kodi's native 'inprogress' filter instead of per-show queries
+  - Test environment: OSMC Vero V with 168 shows, 5646 episodes, 846 movies
+
+Improvements:
+  - Enhanced action logging at INFO level:
+    - Random playlist: logs content type, target length, show/movie counts
+    - Browse mode: logs start/stop with show count
+  - Clone creation now updates ALL language files (future Weblate support)
+  - Added timing instrumentation for partial prioritization queries
+
+Known Issues:
+  - On Windows, clone uninstall may fail due to file locking. Workaround:
+    restart Kodi after uninstalling a clone before creating a new one with
+    the same name.
+  - Clone settings labels require Kodi restart to appear (Kodi caches
+    language strings at startup - this is a Kodi limitation).
+
 v1.1.0 (2026-01-19)
 -------------------
 New Features:

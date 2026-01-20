@@ -161,7 +161,7 @@ msgstr ""
 #empty strings from id 32117 to 32138
 
 msgctxt "#32139"
-msgid "name your clone"
+msgid "EasyTV - "
 msgstr ""
 
 msgctxt "#32140"
@@ -193,7 +193,7 @@ msgid "Cloning successful."
 msgstr ""
 
 msgctxt "#32147"
-msgid "Clone is now ready for use."
+msgid "Restart Kodi for settings labels to appear."
 msgstr ""
 
 msgctxt "#32148"
@@ -204,7 +204,19 @@ msgctxt "#32149"
 msgid "Update successful."
 msgstr ""
 
-#empty strings from id 32150 to 32159
+msgctxt "#32150"
+msgid "Restart Kodi now?"
+msgstr ""
+
+msgctxt "#32151"
+msgid "Restart"
+msgstr ""
+
+msgctxt "#32152"
+msgid "Later"
+msgstr ""
+
+#empty strings from id 32153 to 32159
 
 msgctxt "#32160"
 msgid "EasyTV - there are previous unwatched episodes"

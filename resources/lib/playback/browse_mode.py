@@ -140,13 +140,13 @@ def build_episode_list(
     log = logger or _get_log()
     mon = monitor or xbmc.Monitor()
     
-    log.debug("Building episode list")
-    
     # Filter out random-order shows if configured
     if config.excl_random_order_shows and random_order_shows:
         filtered_data = [x for x in show_data if x[1] not in random_order_shows]
     else:
         filtered_data = show_data
+    
+    log.info("Browse mode starting", event="browse.start", show_count=len(filtered_data))
     
     # Get appropriate XML file for skin
     xmlfile = get_skin_xml_file(config.skin)
@@ -247,4 +247,4 @@ def build_episode_list(
     # Final notification to service
     WINDOW.setProperty("EasyTV.random_order_shuffle", 'true')
     
-    log.debug("Episode list closed")
+    log.info("Browse mode closed", event="browse.stop")

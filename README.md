@@ -111,6 +111,35 @@ Set the launch option to "Ask me" and EasyTV will prompt you each time:
 
 ---
 
+## Performance
+
+EasyTV is optimized for large libraries. Performance varies significantly by hardware and database configuration.
+
+### Measured Performance
+
+| Device | Database | Startup | Playlist Build |
+|--------|----------|---------|----------------|
+| Desktop (Windows) | Local SQLite | 1-2 sec | < 1 sec |
+| OSMC Vero V | Shared MySQL | 15-17 sec | ~4 sec |
+
+### Partial Prioritization (v1.1.1 Optimization)
+
+| Operation | Desktop | Vero V |
+|-----------|---------|--------|
+| Find partial TV episodes | 9ms | 84-101ms |
+| Find partial movies | 12ms | 95-117ms |
+
+### Factors Affecting Performance
+
+- **Database location**: Shared/network databases add significant latency vs local SQLite — this is the primary factor in the difference above
+- **CPU power**: ARM devices are slower than x86 desktops, but the Vero V's 4x Cortex A55 @ 2GHz is capable hardware
+- **Library size**: More shows/episodes = longer queries
+- **Art property queries**: Episode artwork lookups dominate startup time (optimization planned for future release)
+
+*Tested with 168 TV shows, 5,646 episodes, and 846 movies.*
+
+---
+
 ## Installation
 
 ### From GitHub (Recommended)
@@ -123,11 +152,7 @@ Set the launch option to "Ask me" and EasyTV will prompt you each time:
 *(Coming soon)*
 
 ### First Run
-On first launch, the background service analyzes your TV library:
-- **Under 1 second** on a typical desktop (tested with 277 shows)
-- A few seconds on low-power devices (Raspberry Pi, Fire TV Stick)
-
-A notification appears when analysis is complete.
+On first launch, the background service loads your TV library data. A notification appears when ready (see [Performance](#performance) for timing by device).
 
 ---
 

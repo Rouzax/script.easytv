@@ -326,7 +326,7 @@ if __name__ == "__main__":
     script_name = addon.getAddonInfo('Name')
 
     log = get_logger('default')
-    log.info("EasyTV addon started", event="ui.start")
+    log.info("EasyTV addon started", event="ui.start", addon_id=addon_id)
 
     # Handle special modes from command line
     if len(sys.argv) > 1:
