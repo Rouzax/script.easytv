@@ -15,4 +15,9 @@ This package provides playlist building functionality:
 - random_player.py: Random playlist builder (channel surfing mode)
 - browse_mode.py: Browse mode orchestrator (episode list display + playback)
 - browse_player.py: BrowseModePlayer class (playback from browse window)
+- playlist_session.py: Lazy queue state management for Both mode playlists
 """
+
+from resources.lib.playback.playlist_session import PlaylistSession
+
+__all__ = ['PlaylistSession']

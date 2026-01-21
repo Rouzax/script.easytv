@@ -17,28 +17,39 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 # =============================================================================
-# LEGACY STRINGS REMOVED - The following IDs were from the original addon
-# and are no longer used: 32000-32016, 32030-32044, 32060-32063, 32069-32072,
-# 32080-32096. They have been replaced by the new 32500+ series.
+# STRING ID RANGES - Reserved for organized maintenance
+# =============================================================================
+#
+# 32000-32099: UI Elements
+#              Sort options, view styles, spinner values, button labels
+#
+# 32100-32199: Dialogs and Messages
+#              User prompts, notifications, clone/export dialogs
+#
+# 32200-32299: Context Menu and Skin Labels
+#              Actions, skin display labels
+#
+# 32300-32399: Addon Metadata
+#              Summary, description (synced via Weblate)
+#
+# 32400-32499: Help Text
+#              Settings help/description text
+#
+# 32500-32599: Settings UI
+#              Labels, categories, groups, status displays
+#
+# 32600-32699: Feature-Specific Strings
+#              Playlists, duration filter, continuation, etc.
+#
 # =============================================================================
 
-#empty strings from id 32000 to 32029
 
-#empty strings from id 32030 to 32031
+# =============================================================================
+# UI ELEMENTS (32000-32099)
+# Sort options, view styles, spinner values, button labels
+# =============================================================================
 
-msgctxt "#32032"
-msgid "Allow multiple episodes of same TV Show"
-msgstr ""
-
-#empty strings from id 32033 to 32035
-
-
-msgctxt "#32037"
-msgid "Movie selection"
-msgstr ""
-
-#empty strings from id 32038 to 32063
-
+#. Sort options for episode list
 msgctxt "#32064"
 msgid "Show Name"
 msgstr ""
@@ -59,8 +70,7 @@ msgctxt "#32068"
 msgid "Season"
 msgstr ""
 
-#empty strings from id 32069 to 32072
-
+#. View style options
 msgctxt "#32073"
 msgid "Standard"
 msgstr ""
@@ -73,12 +83,12 @@ msgctxt "#32075"
 msgid "Big Screen"
 msgstr ""
 
+#. Browse mode option
 msgctxt "#32076"
 msgid "Return to EasyTV after playback"
 msgstr ""
 
-#empty strings from id 32077 to 32090
-
+#. Generic action labels (used in dialogs and spinners)
 msgctxt "#32091"
 msgid "Don't play"
 msgstr ""
@@ -87,9 +97,13 @@ msgctxt "#32092"
 msgid "Play"
 msgstr ""
 
-#empty strings from id 32093 to 32099
-#dialog
 
+# =============================================================================
+# DIALOGS AND MESSAGES (32100-32199)
+# User prompts, notifications, clone/export dialogs
+# =============================================================================
+
+#. Launch dialog
 msgctxt "#32100"
 msgid "This addon finds the next episode in each TV show."
 msgstr ""
@@ -106,16 +120,17 @@ msgctxt "#32103"
 msgid "Surprise me"
 msgstr ""
 
+#. Playlist selection
 msgctxt "#32104"
 msgid "Select the playlist"
 msgstr ""
 
-# -- yGUI --
+#. Window controls
 msgctxt "#32105"
 msgid "Close"
 msgstr ""
 
-# -- service not running message --
+#. Service status messages
 msgctxt "#32106"
 msgid "EasyTV Service is not running."
 msgstr ""
@@ -124,12 +139,11 @@ msgctxt "#32107"
 msgid "Would you like to attempt to start it now?"
 msgstr ""
 
-# -- service needs restart to update --
 msgctxt "#32108"
 msgid "EasyTV Service has updated. Please restart to apply changes."
 msgstr ""
 
-# -- clone needs updating --
+#. Clone update messages
 msgctxt "#32110"
 msgid "EasyTV has updated and this clone is now out of date."
 msgstr ""
@@ -138,6 +152,7 @@ msgctxt "#32111"
 msgid "Would you like to update the clone now?"
 msgstr ""
 
+#. Time display labels
 msgctxt "#32112"
 msgid "Never"
 msgstr ""
@@ -150,6 +165,7 @@ msgctxt "#32114"
 msgid "days"
 msgstr ""
 
+#. Population status
 msgctxt "#32115"
 msgid "EasyTV is still populating with shows."
 msgstr ""
@@ -158,8 +174,7 @@ msgctxt "#32116"
 msgid "Please wait and try again."
 msgstr ""
 
-#empty strings from id 32117 to 32138
-
+#. Clone creation dialogs
 msgctxt "#32139"
 msgid "EasyTV - "
 msgstr ""
@@ -216,8 +231,7 @@ msgctxt "#32152"
 msgid "Later"
 msgstr ""
 
-#empty strings from id 32153 to 32159
-
+#. Previous episode warning
 msgctxt "#32160"
 msgid "EasyTV - there are previous unwatched episodes"
 msgstr ""
@@ -230,10 +244,12 @@ msgctxt "#32162"
 msgid "Would you like to watch it now?"
 msgstr ""
 
+#. Now playing notification
 msgctxt "#32163"
 msgid "Now Playing"
 msgstr ""
 
+#. Auto-closing dialog
 msgctxt "#32167"
 msgid "EasyTV   (auto-closing in %s seconds)"
 msgstr ""
@@ -242,6 +258,7 @@ msgctxt "#32168"
 msgid "%s (%s) is in your library."
 msgstr ""
 
+#. Selector buttons
 msgctxt "#32170"
 msgid "Save"
 msgstr ""
@@ -254,12 +271,12 @@ msgctxt "#32172"
 msgid "Unselect All"
 msgstr ""
 
+#. Service notification
 msgctxt "#32173"
 msgid "Database analysis complete"
 msgstr ""
 
-#empty strings from id 32174 to 32179
-
+#. Export dialogs
 msgctxt "#32180"
 msgid "Choose export location"
 msgstr ""
@@ -284,8 +301,13 @@ msgctxt "#32185"
 msgid "File export completed successfully"
 msgstr ""
 
-#empty strings from id 32186 to 32199
 
+# =============================================================================
+# CONTEXT MENU AND SKIN LABELS (32200-32299)
+# Actions, skin display labels
+# =============================================================================
+
+#. Context menu actions
 msgctxt "#32200"
 msgid "Multi-Select (on)"
 msgstr ""
@@ -326,34 +348,53 @@ msgctxt "#32209"
 msgid "Refresh List"
 msgstr ""
 
-#empty strings from id 32210 to 32219
+#. Skin labels for Poster and BigScreen views
+msgctxt "#32220"
+msgid "Season"
+msgstr ""
+
+msgctxt "#32221"
+msgid "Episode"
+msgstr ""
+
+msgctxt "#32222"
+msgid "Progress"
+msgstr ""
+
+msgctxt "#32223"
+msgid "Unwatched"
+msgstr ""
+
+msgctxt "#32224"
+msgid "Watched"
+msgstr ""
+
+msgctxt "#32225"
+msgid "Skipped"
+msgstr ""
+
+msgctxt "#32226"
+msgid "Plot"
+msgstr ""
 
 
+# =============================================================================
+# ADDON METADATA (32300-32399)
+# Summary, description (synced via Weblate)
+# =============================================================================
 
-
-
-
-
-
-#empty strings from id 32227 to 32249
-
-
-#empty strings from id 32251 to 32299
-
-#. Addon metadata for Weblate sync
 msgctxt "#32300"
 msgid "Channel surf your own TV library"
 msgstr ""
 
-#. Description for addon.xml - synced via Weblate
 msgctxt "#32301"
 msgid "EasyTV finds the next unwatched episode for each TV show and lets you jump right in, or creates a randomized playlist for lean-back viewing. Built for Kodi 21 (Omega) and newer. Features include episode lists, random playlists, movie mixing, watch-in-any-order shows, next episode prompts, and auto-maintained smart playlists."
 msgstr ""
 
-#empty strings from id 32302 to 32399
 
 # =============================================================================
-# NEW HELP STRINGS (32400-32434) - Settings help text
+# HELP TEXT (32400-32499)
+# Settings help/description text
 # =============================================================================
 
 msgctxt "#32400"
@@ -488,12 +529,13 @@ msgctxt "#32436"
 msgid "Which TV episodes to include in random playlists: unwatched, watched, or both."
 msgstr ""
 
-#empty strings from id 32437 to 32499
 
 # =============================================================================
-# NEW LABEL STRINGS (32500-32539) - Settings labels
+# SETTINGS UI (32500-32599)
+# Labels, categories, groups, status displays
 # =============================================================================
 
+#. Launch settings
 msgctxt "#32500"
 msgid "When I open EasyTV"
 msgstr ""
@@ -510,6 +552,7 @@ msgctxt "#32503"
 msgid "Ask me"
 msgstr ""
 
+#. Show filter settings
 msgctxt "#32504"
 msgid "Use only selected shows"
 msgstr ""
@@ -554,6 +597,7 @@ msgctxt "#32514"
 msgid "Include series premieres"
 msgstr ""
 
+#. Browse mode settings
 msgctxt "#32515"
 msgid "View style"
 msgstr ""
@@ -578,8 +622,17 @@ msgctxt "#32520"
 msgid "Maximum shows"
 msgstr ""
 
+#. Playlist settings
 msgctxt "#32521"
 msgid "Playlist length"
+msgstr ""
+
+msgctxt "#32522"
+msgid "Allow multiple episodes of same TV Show"
+msgstr ""
+
+msgctxt "#32523"
+msgid "Movie selection"
 msgstr ""
 
 msgctxt "#32524"
@@ -590,6 +643,7 @@ msgctxt "#32525"
 msgid "Movie ratio"
 msgstr ""
 
+#. Playback settings
 msgctxt "#32527"
 msgid "Show info when playing"
 msgstr ""
@@ -622,6 +676,7 @@ msgctxt "#32534"
 msgid "Warn about earlier unwatched episodes"
 msgstr ""
 
+#. Advanced settings
 msgctxt "#32535"
 msgid "Show notification when ready"
 msgstr ""
@@ -642,10 +697,7 @@ msgctxt "#32539"
 msgid "Export episodes to folder..."
 msgstr ""
 
-# =============================================================================
-# NEW CATEGORY STRINGS (32540-32551) - Settings categories
-# =============================================================================
-
+#. Category labels
 msgctxt "#32540"
 msgid "EasyTV"
 msgstr ""
@@ -653,7 +705,6 @@ msgstr ""
 msgctxt "#32541"
 msgid "Shows"
 msgstr ""
-
 
 msgctxt "#32543"
 msgid "Random Playlist"
@@ -667,6 +718,7 @@ msgctxt "#32545"
 msgid "Advanced"
 msgstr ""
 
+#. Category help text
 msgctxt "#32546"
 msgid "Control which TV shows and episodes EasyTV uses."
 msgstr ""
@@ -691,17 +743,10 @@ msgctxt "#32551"
 msgid "On Launch"
 msgstr ""
 
-# =============================================================================
-# NEW GROUP STRINGS (32552-32567) - Settings groups
-# =============================================================================
-
+#. Group labels
 msgctxt "#32552"
 msgid "Show Filter"
 msgstr ""
-
-# UNUSED: 32553 was intended for a group label but never implemented
-
-# UNUSED: 32554 was intended for a group label but never implemented
 
 msgctxt "#32555"
 msgid "Appearance"
@@ -714,9 +759,6 @@ msgstr ""
 msgctxt "#32557"
 msgid "Performance"
 msgstr ""
-
-
-
 
 msgctxt "#32561"
 msgid "Notifications"
@@ -742,7 +784,7 @@ msgctxt "#32566"
 msgid "Tools"
 msgstr ""
 
-
+#. Status display labels
 msgctxt "#32568"
 msgid "Selected:"
 msgstr ""
@@ -763,7 +805,7 @@ msgctxt "#32574"
 msgid "Channel surf your own TV library - never wonder what to watch again!"
 msgstr ""
 
-# ERROR STRINGS (32575-32577) - Playlist error messages
+#. Playlist error messages
 msgctxt "#32575"
 msgid "Error: files not in playlist contents"
 msgstr ""
@@ -776,11 +818,7 @@ msgctxt "#32577"
 msgid "Error: no TV shows in playlist"
 msgstr ""
 
-
-# =============================================================================
-# PLAYLIST CONTENT SPINNER (32579-32582) - Settings for content type selection
-# =============================================================================
-
+#. Playlist content spinner options
 msgctxt "#32579"
 msgid "Playlist content"
 msgstr ""
@@ -801,8 +839,7 @@ msgctxt "#32583"
 msgid "Content Options"
 msgstr ""
 
-# MOVIE SELECTION SPINNER (32584-32586) - Options for which movies to include
-# =============================================================================
+#. Movie/episode selection spinner options
 msgctxt "#32584"
 msgid "Unwatched only"
 msgstr ""
@@ -815,43 +852,34 @@ msgctxt "#32586"
 msgid "Both"
 msgstr ""
 
-# =============================================================================
-# EasyTV 1.1.0 - Settings Restructure Strings (32590-32599)
-# =============================================================================
-
-# Category label (renamed from "Episode List")
+#. Browse mode category and groups (v1.1.0)
 msgctxt "#32590"
 msgid "Browse Mode"
 msgstr ""
 
-# Group labels (renamed/new)
 msgctxt "#32591"
 msgid "Random Episode Order"
 msgstr ""
-
 
 msgctxt "#32593"
 msgid "Basics"
 msgstr ""
 
-
-
-# New setting label
 msgctxt "#32596"
 msgid "Episode selection"
 msgstr ""
 
-# Group help texts
 msgctxt "#32597"
 msgid "Configure which shows play episodes in random order instead of sequentially."
 msgstr ""
 
 
 # =============================================================================
-# SMART PLAYLIST FILTERING STRINGS (32600-32607)
+# FEATURE-SPECIFIC STRINGS (32600-32699)
+# Playlists, duration filter, continuation, etc.
 # =============================================================================
 
-# Error messages for playlist type filtering
+#. Smart playlist filtering
 msgctxt "#32600"
 msgid "No TV show playlists found"
 msgstr ""
@@ -860,7 +888,6 @@ msgctxt "#32601"
 msgid "No movie playlists found"
 msgstr ""
 
-# Movie playlist filter settings
 msgctxt "#32602"
 msgid "Filter movies by playlist..."
 msgstr ""
@@ -873,7 +900,6 @@ msgctxt "#32604"
 msgid "Optionally limit which movies are included using a smart playlist."
 msgstr ""
 
-# Error messages for missing playlist files
 msgctxt "#32605"
 msgid "Error: no movies in playlist"
 msgstr ""
@@ -886,6 +912,7 @@ msgctxt "#32607"
 msgid "TV show playlist not found. Please update your settings."
 msgstr ""
 
+#. Episode selection ratio
 msgctxt "#32608"
 msgid "Unwatched episode chance"
 msgstr ""
@@ -894,6 +921,7 @@ msgctxt "#32609"
 msgid "When using 'Both', this controls how often unwatched episodes are picked vs. watched episodes. 50% means equal chance, 80% means mostly unwatched."
 msgstr ""
 
+#. Season premieres
 msgctxt "#32610"
 msgid "Include season premieres"
 msgstr ""
@@ -902,7 +930,7 @@ msgctxt "#32611"
 msgid "Include first episode of each season (S02E01, S03E01, etc.). Disable if you prefer starting seasons from where you left off."
 msgstr ""
 
-# PLAYLIST CONTINUATION STRINGS (32612-32620)
+#. Playlist continuation
 msgctxt "#32612"
 msgid "Playlist Continuation"
 msgstr ""
@@ -939,6 +967,7 @@ msgctxt "#32620"
 msgid "Stop"
 msgstr ""
 
+#. Partial episode/movie handling
 msgctxt "#32621"
 msgid "Start playlist with unfinished episodes"
 msgstr ""
@@ -969,4 +998,45 @@ msgstr ""
 
 msgctxt "#32628"
 msgid "When playing a partial movie, automatically skip to where you left off."
+msgstr ""
+
+#. Episode duration filter
+msgctxt "#32629"
+msgid "Episode Duration"
+msgstr ""
+
+msgctxt "#32630"
+msgid "Enable duration filter"
+msgstr ""
+
+msgctxt "#32631"
+msgid "Minimum episode length (minutes)"
+msgstr ""
+
+msgctxt "#32632"
+msgid "Maximum episode length (minutes)"
+msgstr ""
+
+msgctxt "#32633"
+msgid "Filter shows by typical episode duration. Only shows within the specified range will be included."
+msgstr ""
+
+msgctxt "#32634"
+msgid "Only include shows with episodes at least this long. Set to 0 for no minimum."
+msgstr ""
+
+msgctxt "#32635"
+msgid "Only include shows with episodes no longer than this. Set to 0 for no maximum."
+msgstr ""
+
+msgctxt "#32636"
+msgid "Duration is estimated from a sample episode's file metadata."
+msgstr ""
+
+msgctxt "#32637"
+msgid "Invalid Duration Settings"
+msgstr ""
+
+msgctxt "#32638"
+msgid "Minimum duration cannot be greater than maximum. Duration filter disabled."
 msgstr ""

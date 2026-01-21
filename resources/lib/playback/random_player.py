@@ -43,6 +43,7 @@ from resources.lib.constants import (
     EPISODE_SELECTION_WATCHED,
     EPISODE_SELECTION_BOTH,
     PROP_PLAYLIST_CONFIG,
+    LAZY_QUEUE_BUFFER_SIZE,
 )
 from resources.lib.data.queries import (
     get_clear_video_playlist_query,
@@ -61,7 +62,10 @@ from resources.lib.data.shows import (
     fetch_shows_with_watched_episodes,
     extract_showids_from_playlist,
     extract_movieids_from_playlist,
+    filter_shows_by_duration,
+    validate_duration_settings,
 )
+from resources.lib.playback.playlist_session import PlaylistSession
 from resources.lib.utils import get_logger, json_query, log_timing
 
 if TYPE_CHECKING:
@@ -110,6 +114,9 @@ class RandomPlaylistConfig:
         language: System language for sorting
         movie_playlist: Optional path to movie playlist filter (None = all movies)
         unwatched_ratio: Chance of picking unwatched vs watched in "Both" mode (0-100)
+        duration_filter_enabled: Whether to filter shows by episode duration
+        duration_min: Minimum episode duration in minutes (0 = no minimum)
+        duration_max: Maximum episode duration in minutes (0 = no maximum)
     """
     length: int = 10
     playlist_content: int = CONTENT_MIXED
@@ -126,6 +133,9 @@ class RandomPlaylistConfig:
     language: str = 'English'
     movie_playlist: Optional[str] = None
     unwatched_ratio: int = 50  # 0-100, used when episode_selection is BOTH
+    duration_filter_enabled: bool = False
+    duration_min: int = 0
+    duration_max: int = 0
 
 
 def filter_shows_by_population(
@@ -849,6 +859,129 @@ def _update_added_dict(
         added_ep_dict[show_id] = ''
 
 
+def _build_lazy_queue_playlist(
+    population: dict,
+    random_order_shows: list,
+    config: RandomPlaylistConfig,
+    candidate_list: list,
+    logger: StructuredLogger
+) -> None:
+    """
+    Build a lazy queue playlist for Both mode.
+    
+    Instead of building the full playlist upfront, creates a small initial
+    buffer (LAZY_QUEUE_BUFFER_SIZE items) and relies on the playback monitor
+    to replenish as episodes are watched. This allows on-deck episodes to
+    progress naturally as content is consumed.
+    
+    The key difference from batch mode is that on-deck episodes can appear
+    multiple times for the same show, advancing as each episode is watched
+    (e.g., S02E05 → S02E06 → S02E07).
+    
+    Args:
+        population: Show population filter dict
+        random_order_shows: List of show IDs with random episode order
+        config: Playlist configuration
+        candidate_list: Shuffled list of candidates like ['t123', 'm456']
+        logger: Logger instance
+    
+    Side Effects:
+        - Creates PlaylistSession and saves to window property
+        - Adds initial buffer items to video playlist
+        - Sets 'EasyTV.playlist_running' to 'true'
+        - Sets 'EasyTV.random_order_shuffle' to 'true'
+        - Starts playlist playback via xbmc.Player
+    """
+    log = logger
+    
+    with log_timing(log, "lazy_queue_build",
+                    buffer_size=LAZY_QUEUE_BUFFER_SIZE,
+                    target_length=config.length) as timer:
+        # Serialize config for session storage
+        config_dict = {
+            'length': config.length,
+            'playlist_content': config.playlist_content,
+            'episode_selection': config.episode_selection,
+            'movie_selection': config.movie_selection,
+            'movieweight': config.movieweight,
+            'start_partials_tv': config.start_partials_tv,
+            'start_partials_movies': config.start_partials_movies,
+            'premieres': config.premieres,
+            'season_premieres': config.season_premieres,
+            'multiple_shows': config.multiple_shows,
+            'sort_by': config.sort_by,
+            'sort_reverse': config.sort_reverse,
+            'language': config.language,
+            'movie_playlist': config.movie_playlist,
+            'unwatched_ratio': config.unwatched_ratio,
+            'duration_filter_enabled': config.duration_filter_enabled,
+            'duration_min': config.duration_min,
+            'duration_max': config.duration_max,
+        }
+        
+        # Clear any existing lazy queue session
+        PlaylistSession.clear()
+        
+        # Create new session
+        session = PlaylistSession.create(
+            config=config_dict,
+            population=population,
+            random_order_shows=random_order_shows,
+            candidate_list=candidate_list.copy(),  # Copy to avoid mutation
+            target_length=config.length
+        )
+        timer.mark("session_create")
+        
+        # Pick initial buffer items
+        items_added = 0
+        buffer_target = min(LAZY_QUEUE_BUFFER_SIZE, config.length)
+        
+        while items_added < buffer_target:
+            result = session.pick_next_item()
+            if result is None:
+                # No more candidates available
+                log.debug("Lazy queue exhausted during initial build",
+                          items_added=items_added,
+                          buffer_target=buffer_target)
+                break
+            
+            item_type, item_id = result
+            
+            # Add to playlist
+            if item_type == 'episode':
+                json_query(build_add_episode_query(item_id), False)
+            elif item_type == 'movie':
+                json_query(build_add_movie_query(item_id), False)
+            
+            items_added += 1
+        
+        timer.mark("initial_buffer")
+        
+        # Save session state for playback monitor to use
+        session.save()
+        
+        # Notify service that playlist is running
+        WINDOW.setProperty("EasyTV.playlist_running", 'true')
+        WINDOW.setProperty("EasyTV.random_order_shuffle", 'true')
+        
+        # Also store config for playlist continuation (same as batch mode)
+        playlist_state = {
+            'population': population,
+            'random_order_shows': random_order_shows,
+            'config': config_dict
+        }
+        WINDOW.setProperty(PROP_PLAYLIST_CONFIG, json.dumps(playlist_state))
+        
+        # Start playback
+        xbmc.Player().play(xbmc.PlayList(1))
+        
+        log.info("Lazy queue playlist started",
+                 event="playlist.lazy_queue_start",
+                 initial_items=items_added,
+                 target_length=config.length,
+                 candidates_remaining=len(session.candidate_list))
+
+
 def build_random_playlist(
     population: dict,
     random_order_shows: list[int],
@@ -926,6 +1059,15 @@ def build_random_playlist(
                 population, config.sort_by, config.sort_reverse, config.language,
                 episode_selection=config.episode_selection, logger=log
             )
+            
+            # Apply duration filter if enabled
+            if config.duration_filter_enabled and stored_data_filtered:
+                if validate_duration_settings(config.duration_min, config.duration_max):
+                    stored_data_filtered = filter_shows_by_duration(
+                        stored_data_filtered,
+                        config.duration_min,
+                        config.duration_max
+                    )
         
         outer_timer.mark("show_fetch")
         
@@ -1047,7 +1189,21 @@ def build_random_playlist(
         
         outer_timer.mark("partial_priority")
         
-        # Main playlist building loop
+        # Both mode with multiple_shows uses lazy queue for on-deck progression
+        # This allows the same show to appear multiple times with its on-deck
+        # episode advancing naturally as content is watched (S02E05 → S02E06 → ...)
+        if (config.episode_selection == EPISODE_SELECTION_BOTH and 
+            config.multiple_shows and 
+            config.playlist_content != CONTENT_MOVIES_ONLY):
+            log.debug("Using lazy queue for Both mode",
+                      event="playlist.lazy_queue_mode",
+                      candidates=len(candidate_list))
+            _build_lazy_queue_playlist(
+                population, random_order_shows, config, candidate_list, log
+            )
+            return
+        
+        # Main playlist building loop (batch mode for Unwatched/Watched/Both without multiple_shows)
         # Candidates are ordered: partials first (priority sorted), then shuffled non-partials
         # Always pick from front (index 0) to respect this ordering
         while count < config.length and candidate_list:
@@ -1090,6 +1246,14 @@ def build_random_playlist(
                     is_multi, tmp_details, config, episode_id=episode_id
                 )
                 
+                # Move show to end of list so other shows get a turn
+                # (only when multiple_shows is enabled and show wasn't exhausted)
+                if config.multiple_shows:
+                    candidate_tag = f't{candidate_id}'
+                    if candidate_tag in candidate_list:
+                        candidate_list.remove(candidate_tag)
+                        candidate_list.append(candidate_tag)
+                
             elif candidate_type == 'm':
                 # Movie candidate
                 json_query(build_add_movie_query(candidate_id), False)
@@ -1128,6 +1292,9 @@ def build_random_playlist(
                 'language': config.language,
                 'movie_playlist': config.movie_playlist,
                 'unwatched_ratio': config.unwatched_ratio,
+                'duration_filter_enabled': config.duration_filter_enabled,
+                'duration_min': config.duration_min,
+                'duration_max': config.duration_max,
             }
         }
         WINDOW.setProperty(PROP_PLAYLIST_CONFIG, json.dumps(playlist_state))

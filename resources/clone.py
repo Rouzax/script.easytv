@@ -203,6 +203,19 @@ def Main():
                 print(line.replace('script.easytv', san_name), end='')
             fileinput.close()
 
+        # Update skin XML files to use clone's addon ID for language strings
+        # Without this, $ADDON[script.easytv ...] won't resolve in clones
+        skin_files = [
+            os.path.join(temp_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-main.xml'),
+            os.path.join(temp_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-BigScreenList.xml')
+        ]
+
+        for skin_file in skin_files:
+            if os.path.isfile(skin_file):
+                for line in fileinput.input(skin_file, inplace=True):
+                    print(line.replace('$ADDON[script.easytv ', f'$ADDON[{san_name} '), end='')
+                fileinput.close()
+
         # All modifications complete - now move from temp to final location
         # This ensures Kodi sees a fully-prepared addon with correct strings.po
         shutil.move(temp_path, new_path)

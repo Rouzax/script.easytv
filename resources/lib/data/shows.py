@@ -43,7 +43,9 @@ from resources.lib.constants import (
     CATEGORY_START_FRESH,
     CATEGORY_CONTINUE_WATCHING,
     ISTREAM_FIX_MAX_RETRIES,
+    SECONDS_PER_MINUTE,
 )
+from resources.lib.service.episode_tracker import PROP_DURATION
 from resources.lib.data.queries import (
     get_all_shows_query,
     build_show_episodes_query,
@@ -63,19 +65,25 @@ WINDOW = xbmcgui.Window(KODI_HOME_WINDOW_ID)
 # =============================================================================
 # Article Stripping Configuration by Language
 # =============================================================================
-# Maps languages to their leading articles that should be stripped for sorting
+# Maps languages to their leading articles that should be stripped for sorting.
+# Includes both definite ("the") and indefinite ("a/an") articles.
+# Example: "The Office" -> "Office", "A Man in Full" -> "Man in Full"
+# Languages without articles (Russian, Polish, Turkish, etc.) are not included.
 LANGUAGE_ARTICLES: dict[str, list[str]] = {
-    'English': ['the '],
-    'Russian': ['the '],
-    'Polish': ['the '],
-    'Turkish': ['the '],
-    'Spanish': ['la ', 'los ', 'las ', 'el ', 'lo '],
-    'Dutch': ['de ', 'het '],
-    'Danish': ['de ', 'det ', 'den '],
-    'Swedish': ['de ', 'det ', 'den '],
-    'German': ['die ', 'der ', 'den ', 'das '],
-    'Afrikaans': ['die ', 'der ', 'den ', 'das '],
-    'French': ['les ', 'la ', 'le '],
+    'English': ['the ', 'a ', 'an '],
+    'Spanish': ['el ', 'la ', 'los ', 'las ', 'un ', 'una ', 'unos ', 'unas '],
+    'Dutch': ['de ', 'het ', 'een '],
+    'Danish': ['den ', 'det ', 'en ', 'et '],
+    'Swedish': ['den ', 'det ', 'en ', 'ett '],
+    'German': ['der ', 'die ', 'das ', 'ein ', 'eine '],
+    'Afrikaans': ['die ', "'n "],
+    'French': ['le ', 'la ', 'les ', "l'", 'un ', 'une ', 'des '],
+    'Italian': ['il ', 'lo ', 'la ', 'i ', 'gli ', 'le ', "l'", 'un ', 'uno ', 'una '],
+    'Portuguese': ['o ', 'a ', 'os ', 'as ', 'um ', 'uma ', 'uns ', 'umas '],
+    'Norwegian': ['den ', 'det ', 'de ', 'en ', 'et ', 'ei '],
+    'Catalan': ['el ', 'la ', 'els ', 'les ', "l'", 'un ', 'una ', 'uns ', 'unes '],
+    'Romanian': ['a ', 'al ', 'ale ', 'un ', 'o '],
+    'Greek': ['ο ', 'η ', 'το ', 'οι ', 'τα ', 'ένας ', 'μια ', 'ένα '],
 }
 
 
@@ -712,3 +720,162 @@ def resolve_istream_episode(
                         break
     
     return False, now_playing_show_id, now_playing_episode_id
+
+
+# =============================================================================
+# Duration Filtering
+# =============================================================================
+
+def get_show_duration(
+    show_id: int,
+    window: Optional[xbmcgui.Window] = None
+) -> int:
+    """
+    Get the cached episode duration for a show.
+    
+    Retrieves the duration (in seconds) from the window property set during
+    service startup. This represents a randomly sampled episode's duration.
+    
+    Args:
+        show_id: The TV show ID.
+        window: Window for property lookup (defaults to home window).
+    
+    Returns:
+        Duration in seconds, or 0 if not available.
+    """
+    if window is None:
+        window = WINDOW
+    
+    prop_key = f"EasyTV.{show_id}.{PROP_DURATION}"
+    duration_str = window.getProperty(prop_key)
+    
+    try:
+        return int(duration_str) if duration_str else 0
+    except (ValueError, TypeError):
+        return 0
+
+
+def validate_duration_settings(min_minutes: int, max_minutes: int) -> bool:
+    """
+    Validate duration filter settings and warn user if invalid.
+    
+    Shows a warning dialog if min > max (when both are non-zero),
+    which would result in no shows matching.
+    
+    Args:
+        min_minutes: Minimum duration setting in minutes.
+        max_minutes: Maximum duration setting in minutes.
+    
+    Returns:
+        True if valid (filtering should proceed).
+        False if invalid (warning shown, filtering should be skipped).
+    """
+    # Valid cases:
+    # - min=0, max=0: No filtering
+    # - min>0, max=0: Only minimum
+    # - min=0, max>0: Only maximum  
+    # - min>0, max>0, min<=max: Valid range
+    # Invalid: min>0, max>0, min>max
+    if min_minutes > 0 and max_minutes > 0 and min_minutes > max_minutes:
+        dialog = xbmcgui.Dialog()
+        # 32637 = "Invalid Duration Settings"
+        # 32638 = "Minimum duration cannot be greater than maximum. Duration filter disabled."
+        dialog.ok(lang(32637), lang(32638))
+        log.warning(
+            "Invalid duration settings",
+            min_minutes=min_minutes,
+            max_minutes=max_minutes
+        )
+        return False
+    
+    return True
+
+
+def filter_shows_by_duration(
+    shows: list,
+    min_minutes: int = 0,
+    max_minutes: int = 0,
+    window: Optional[xbmcgui.Window] = None
+) -> list:
+    """
+    Filter shows by typical episode duration.
+    
+    Uses cached duration data (set during service startup) to filter shows
+    based on their typical episode length. Shows without duration data
+    (duration=0) are excluded when filtering is active.
+    
+    Args:
+        shows: List of shows in one of two formats:
+            - List of dicts with 'tvshowid' key (from browse mode)
+            - List of [lastplayed, showid, episodeid] (from random playlist)
+        min_minutes: Minimum duration in minutes (0 = no minimum).
+        max_minutes: Maximum duration in minutes (0 = no maximum).
+        window: Window for property lookup (defaults to home window).
+    
+    Returns:
+        Filtered list of shows within duration range (same format as input).
+        Shows without duration data (duration=0) are excluded.
+    
+    Note:
+        Call validate_duration_settings() before this function to warn
+        users about invalid min > max configurations.
+    """
+    # No filtering if both are 0
+    if min_minutes == 0 and max_minutes == 0:
+        return shows
+    
+    if not shows:
+        return shows
+    
+    if window is None:
+        window = WINDOW
+    
+    # Convert minutes to seconds for comparison
+    min_seconds = min_minutes * SECONDS_PER_MINUTE
+    max_seconds = max_minutes * SECONDS_PER_MINUTE
+    
+    # Detect format: dict with 'tvshowid' or list with showid at index 1
+    is_dict_format = isinstance(shows[0], dict)
+    
+    filtered = []
+    excluded_no_duration = 0
+    for show in shows:
+        # Extract show ID based on format
+        if is_dict_format:
+            show_id = show.get('tvshowid')
+        else:
+            # List format: [lastplayed, showid, episodeid]
+            show_id = show[1] if len(show) > 1 else None
+        
+        if show_id is None:
+            # No show ID, include by default
+            filtered.append(show)
+            continue
+        
+        duration = get_show_duration(show_id, window)
+        
+        # Exclude shows without duration data
+        if duration == 0:
+            excluded_no_duration += 1
+            continue
+        
+        # Check against min (if set)
+        if min_seconds > 0 and duration < min_seconds:
+            continue
+        
+        # Check against max (if set)
+        if max_seconds > 0 and duration > max_seconds:
+            continue
+        
+        filtered.append(show)
+    
+    log.debug(
+        "Duration filter applied",
+        min_minutes=min_minutes,
+        max_minutes=max_minutes,
+        input_count=len(shows),
+        output_count=len(filtered),
+        excluded_no_duration=excluded_no_duration
+    )
+    
+    return filtered

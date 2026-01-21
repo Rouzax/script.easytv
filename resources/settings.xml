@@ -114,7 +114,7 @@
 
 				<setting id="premieres" type="boolean" label="32514" help="32407">
 					<level>1</level>
-					<default>false</default>
+					<default>true</default>
 					<control type="toggle" />
 				</setting>
 
@@ -125,7 +125,44 @@
 				</setting>
 			</group>
 
-			<!-- Group 2.2: Watch Order (shuffle-friendly shows) -->
+			<!-- Group 2.2: Episode Duration Filter -->
+			<group id="duration" label="32629">
+				<setting id="duration_filter_enabled" type="boolean" label="32630" help="32633">
+					<level>1</level>
+					<default>false</default>
+					<control type="toggle" />
+				</setting>
+
+				<setting id="duration_min" type="integer" label="32631" help="32634">
+					<level>1</level>
+					<default>0</default>
+					<dependencies>
+						<dependency type="enable" setting="duration_filter_enabled">true</dependency>
+					</dependencies>
+					<constraints>
+						<minimum>0</minimum>
+						<maximum>120</maximum>
+						<step>5</step>
+					</constraints>
+					<control type="slider" format="integer" />
+				</setting>
+
+				<setting id="duration_max" type="integer" label="32632" help="32635">
+					<level>1</level>
+					<default>0</default>
+					<dependencies>
+						<dependency type="enable" setting="duration_filter_enabled">true</dependency>
+					</dependencies>
+					<constraints>
+						<minimum>0</minimum>
+						<maximum>120</maximum>
+						<step>5</step>
+					</constraints>
+					<control type="slider" format="integer" />
+				</setting>
+			</group>
+
+			<!-- Group 2.3: Watch Order (shuffle-friendly shows) -->
 			<group id="watch_order" label="32591" help="32597">
 				<setting id="select_random_order_shows" type="action" label="32513" help="32406">
 					<level>0</level>
@@ -232,7 +269,7 @@
 			<group id="basics" label="32593">
 				<setting id="playlist_content" type="integer" label="32579" help="32435">
 					<level>0</level>
-					<default>1</default>
+					<default>0</default>
 					<constraints>
 						<options>
 							<option label="32580">0</option>
@@ -254,7 +291,7 @@
 					<control type="slider" format="integer" />
 				</setting>
 
-				<setting id="multiple_shows" type="boolean" label="32032" help="32416">
+				<setting id="multiple_shows" type="boolean" label="32522" help="32416">
 					<level>1</level>
 					<default>false</default>
 					<dependencies>
@@ -333,7 +370,7 @@
 					<control type="toggle" />
 				</setting>
 
-				<setting id="movie_selection" type="integer" label="32037" help="32420">
+				<setting id="movie_selection" type="integer" label="32523" help="32420">
 					<level>0</level>
 					<default>0</default>
 					<dependencies>
@@ -436,13 +473,13 @@
 			<group id="nextprompt" label="32562">
 				<setting id="nextprompt" type="boolean" label="32528" help="32425">
 					<level>0</level>
-					<default>true</default>
+					<default>false</default>
 					<control type="toggle" />
 				</setting>
 
 				<setting id="promptduration" type="integer" label="32529" help="32426">
 					<level>1</level>
-					<default>20</default>
+					<default>5</default>
 					<dependencies>
 						<dependency type="enable" setting="nextprompt">true</dependency>
 					</dependencies>
@@ -483,7 +520,7 @@
 			<group id="warnings" label="32563">
 				<setting id="previous_episode_check" type="boolean" label="32534" help="32429">
 					<level>1</level>
-					<default>false</default>
+					<default>true</default>
 					<control type="toggle" />
 				</setting>
 			</group>

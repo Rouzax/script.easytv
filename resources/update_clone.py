@@ -96,7 +96,7 @@ def Main():
 
 
         # copy current addon to new location
-        IGNORE_PATTERNS = ('.pyc','CVS','.git','tmp','.svn')
+        IGNORE_PATTERNS = ('.pyc','CVS','.git','tmp','.svn','__pycache__')
         shutil.copytree(src_path,new_path, ignore=shutil.ignore_patterns(*IGNORE_PATTERNS))
 
         # remove the unneeded files
@@ -111,15 +111,38 @@ def Main():
         shutil.move( os.path.join(new_path,'resources','addon_clone.xml') , addon_file )
         shutil.move( os.path.join(new_path,'resources','settings_clone.xml') , os.path.join(new_path,'resources','settings.xml') )
 
+        # Update section id in settings.xml to match clone addon id
+        # Without this, Kodi can't match settings to the clone addon
+        settings_file = os.path.join(new_path, 'resources', 'settings.xml')
+        for line in fileinput.input(settings_file, inplace=True):
+            print(line.replace('section id="script.easytv"', f'section id="{san_name}"'), end='')
+        fileinput.close()
+
+        # Update strings.po header in ALL language folders to match clone addon id
+        # Without this, Kodi 21+ won't load language strings for the clone
+        language_dir = os.path.join(new_path, 'resources', 'language')
+        for lang_folder in os.listdir(language_dir):
+            strings_file = os.path.join(language_dir, lang_folder, 'strings.po')
+            if os.path.isfile(strings_file):
+                for line in fileinput.input(strings_file, inplace=True):
+                    line = line.replace('# Addon Name: EasyTV', f'# Addon Name: {clone_name}')
+                    line = line.replace('# Addon id: script.easytv', f'# Addon id: {san_name}')
+                    print(line, end='')
+                fileinput.close()
+
     except Exception as e:
         _, _, tb = sys.exc_info()  # Only need traceback
         errorHandle(e, tb, new_path)
+
+    # Get parent version to use for clone
+    parent_version = __addon__.getAddonInfo('version')
 
     # edit the addon.xml to point to the right folder
     tree = et.parse(addon_file)
     root = tree.getroot()
     root.set('id', san_name)
     root.set('name', clone_name)
+    root.set('version', parent_version)  # Clone inherits parent version
     tree.find('.//summary').text = clone_name
     tree.write(addon_file)
 
@@ -133,6 +156,19 @@ def Main():
             for line in fileinput.input(py, inplace=True):
                 print(line.replace('script.easytv', san_name), end='')
         finally:
+            fileinput.close()
+
+    # Update skin XML files to use clone's addon ID for language strings
+    # Without this, $ADDON[script.easytv ...] won't resolve in clones
+    skin_files = [
+        os.path.join(new_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-main.xml'),
+        os.path.join(new_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-BigScreenList.xml')
+    ]
+
+    for skin_file in skin_files:
+        if os.path.isfile(skin_file):
+            for line in fileinput.input(skin_file, inplace=True):
+                print(line.replace('$ADDON[script.easytv ', f'$ADDON[{san_name} '), end='')
             fileinput.close()
 
     # stop and start the addon to have it show in the Video Addons window
@@ -152,4 +188,5 @@ if __name__ == "__main__":
 
     Main()
 
-    log.info("Clone update completed", event="clone.update_complete", clone_name=clone_name)
+    log.info("Clone update completed", event="clone.update_complete", 
+             clone_name=clone_name, version=__addon__.getAddonInfo('version'))

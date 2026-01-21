@@ -79,6 +79,7 @@ Set the launch option to "Ask me" and EasyTV will prompt you each time:
 | Feature                | Description                                                       |
 | ---------------------- | ----------------------------------------------------------------- |
 | **Episode Selection**  | Include unwatched, watched, or all episodes in random playlist    |
+| **Duration Filter**    | Filter shows by typical episode length (e.g., under 30 minutes)   |
 | **Movie Integration**  | Mix unwatched (or watched) movies into your random playlist       |
 | **Movie Weighting**    | Control how often movies appear vs. TV episodes                   |
 | **Movie Filtering**    | Use a Kodi smart playlist to limit which movies are included      |
@@ -113,30 +114,27 @@ Set the launch option to "Ask me" and EasyTV will prompt you each time:
 
 ## Performance
 
-EasyTV is optimized for large libraries. Performance varies significantly by hardware and database configuration.
+EasyTV is optimized for large libraries on all devices, including low-power media players.
 
-### Measured Performance
+### Startup Time
 
-| Device | Database | Startup | Playlist Build |
-|--------|----------|---------|----------------|
-| Desktop (Windows) | Local SQLite | 1-2 sec | < 1 sec |
-| OSMC Vero V | Shared MySQL | 15-17 sec | ~4 sec |
+Duration data is cached to disk, so subsequent startups are significantly faster:
 
-### Partial Prioritization (v1.1.1 Optimization)
+| Device | First Run | Cached Run | Savings |
+|--------|-----------|------------|---------|
+| **Fast PC** (local SQLite) | ~2 seconds | ~0.6 seconds | 71% |
+| **OSMC Vero V** (network MariaDB) | ~32 seconds | ~6 seconds | 81% |
 
-| Operation | Desktop | Vero V |
-|-----------|---------|--------|
-| Find partial TV episodes | 9ms | 84-101ms |
-| Find partial movies | 12ms | 95-117ms |
+*First run calculates median episode durations for all shows (one-time cost).*
 
-### Factors Affecting Performance
+### Operation Timing
 
-- **Database location**: Shared/network databases add significant latency vs local SQLite — this is the primary factor in the difference above
-- **CPU power**: ARM devices are slower than x86 desktops, but the Vero V's 4x Cortex A55 @ 2GHz is capable hardware
-- **Library size**: More shows/episodes = longer queries
-- **Art property queries**: Episode artwork lookups dominate startup time (optimization planned for future release)
+| Operation | Time | Notes |
+|-----------|------|-------|
+| **Random playlist build** | ~4 seconds | Builds a full playlist with partial prioritization |
+| **Episode list refresh** | Instant | Updates immediately after playback |
 
-*Tested with 168 TV shows, 5,646 episodes, and 846 movies.*
+*Tested with ~170 TV shows, ~5,600 episodes, and ~850 movies.*
 
 ---
 
@@ -152,7 +150,7 @@ EasyTV is optimized for large libraries. Performance varies significantly by har
 *(Coming soon)*
 
 ### First Run
-On first launch, the background service loads your TV library data. A notification appears when ready (see [Performance](#performance) for timing by device).
+On first launch, the background service analyzes your TV library — this typically takes under a second (see [Performance](#performance)). A notification appears when analysis is complete.
 
 ---
 
@@ -234,6 +232,18 @@ These settings apply to **both** Browse Mode and Random Playlist.
 
 > Disable "Include season premieres" if you prefer starting new seasons from where you left off rather than from episode 1.
 
+#### Episode Duration
+
+| Setting                       | Description                                                                 | Default |
+| ----------------------------- | --------------------------------------------------------------------------- | ------- |
+| **Enable duration filter**    | Filter shows by typical episode length                                      | Off     |
+| **Minimum episode length**    | Only include shows with episodes at least this long (0 = no minimum)        | 0       |
+| **Maximum episode length**    | Only include shows with episodes no longer than this (0 = no maximum)       | 0       |
+
+> Duration is calculated as the median across all episodes in a show, using stream details from the video files. This is robust to outliers like double-length finales or extended pilots. Use this to find short shows for limited time slots (e.g., max 30 minutes) or longer shows for dedicated viewing (e.g., min 40 minutes).
+>
+> **Note:** Shows with unknown duration (no stream metadata) are excluded when the filter is active. Set the filter to disabled ("All") to include these shows.
+
 ---
 
 ### Browse Mode
@@ -300,6 +310,18 @@ Settings for **Random Playlist Mode** only ("Play random playlist").
 > "Start watched movies at random point" is only available when "Movie selection" includes watched movies.
 > 
 > "Unwatched episode chance" controls the mix in "Both" mode: 80% means mostly new episodes with occasional rewatches, 20% means mostly rewatches with occasional new episodes. Unwatched episodes always play in order (next on-deck), while watched episodes are picked randomly.
+
+#### Both Mode with Multiple Episodes
+
+When using **"Both"** episode selection with **"Allow multiple episodes of same TV Show"** enabled, EasyTV uses a dynamic playlist that grows as you watch:
+
+- The playlist starts with only **2-3 items visible** instead of the full length
+- As you watch each episode, **the next item is added automatically**
+- **On-deck episodes progress naturally** — if Breaking Bad appears 3 times in your playlist, you'll see S02E05, then S02E06, then S02E07 (not S02E05 three times)
+
+This "lazy queue" approach allows the playlist to adapt to your watch progress. When you finish S02E05, EasyTV checks the *current* next episode and may add S02E06 to the queue.
+
+> **Note:** Unwatched and Watched modes still build the full playlist upfront. The lazy queue behavior only applies to Both mode with multiple episodes enabled.
 
 #### Partial Content Prioritization
 

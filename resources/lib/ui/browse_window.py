@@ -207,7 +207,9 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
             ok_button.setLabel(lang(32105))
             
             heading = self.getControl(CONTROL_HEADING)
-            heading.setLabel('EasyTV')
+            # Get addon name dynamically (supports clones with custom names)
+            addon_name = xbmcaddon.Addon().getAddonInfo('name')
+            heading.setLabel(addon_name)
             heading.setVisible(True)
             
             self.name_list = self.getControl(CONTROL_LIST)
@@ -290,7 +292,6 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         
         # Get episode properties
         poster = WINDOW.getProperty(f"{prop_prefix}.Art(tvshow.poster)")
-        thumb = WINDOW.getProperty(f"{prop_prefix}.Art(thumb)")
         eptitle = WINDOW.getProperty(f"{prop_prefix}.Title")
         plot = WINDOW.getProperty(f"{prop_prefix}.Plot")
         season = WINDOW.getProperty(f"{prop_prefix}.Season")
@@ -315,7 +316,6 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
             list_item = xbmcgui.ListItem(label=title, label2=eptitle)
             list_item.setArt({'thumb': poster})
             list_item.setProperty("Fanart_Image", fanart)
-            list_item.setProperty("Backup_Image", thumb)
             list_item.setProperty("numwatched", num_watched)
             list_item.setProperty("numondeck", num_ondeck)
             list_item.setProperty("numskipped", num_skipped)

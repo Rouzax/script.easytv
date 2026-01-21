@@ -43,6 +43,7 @@ from resources.lib.playback.browse_mode import EpisodeListConfig, build_episode_
 from resources.lib.playback.random_player import (
     RandomPlaylistConfig, filter_shows_by_population, build_random_playlist
 )
+from resources.lib.data.shows import filter_shows_by_duration, validate_duration_settings
 
 
 def _get_population(filter_enabled, populate_by, playlist_source,
@@ -160,7 +161,10 @@ def main_entry(addon, log):
                 multiple_shows=get_bool_setting('multiple_shows'),
                 sort_by=sort_by, sort_reverse=sort_reverse, language=language,
                 movie_playlist=movie_playlist,
-                unwatched_ratio=get_int_setting('unwatched_ratio')
+                unwatched_ratio=get_int_setting('unwatched_ratio'),
+                duration_filter_enabled=get_bool_setting('duration_filter_enabled'),
+                duration_min=get_int_setting('duration_min'),
+                duration_max=get_int_setting('duration_max')
             ),
             logger=log
         )
@@ -169,6 +173,16 @@ def main_entry(addon, log):
         show_data = filter_shows_by_population(
             population, sort_by, sort_reverse, language, logger=log
         )
+        
+        # Apply duration filter if enabled
+        duration_filter_enabled = get_bool_setting('duration_filter_enabled')
+        if duration_filter_enabled and show_data:
+            duration_min = get_int_setting('duration_min')
+            duration_max = get_int_setting('duration_max')
+            if validate_duration_settings(duration_min, duration_max):
+                show_data = filter_shows_by_duration(
+                    show_data, duration_min, duration_max
+                )
         
         # Filter out premieres based on settings
         include_series_premieres = get_bool_setting('premieres')
@@ -208,7 +222,10 @@ def main_entry(addon, log):
                 window_length=get_int_setting('window_length'),
                 skin_return=get_bool_setting('skin_return'),
                 excl_random_order_shows=get_bool_setting('excl_random_order_shows'),
-                script_path=script_path
+                script_path=script_path,
+                duration_filter_enabled=get_bool_setting('duration_filter_enabled'),
+                duration_min=get_int_setting('duration_min'),
+                duration_max=get_int_setting('duration_max')
             ),
             monitor=xbmc.Monitor(),
             logger=log

@@ -47,10 +47,12 @@ from resources.lib.utils import (
     get_logger,
     json_query,
     lang,
+    log_timing,
     runtime_converter,
 )
 from resources.lib.data.queries import (
     build_add_episode_query,
+    build_add_movie_query,
     build_player_seek_query,
     build_player_seek_time_query,
     get_playing_item_query,
@@ -59,6 +61,7 @@ from resources.lib.data.shows import (
     parse_season_episode_string,
     resolve_istream_episode,
 )
+from resources.lib.playback.playlist_session import PlaylistSession
 
 if TYPE_CHECKING:
     from resources.lib.utils import StructuredLogger
@@ -200,6 +203,11 @@ class PlaybackMonitor(xbmc.Player):
             self._handle_episode_playback(settings)
         elif item_type == 'movie' and self._pl_running_local == 'true':
             self._handle_movie_playback(settings)
+        
+        # Replenish lazy queue buffer on every item start
+        # This handles rapid skipping (Page Up) which doesn't fire onPlayBackEnded
+        if self._pl_running_local == 'true':
+            self._replenish_lazy_queue()
         
         self._log.debug("Playback started handler complete")
     
@@ -448,6 +456,9 @@ class PlaybackMonitor(xbmc.Player):
         if not is_something_playing and self._pl_running_local == 'true':
             self._window.setProperty("EasyTV.playlist_running", 'false')
             
+            # Clear any active lazy queue session
+            PlaylistSession.clear()
+            
             # Show playlist continuation prompt if enabled and config is stored
             if settings.playlist_continuation:
                 stored_config = self._window.getProperty(PROP_PLAYLIST_CONFIG)
@@ -591,6 +602,78 @@ class PlaybackMonitor(xbmc.Player):
                 '{"jsonrpc":"2.0","method":"Player.PlayPause",'
                 '"params":{"playerid":1,"play":true},"id":1}'
             )
+    
+    def _replenish_lazy_queue(self) -> None:
+        """
+        Replenish the lazy queue playlist buffer.
+        
+        Called after each episode completes to maintain a buffer of upcoming
+        items. This enables on-deck progression in Both mode - as episodes
+        are watched, the on-deck advances and can appear again in the playlist.
+        
+        The method:
+        1. Loads the active session from window property
+        2. If session complete or exhausted, clears and returns
+        3. Picks next item and adds to playlist
+        4. Saves updated session state
+        
+        Error handling ensures playlist continues even if replenishment fails.
+        """
+        try:
+            with log_timing(self._log, "lazy_queue_replenish") as timer:
+                # Load the active session
+                session = PlaylistSession.load()
+                timer.mark("load")
+                
+                if session is None:
+                    # No active lazy queue session
+                    return
+                
+                # Check if session has reached target length
+                if session.is_complete:
+                    self._log.debug("Lazy queue complete, clearing session",
+                                    event="lazy_queue.complete",
+                                    items_added=session.items_added,
+                                    target=session.target_length)
+                    PlaylistSession.clear()
+                    return
+                
+                # Pick next item to add
+                result = session.pick_next_item()
+                timer.mark("pick")
+                
+                if result is None:
+                    # All candidates exhausted before reaching target
+                    self._log.debug("Lazy queue exhausted, clearing session",
+                                    event="lazy_queue.exhausted",
+                                    items_added=session.items_added,
+                                    target=session.target_length)
+                    PlaylistSession.clear()
+                    return
+                
+                item_type, item_id = result
+                
+                # Add to playlist
+                if item_type == 'episode':
+                    json_query(build_add_episode_query(item_id), False)
+                elif item_type == 'movie':
+                    json_query(build_add_movie_query(item_id), False)
+                timer.mark("add")
+                
+                # Save updated session state
+                session.save()
+                
+                self._log.debug("Lazy queue replenished",
+                                event="lazy_queue.replenish",
+                                item_type=item_type,
+                                item_id=item_id,
+                                items_added=session.items_added,
+                                remaining=session.items_remaining)
+        except Exception as e:
+            # Log error but don't interrupt playlist playback
+            self._log.exception("Lazy queue replenishment failed",
+                                event="lazy_queue.replenish_error",
+                                error=str(e))
     
     def _show_playlist_continuation_prompt(self, settings: PlaybackSettings) -> None:
         """

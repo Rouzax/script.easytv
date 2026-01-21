@@ -26,7 +26,7 @@ from typing import Callable, List, Optional, TYPE_CHECKING, Union
 import xbmc
 import xbmcgui
 
-from resources.lib.constants import WATCHED_PLAYCOUNT
+from resources.lib.constants import WATCHED_PLAYCOUNT, PROP_ART_FETCHED
 from resources.lib.utils import get_logger, json_query
 from resources.lib.data.queries import build_episode_show_id_query
 
@@ -47,7 +47,7 @@ class LibraryMonitor(xbmc.Monitor):
     
     Responds to:
     - Settings changes: Triggers settings reload
-    - Video database updates: Flags library refresh needed
+    - Library scan completion: Triggers full refresh and clears art cache
     - VideoLibrary.OnUpdate notifications: Handles watched/unwatched changes
     
     Args:
@@ -97,18 +97,24 @@ class LibraryMonitor(xbmc.Monitor):
         """Handle settings changes by triggering a reload."""
         self._on_settings_changed()
     
-    def onDatabaseUpdated(self, database: str) -> None:
+    def onScanFinished(self, library: str) -> None:
         """
-        Handle database updates.
+        Handle library scan completion.
         
-        When the video database is updated, flag that a library refresh
-        is needed to pick up any new shows or episodes.
+        When a video library scan completes, triggers a full refresh to pick up
+        any new shows or episodes. Also clears the art cache flag so that new
+        shows will have their art fetched when Browse mode opens.
         
         Args:
-            database: The database that was updated ('video', 'music', etc.)
+            library: The library that was scanned ('video' or 'music').
         """
-        if database == 'video':
-            self._log.debug("Database updated, refreshing episode list")
+        if library == 'video':
+            self._log.info(
+                "Library scan finished, refreshing episode list",
+                event="library.scan_finished"
+            )
+            # Clear art cache flag so new shows get art on next Browse
+            self._window.clearProperty(PROP_ART_FETCHED)
             self._on_library_updated()
     
     def onNotification(self, _sender: str, method: str, data: str) -> None:

@@ -33,7 +33,7 @@ Dialog Features:
     - "Enable All" button (top of list) - Selects all shows
     - "Ignore All" button - Deselects all shows
     - Individual show toggle via click
-    - Shows display with thumbnails from library
+    - Shows display with poster artwork from library
     - Selected state persisted to addon settings
 
 Logging:
@@ -41,6 +41,7 @@ Logging:
     Events: None (debug logging only)
 """
 
+import xbmc
 import xbmcgui
 import xbmcaddon
 import ast
@@ -48,6 +49,7 @@ import sys
 
 # Import shared utilities
 from resources.lib.utils import lang, json_query, get_logger
+from resources.lib.data.shows import generate_sort_key
 from resources.lib.constants import (
     ACTION_PREVIOUS_MENU,
     ACTION_NAV_BACK,
@@ -74,7 +76,7 @@ else:
 # Module-specific logger
 log = get_logger('selector')
 
-show_request         = {"jsonrpc": "2.0","method": "VideoLibrary.GetTVShows","params": {"properties": ["thumbnail"]},"id": "1"}
+show_request         = {"jsonrpc": "2.0","method": "VideoLibrary.GetTVShows","params": {"properties": ["art"]},"id": "1"}
 
 class xGUI(xbmcgui.WindowXMLDialog):
     """
@@ -225,11 +227,11 @@ def Main():
     all_shows = json_query(show_request, True)
     if 'tvshows' in all_shows:
         all_s = all_shows['tvshows']
-        all_variables = [(x['label'], int(x['tvshowid']), x['thumbnail']) for x in all_s]
+        all_variables = [(x['label'], int(x['tvshowid']), x.get('art', {}).get('poster', '')) for x in all_s]
     else:
         all_variables = []
 
-    all_variables.sort()
+    all_variables.sort(key=lambda x: generate_sort_key(x[0], xbmc.getInfoLabel('System.Language')))
 
     log.debug("Available shows loaded", count=len(all_variables))
 

@@ -1,6 +1,88 @@
 EasyTV Changelog
 ================
 
+v1.2.0 (2026-01-21)
+-------------------
+New Features:
+  - Episode duration filter: Filter shows by typical episode length
+    - Enable filter and set min/max duration in minutes (0-120, step 5)
+    - Works in both Browse Mode and Random Playlist mode
+    - Duration calculated as median from episode file metadata
+    - Shows without duration data are excluded when filter is active
+    - Set filter to "All" to include shows with unknown duration
+    - Warning shown if min > max (filter disabled, all shows included)
+  - Both mode now uses dynamic playlist building ("lazy queue")
+    - Playlist starts with 2-3 items visible instead of full length
+    - Additional items are added automatically as you watch
+    - On-deck episodes now progress naturally when same show appears multiple times
+      (S02E05 → S02E06 → S02E07 as each episode is watched)
+    - Unwatched/Watched modes unchanged (still build full playlist upfront)
+    - Requires "Allow multiple episodes of same TV Show" to be enabled
+  - Fixed LANGUAGE_ARTICLES for proper alphabetical sorting:
+    - Removed languages without articles (Russian, Polish, Turkish)
+    - Added indefinite articles (a/an) for English and other languages
+    - Added missing languages: Italian, Portuguese, Norwegian, Catalan, Romanian, Greek
+    - Example: "A Man in Full" now sorts under M, not A
+
+Bug Fixes:
+  - Fixed library scan not triggering EasyTV refresh
+    - New shows/episodes now appear after library scan completes
+    - Added onScanFinished handler (was missing)
+  - Fixed Poster/BigScreen views showing only numbers without labels
+    - Added missing language strings (32220-32226) for skin labels
+    - Labels like "Season", "Episode", "Unwatched", etc. now display correctly
+    - Affects both main addon and clones
+  - Fixed show selector sorting issues ("Pick shows manually", "Random order shows")
+    - Now case-insensitive ("black-ish" sorts with B's, not after Z)
+    - Now handles articles ("A Man in Full" sorts under M, not A)
+    - Uses same sorting logic as Browse mode for consistency
+  - Fixed show selector missing artwork (showed placeholder icons)
+    - Now uses modern art.poster property instead of legacy thumbnail
+  - Fixed clone Browse mode showing "EasyTV" instead of clone name in title
+  - Fixed clone skin XML files not updated during clone creation/update
+    - Skin XML files now updated to use clone addon ID for language strings
+  - Clone update script now applies all fixes (was missing several updates)
+    - Existing clones can be updated via the update mechanism to get these fixes
+  - Fixed random playlist picking same show repeatedly when "Allow multiple episodes" enabled
+    - Shows are now properly distributed throughout the playlist
+    - After adding an episode, show moves to end of candidate list
+
+Performance:
+  - Duration cache optimization: Significantly reduced startup time
+    - Median episode durations are now cached to disk
+    - Streamdetails only queried for shows with changed episode counts
+    - First startup: one-time full calculation
+    - Subsequent startups: ~81% faster on OSMC Vero V (32s → 6s)
+    - Cache file: special://profile/addon_data/script.easytv/duration_cache.json
+    - Cache now includes show titles for easier debugging
+  - Removed redundant full refresh on every database update
+    - Watch state changes now handled surgically via notifications
+    - Full refresh only triggers on library scan completion
+  - Art now lazy-loaded when Browse mode opens (~1s one-time cost per session)
+    - Reduces data fetched during startup
+
+Default Settings Changed:
+  - "Include series premieres" now enabled by default (was disabled)
+  - "Playlist content" now defaults to "TV episodes only" (was "TV and movies")
+  - "Ask to watch next episode" now disabled by default (was enabled)
+  - "Prompt timeout" now defaults to 5 seconds (was 20)
+  - "Warn about earlier unwatched episodes" now enabled by default (was disabled)
+
+Internal:
+  - Added timing instrumentation for performance monitoring (DEBUG level)
+  - Removed unused episode thumbnail (Art(thumb)) caching
+  - New module: resources/lib/data/duration_cache.py
+  - Reorganized strings.po with documented ID ranges for maintainability:
+    - 32000-32099: UI Elements (sort options, view styles, spinner values)
+    - 32100-32199: Dialogs and Messages
+    - 32200-32299: Context Menu and Skin Labels
+    - 32300-32399: Addon Metadata
+    - 32400-32499: Help Text
+    - 32500-32599: Settings UI (labels, categories, groups)
+    - 32600-32699: Feature-Specific Strings
+  - Removed legacy comments and empty string placeholders from strings.po
+  - Moved misplaced string IDs: 32032→32522, 32037→32523
+
 v1.1.1 (2026-01-20)
 -------------------
 Bug Fixes:

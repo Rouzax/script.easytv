@@ -43,16 +43,19 @@ from resources.lib.constants import (
     PLAYLIST_ADD_DELAY_MS,
     DIALOG_WAIT_SLEEP_MS,
     DIALOG_WAIT_MAX_TICKS,
+    PROP_ART_FETCHED,
 )
 from resources.lib.data.queries import (
     get_clear_video_playlist_query,
     build_add_episode_query,
+    build_shows_art_query,
 )
-from resources.lib.utils import get_logger, json_query
+from resources.lib.utils import get_logger, json_query, log_timing
 from resources.lib.ui.browse_window import (
     BrowseWindow, BrowseWindowConfig, get_skin_xml_file
 )
 from resources.lib.playback.browse_player import BrowseModePlayer
+from resources.lib.data.shows import filter_shows_by_duration
 
 if TYPE_CHECKING:
     from resources.lib.utils import StructuredLogger
@@ -74,6 +77,53 @@ def _get_log() -> StructuredLogger:
 WINDOW = xbmcgui.Window(KODI_HOME_WINDOW_ID)
 
 
+def _fetch_show_art(logger: 'StructuredLogger') -> None:
+    """
+    Fetch and cache show art to window properties.
+    
+    Called when Browse mode opens. Uses a session flag to avoid re-fetching
+    art multiple times in the same Kodi session.
+    
+    Art key mapping:
+        - Kodi returns: art.poster, art.fanart
+        - Cached as: EasyTV.{showid}.Art(tvshow.poster), EasyTV.{showid}.Art(tvshow.fanart)
+    
+    Args:
+        logger: Logger instance for timing instrumentation.
+    """
+    # Check session flag - skip if already fetched this session
+    if WINDOW.getProperty(PROP_ART_FETCHED) == 'true':
+        logger.debug("Art already fetched this session, skipping")
+        return
+    
+    # Fetch art for all shows
+    with log_timing(logger, "art_fetch") as timer:
+        result = json_query(build_shows_art_query())
+        timer.mark("query")
+        
+        shows = result.get('tvshows', [])
+        
+        # Cache art to window properties
+        for show in shows:
+            show_id = show.get('tvshowid')
+            if show_id is None:
+                continue
+            
+            art = show.get('art', {})
+            prop_prefix = f"EasyTV.{show_id}"
+            
+            # Map Kodi art keys to window property format
+            # poster -> Art(tvshow.poster), fanart -> Art(tvshow.fanart)
+            WINDOW.setProperty(f"{prop_prefix}.Art(tvshow.poster)", art.get('poster', ''))
+            WINDOW.setProperty(f"{prop_prefix}.Art(tvshow.fanart)", art.get('fanart', ''))
+        
+        timer.mark("cache")
+    
+    # Set session flag
+    WINDOW.setProperty(PROP_ART_FETCHED, 'true')
+    logger.debug("Art fetched and cached", show_count=len(shows))
+
+
 @dataclass
 class EpisodeListConfig:
     """
@@ -86,6 +136,9 @@ class EpisodeListConfig:
         skin_return: Whether to return to the window after playback
         excl_random_order_shows: Whether to exclude random-order shows
         script_path: Path to the addon for locating resources
+        duration_filter_enabled: Whether to filter shows by episode duration
+        duration_min: Minimum episode duration in minutes (0 = no minimum)
+        duration_max: Maximum episode duration in minutes (0 = no maximum)
     """
     skin: int = 0
     limit_shows: bool = False
@@ -93,6 +146,9 @@ class EpisodeListConfig:
     skin_return: bool = True
     excl_random_order_shows: bool = False
     script_path: str = ''
+    duration_filter_enabled: bool = False
+    duration_min: int = 0
+    duration_max: int = 0
 
 
 def build_episode_list(
@@ -146,7 +202,18 @@ def build_episode_list(
     else:
         filtered_data = show_data
     
+    # Apply duration filter if enabled
+    if config.duration_filter_enabled:
+        filtered_data = filter_shows_by_duration(
+            filtered_data,
+            min_minutes=config.duration_min,
+            max_minutes=config.duration_max
+        )
+    
     log.info("Browse mode starting", event="browse.start", show_count=len(filtered_data))
+    
+    # Fetch show art if not already cached this session
+    _fetch_show_art(log)
     
     # Get appropriate XML file for skin
     xmlfile = get_skin_xml_file(config.skin)

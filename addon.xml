@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <addon id="script.easytv"
        name="EasyTV"
-       version="1.1.1"
+       version="1.2.0"
        provider-name="KODeKarnage, Rouzax">
     <requires>
         <import addon="xbmc.python" version="3.0.1"/>
@@ -26,15 +26,11 @@
         <forum>https://forum.kodi.tv/showthread.php?tid=383902</forum>
         <website>https://github.com/Rouzax/script.easytv</website>
         <source>https://github.com/Rouzax/script.easytv</source>
-        <news>v1.1.1 (2026-01-20)
-- Fixed: Clone settings showing blank labels
-- Fixed: Clone missing v1.1.0 settings
-- Fixed: Clone version now matches parent
-- Fixed: Clone defaults now match parent
-- Fixed: Clone logs now identify which clone is running
-- Added: Safeguards to prevent overwriting addons
-- Changed: Clone naming keyboard pre-fills "EasyTV - "
-- Improved: Better action logging (content, counts)
+        <news>v1.2.0 (2026-01-21)
+- New: Episode duration filter for shows
+- New: Both mode lazy queue (dynamic playlist)
+- Performance: Duration cache reduces startup by ~7-8 seconds
+- Fixed: Library scan refresh, selector sorting, clone issues
 - See changelog.txt for full details</news>
         <assets>
             <icon>icon.png</icon>

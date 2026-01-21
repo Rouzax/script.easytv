@@ -228,3 +228,32 @@ DEFAULT_ADDON_ID = "script.easytv"
 PROP_PLAYLIST_CONFIG = "EasyTV.playlist_config"
 # Flag to trigger playlist regeneration from daemon
 PROP_PLAYLIST_REGENERATE = "EasyTV.playlist_regenerate"
+
+# =============================================================================
+# Browse Mode Window Properties
+# =============================================================================
+# Session flag indicating show art has been fetched (cleared on library scan)
+PROP_ART_FETCHED = "EasyTV.ArtFetched"
+
+# =============================================================================
+# Duration Filter Settings
+# =============================================================================
+SETTING_DURATION_FILTER_ENABLED = "duration_filter_enabled"
+SETTING_DURATION_MIN = "duration_min"
+SETTING_DURATION_MAX = "duration_max"
+
+# =============================================================================
+# Duration Cache
+# =============================================================================
+# Cache file for storing median episode durations per show
+DURATION_CACHE_FILENAME = "duration_cache.json"
+# Schema version for cache file format (increment on breaking changes)
+DURATION_CACHE_VERSION = 1
+
+# =============================================================================
+# Lazy Queue (Both Mode) Settings
+# =============================================================================
+# JSON-encoded session state for lazy queue playlist
+PROP_LAZY_QUEUE_SESSION = "EasyTV.lazy_queue_session"
+# Number of items to maintain in playlist buffer
+LAZY_QUEUE_BUFFER_SIZE = 3

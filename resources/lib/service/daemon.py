@@ -38,10 +38,12 @@ Logging:
     
     Timing events (DEBUG):
         - bulk_refresh: Startup/rescan with all shows
-            Phases: show_query_ms, episode_query_ms, processing_ms, playlists_ms
-            Example: bulk_refresh completed | duration_ms=1500, show_count=277,
-                     show_query_ms=50, episode_query_ms=800, processing_ms=600,
-                     playlists_ms=50
+            Phases: show_query_ms, episode_query_ms, processing_ms,
+                    duration_compare_ms, duration_calc_ms, duration_save_ms, playlists_ms
+            Example: bulk_refresh completed | duration_ms=2500, show_count=277,
+                     show_query_ms=50, episode_query_ms=1900, processing_ms=400,
+                     duration_compare_ms=10, duration_calc_ms=100, duration_save_ms=10, playlists_ms=30
+            Note: duration_calc_ms is low when most shows are cached; higher on first run.
         - show_refresh: Single show refresh (playback tracking)
             Phases: show_query_ms, episode_query_ms, processing_ms
             Example: show_refresh completed | duration_ms=45, show_count=1,
@@ -54,6 +56,7 @@ from __future__ import annotations
 import ast
 import json
 import random
+import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
 
@@ -102,7 +105,8 @@ from resources.lib.data.queries import (
     get_unwatched_shows_query,
     get_shows_by_lastplayed_query,
     build_show_episodes_query,
-    build_all_episodes_query,
+    build_all_episodes_no_streamdetails_query,
+    build_show_episodes_with_streamdetails_query,
     build_episode_prompt_info_query,
 )
 from resources.lib.data.shows import (
@@ -115,10 +119,17 @@ from resources.lib.data.smart_playlists import (
     start_playlist_batch,
     flush_playlist_batch,
 )
+from resources.lib.data.duration_cache import (
+    load_duration_cache,
+    save_duration_cache,
+    calculate_median_duration,
+    get_shows_needing_calculation,
+    build_updated_cache,
+)
 from resources.lib.service.settings import load_settings, ServiceSettings
 from resources.lib.service.library_monitor import LibraryMonitor
 from resources.lib.service.playback_monitor import PlaybackMonitor, PlaybackSettings
-from resources.lib.service.episode_tracker import EpisodeTracker
+from resources.lib.service.episode_tracker import EpisodeTracker, PROP_DURATION
 
 if TYPE_CHECKING:
     from resources.lib.utils import StructuredLogger
@@ -854,6 +865,9 @@ class ServiceDaemon:
             language=config_dict.get('language', 'English'),
             movie_playlist=config_dict.get('movie_playlist'),
             unwatched_ratio=config_dict.get('unwatched_ratio', 50),
+            duration_filter_enabled=config_dict.get('duration_filter_enabled', False),
+            duration_min=config_dict.get('duration_min', 0),
+            duration_max=config_dict.get('duration_max', 0),
         )
         
         # Rebuild the playlist
@@ -1004,10 +1018,11 @@ class ServiceDaemon:
                 timer.mark("show_query")
             
             # For bulk operations, fetch all episodes in one query
+            # Use the fast query without streamdetails - duration cache handles that separately
             episodes_by_show: Dict[int, List[Dict[str, Any]]] = {}
             if bulk and show_lw:
                 showids_set = set(show_lw)
-                all_episodes_result = json_query(build_all_episodes_query(), True)
+                all_episodes_result = json_query(build_all_episodes_no_streamdetails_query(), True)
                 
                 # Group episodes by show ID
                 for ep in all_episodes_result.get('episodes', []):
@@ -1023,7 +1038,15 @@ class ServiceDaemon:
             if bulk and self._settings.maintainsmartplaylist:
                 start_playlist_batch()
             
+            # Timing instrumentation for processing breakdown
+            _proc_shows_iterated = 0
+            _proc_shows_with_eps = 0
+            _proc_cache_time_ms = 0
+            _proc_logic_time_ms = 0
+            
             for my_showid in show_lw:
+                _proc_shows_iterated += 1
+                _logic_start = time.perf_counter()
                 service_heartbeat()
                 
                 # Get episodes: from pre-fetched bulk data or per-show query
@@ -1038,6 +1061,7 @@ class ServiceDaemon:
                 if not eps:
                     continue
                 
+                _proc_shows_with_eps += 1
                 all_unplayed = []
                 season = FIRST_REGULAR_SEASON
                 episode = EPISODE_INITIAL_VALUE
@@ -1134,7 +1158,11 @@ class ServiceDaemon:
                     x['episodeid'] for x in offdeck_eps
                 ] if offdeck_eps else []
                 
+                # Track logic time (everything before cache)
+                _proc_logic_time_ms += int((time.perf_counter() - _logic_start) * 1000)
+                
                 # Cache episode data in window properties
+                _cache_start = time.perf_counter()
                 self._episode_tracker.cache_next_episode(
                     on_deck_epid, my_showid,
                     on_deck_list, off_deck_list,
@@ -1143,14 +1171,107 @@ class ServiceDaemon:
                     quiet=bulk,
                     ep_data=selected_ep_data
                 )
+                _proc_cache_time_ms += int((time.perf_counter() - _cache_start) * 1000)
                 
                 # Add to tracked shows
                 if my_showid not in self._state.shows_with_next_episodes:
                     self._state.shows_with_next_episodes.append(my_showid)
             
+            # Log processing breakdown
+            if bulk:
+                self._log.debug(
+                    "Processing loop breakdown",
+                    shows_iterated=_proc_shows_iterated,
+                    shows_with_episodes=_proc_shows_with_eps,
+                    logic_ms=_proc_logic_time_ms,
+                    cache_ms=_proc_cache_time_ms
+                )
+            
             # Mark end of main processing loop (for bulk timing breakdown)
             if timer is not None:
                 timer.mark("processing")
+            
+            # Cache episode duration for each show (bulk mode only)
+            # Uses persistent cache to avoid querying streamdetails for every show
+            if bulk and episodes_by_show:
+                # Load existing cache
+                duration_cache = load_duration_cache()
+                
+                # Count episodes per show
+                current_episode_counts: Dict[int, int] = {
+                    show_id: len(eps) for show_id, eps in episodes_by_show.items()
+                }
+                
+                # Extract show titles from first episode of each show (for cache readability)
+                show_titles: Dict[int, str] = {
+                    show_id: eps[0].get('showtitle', '')
+                    for show_id, eps in episodes_by_show.items()
+                    if eps
+                }
+                
+                # Determine which shows need duration recalculation
+                shows_needing_calc = get_shows_needing_calculation(
+                    duration_cache, current_episode_counts
+                )
+                
+                if timer is not None:
+                    timer.mark("duration_compare")
+                
+                # Query streamdetails only for shows that need recalculation
+                new_durations: Dict[int, int] = {}
+                if shows_needing_calc:
+                    for show_id in shows_needing_calc:
+                        service_heartbeat()
+                        # Query this show's episodes with streamdetails
+                        ep_result = json_query(
+                            build_show_episodes_with_streamdetails_query(show_id),
+                            True
+                        )
+                        episodes_with_stream = ep_result.get('episodes', [])
+                        # Calculate median duration
+                        median = calculate_median_duration(episodes_with_stream)
+                        new_durations[show_id] = median
+                    
+                    self._log.debug(
+                        "Duration recalculation complete",
+                        shows_recalculated=len(shows_needing_calc),
+                        shows_from_cache=len(current_episode_counts) - len(shows_needing_calc)
+                    )
+                
+                if timer is not None:
+                    timer.mark("duration_calc")
+                
+                # Build updated cache (merges old + new, prunes removed shows)
+                updated_cache = build_updated_cache(
+                    duration_cache, current_episode_counts, new_durations, show_titles
+                )
+                
+                # Write all durations to window properties
+                cached_shows = updated_cache.get('shows', {})
+                for show_id in current_episode_counts.keys():
+                    show_id_str = str(show_id)
+                    if show_id_str in cached_shows:
+                        duration = cached_shows[show_id_str].get('median_seconds', 0)
+                    elif show_id in new_durations:
+                        # Show calculated but not cached (median was 0)
+                        duration = new_durations[show_id]
+                    else:
+                        duration = 0
+                    prop_key = f"EasyTV.{show_id}.{PROP_DURATION}"
+                    self._window.setProperty(prop_key, str(duration))
+                
+                # Save updated cache
+                save_duration_cache(updated_cache)
+                
+                self._log.debug(
+                    "Duration cache updated",
+                    total_shows=len(current_episode_counts),
+                    cached_shows=len(cached_shows),
+                    shows_recalculated=len(new_durations)
+                )
+                
+                if timer is not None:
+                    timer.mark("duration_save")
             
             # Flush batched playlist writes
             if bulk and self._settings.maintainsmartplaylist:

@@ -64,7 +64,6 @@ PROP_EPISODE = "Episode"
 PROP_EPISODE_NO = "EpisodeNo"
 PROP_SEASON = "Season"
 PROP_TVSHOW_TITLE = "TVshowTitle"
-PROP_ART_THUMB = "Art(thumb)"
 PROP_ART_POSTER = "Art(tvshow.poster)"
 PROP_RESUME = "Resume"
 PROP_PERCENT_PLAYED = "PercentPlayed"
@@ -79,6 +78,7 @@ PROP_ART_FANART = "Art(tvshow.fanart)"
 PROP_PREMIERED = "Premiered"
 PROP_PLOT = "Plot"
 PROP_IS_SKIPPED = "IsSkipped"
+PROP_DURATION = "Duration"
 
 # All properties that need to be copied during swap_over
 EPISODE_PROPERTIES = [
@@ -87,7 +87,6 @@ EPISODE_PROPERTIES = [
     PROP_EPISODE_NO,
     PROP_SEASON,
     PROP_TVSHOW_TITLE,
-    PROP_ART_THUMB,
     PROP_ART_POSTER,
     PROP_RESUME,
     PROP_PERCENT_PLAYED,
@@ -321,7 +320,6 @@ class EpisodeTracker:
         self._set_property(normalized_show_id, PROP_EPISODE_NO, episode_no)
         self._set_property(normalized_show_id, PROP_SEASON, season)
         self._set_property(normalized_show_id, PROP_TVSHOW_TITLE, ep_details.get('showtitle', ''))
-        self._set_property(normalized_show_id, PROP_ART_THUMB, art.get('thumb', ''))
         self._set_property(normalized_show_id, PROP_ART_POSTER, art.get('tvshow.poster', ''))
         self._set_property(normalized_show_id, PROP_RESUME, resume)
         self._set_property(normalized_show_id, PROP_PERCENT_PLAYED, percent_played)

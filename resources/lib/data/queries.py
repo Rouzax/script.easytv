@@ -548,23 +548,62 @@ def build_show_details_query(tvshowid: int) -> dict[str, Any]:
     }
 
 
+def build_shows_art_query() -> dict[str, Any]:
+    """
+    Get art for all TV shows.
+    
+    Used for lazy-loading art when Browse mode opens. This is significantly
+    faster than including art in the bulk episode query (~1s vs ~10s).
+    
+    Returns art keys:
+        - poster: Show poster image
+        - fanart: Show fanart/background image
+    
+    Note:
+        Caller must map keys when caching to window properties:
+        - art.poster -> Art(tvshow.poster)
+        - art.fanart -> Art(tvshow.fanart)
+    
+    Returns:
+        Query for all shows with art property only.
+    """
+    return {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "VideoLibrary.GetTVShows",
+        "params": {
+            "properties": ["art"]
+        }
+    }
+
+
 # =============================================================================
 # Episode Queries
 # =============================================================================
 
-def build_all_episodes_query() -> dict[str, Any]:
+def build_all_episodes_no_streamdetails_query() -> dict[str, Any]:
     """
-    Get all episodes from all TV shows with full details.
+    Get all episodes from all TV shows WITHOUT streamdetails.
     
-    Used for bulk refresh at startup/rescan to minimize JSON-RPC calls.
-    Returns episodes for ALL shows; caller filters to relevant show IDs.
+    Optimized query for bulk refresh when duration cache is available.
+    Excludes streamdetails property which adds ~8 seconds to query time
+    on large libraries (~7000 episodes).
     
     Properties included:
         - For next-episode calculation: season, episode, playcount, tvshowid, file
-        - For display caching: title, showtitle, plot, firstaired, resume, art
+        - For display caching: title, showtitle, plot, firstaired, resume
+    
+    Performance:
+        - With streamdetails: ~10 seconds for 7000 episodes
+        - Without streamdetails: ~2 seconds for 7000 episodes
+    
+    Note:
+        Use this query when duration cache is available. Shows needing
+        duration recalculation should be queried individually with
+        build_show_episodes_with_streamdetails_query().
     
     Returns:
-        Query for all episodes with calculation and display fields.
+        Query for all episodes without streamdetails.
     """
     return {
         "jsonrpc": "2.0",
@@ -574,9 +613,41 @@ def build_all_episodes_query() -> dict[str, Any]:
             "properties": [
                 # For next-episode calculation
                 "season", "episode", "playcount", "tvshowid", "file",
-                # For display caching
-                "title", "showtitle", "plot", "firstaired", "resume", "art"
+                # For display caching (art loaded lazily via build_shows_art_query)
+                "title", "showtitle", "plot", "firstaired", "resume"
             ]
+        }
+    }
+
+
+def build_show_episodes_with_streamdetails_query(tvshowid: int) -> dict[str, Any]:
+    """
+    Get all episodes for a TV show WITH streamdetails.
+    
+    Used for calculating median episode duration for a single show.
+    Only queries the specific show, making it efficient for selective
+    duration recalculation when episode counts change.
+    
+    Args:
+        tvshowid: The Kodi TV show ID.
+    
+    Properties included:
+        - tvshowid: For grouping verification
+        - streamdetails: For duration extraction (video[0].duration)
+    
+    Performance:
+        - ~2ms per episode (308 episodes = ~665ms)
+    
+    Returns:
+        Query for single show's episodes with streamdetails.
+    """
+    return {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "VideoLibrary.GetEpisodes",
+        "params": {
+            "tvshowid": tvshowid,
+            "properties": ["tvshowid", "streamdetails"]
         }
     }
 
