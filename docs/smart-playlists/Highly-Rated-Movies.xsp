@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<smartplaylist type="movies">
+    <n>Highly Rated Movies</n>
+    <match>all</match>
+    <rule field="rating" operator="greaterthan">
+        <value>6.9</value>
+    </rule>
+</smartplaylist>

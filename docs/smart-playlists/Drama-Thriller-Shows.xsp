@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<smartplaylist type="tvshows">
+    <n>Drama and Thriller Shows</n>
+    <match>one</match>
+    <rule field="genre" operator="is">
+        <value>Drama</value>
+    </rule>
+    <rule field="genre" operator="is">
+        <value>Thriller</value>
+    </rule>
+    <rule field="genre" operator="is">
+        <value>Crime</value>
+    </rule>
+</smartplaylist>
