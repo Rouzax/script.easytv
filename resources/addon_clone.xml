@@ -2,7 +2,7 @@
 <addon id="script.easytv.SANNAME"
        name="CLONENAME"
        version="1.0.0"
-       provider-name="KODeKarnage, Rouzax">
+       provider-name="Rouzax, KODeKarnage">
     <requires>
         <import addon="xbmc.python" version="3.0.1"/>
     </requires>
