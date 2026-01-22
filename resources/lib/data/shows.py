@@ -581,6 +581,65 @@ def get_show_category(episode_number: int) -> str:
     return CATEGORY_CONTINUE_WATCHING
 
 
+def get_premiere_category(season_number: int, episode_number: int) -> str:
+    """
+    Determine which premiere playlist a show belongs to, if any.
+    
+    - S01E01 = Show Premiere (brand new show)
+    - S02E01+ = Season Premiere (new season of existing show)
+    - Episode > 1 = Not a premiere (empty string)
+    
+    Args:
+        season_number: The season number (1, 2, 3, etc.)
+        episode_number: The episode number (1, 2, 3, etc.)
+    
+    Returns:
+        CATEGORY_SHOW_PREMIERE if S01E01
+        CATEGORY_SEASON_PREMIERE if S02E01+
+        Empty string if episode > 1 (not a premiere)
+    """
+    from resources.lib.constants import (
+        CATEGORY_SHOW_PREMIERE,
+        CATEGORY_SEASON_PREMIERE,
+    )
+    
+    # Not a premiere if episode > 1
+    if episode_number != SEASON_START_EPISODE:
+        return ""
+    
+    # S01E01 = Show Premiere
+    if season_number == SEASON_START_EPISODE:
+        return CATEGORY_SHOW_PREMIERE
+    
+    # S02E01+ = Season Premiere
+    return CATEGORY_SEASON_PREMIERE
+
+
+def _get_playlist_filename(file_path: str) -> str:
+    """
+    Get the appropriate filename for smart playlist rules.
+    
+    For plugin URLs (like Jellyfin), returns the full path since these require
+    the complete plugin:// URL for playback. For local files, returns just
+    the basename to match Kodi's default filename matching.
+    
+    Args:
+        file_path: Full file path or plugin URL.
+    
+    Returns:
+        Full path for plugin:// URLs, basename for local files.
+    
+    Examples:
+        _get_playlist_filename("plugin://plugin.video.jellyfin/...")
+            -> "plugin://plugin.video.jellyfin/..."
+        _get_playlist_filename("/media/TV/Show/episode.mkv")
+            -> "episode.mkv"
+    """
+    if file_path.startswith('plugin://'):
+        return file_path
+    return os.path.basename(file_path)
+
+
 def fetch_show_episode_data(tvshowid: int) -> Optional[dict[str, Any]]:
     """
     Retrieve show data from Window properties for smart playlist operations.
@@ -592,15 +651,17 @@ def fetch_show_episode_data(tvshowid: int) -> Optional[dict[str, Any]]:
         tvshowid: The TV show ID.
     
     Returns:
-        Dict with keys: showname, filename, episode_number, episodeno
-        Returns None if essential data (showname) is not available.
+        Dict with keys: filename, episode_number, season_number, episodeno
+        Returns None if the show is not available (no title found).
     """
     showname = WINDOW.getProperty("EasyTV.%s.TVshowTitle" % tvshowid)
-    filename = os.path.basename(WINDOW.getProperty("EasyTV.%s.File" % tvshowid))
+    filename = _get_playlist_filename(WINDOW.getProperty("EasyTV.%s.File" % tvshowid))
     episodeno = WINDOW.getProperty("EasyTV.%s.EpisodeNo" % tvshowid)
     episode_str = WINDOW.getProperty("EasyTV.%s.Episode" % tvshowid)
+    season_str = WINDOW.getProperty("EasyTV.%s.Season" % tvshowid)
     
     # Fallback: lookup show name from Kodi library if Window property not set
+    # Used only to validate the show exists
     if not showname:
         result = json_query(build_show_details_query(tvshowid), True)
         showname = result.get('tvshowdetails', {}).get('title', '')
@@ -614,10 +675,16 @@ def fetch_show_episode_data(tvshowid: int) -> Optional[dict[str, Any]]:
     except (ValueError, TypeError):
         episode_number = SEASON_START_EPISODE
     
+    # Parse season number, default to 1 if parsing fails
+    try:
+        season_number = int(season_str) if season_str else SEASON_START_EPISODE
+    except (ValueError, TypeError):
+        season_number = SEASON_START_EPISODE
+    
     return {
-        'showname': showname,
         'filename': filename,
         'episode_number': episode_number,
+        'season_number': season_number,
         'episodeno': episodeno
     }
 

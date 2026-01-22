@@ -1,6 +1,29 @@
 EasyTV Changelog
 ================
 
+v1.2.1 (2026-01-22)
+-------------------
+New Features:
+  - Two new smart playlists for premiere episodes:
+    - "EasyTV - Show Premieres" — Shows at S01E01 (brand new shows to start)
+    - "EasyTV - Season Premieres" — Shows at S02E01+ (new seasons of existing shows)
+  - Smart playlists now work with Jellyfin and other plugin-based libraries
+    - Plugin URLs (plugin://...) are now preserved in playlist rules
+    - Previously only local file paths worked correctly
+
+Bug Fixes:
+  - Fixed smart playlists breaking with special characters in filenames
+    - Characters like & < > are now properly XML-escaped
+    - Example: "Pam & Tommy" now works correctly
+  - Fixed potential XML parsing issues with show names containing "--"
+    - Playlist entries now use numeric show IDs instead of show names as markers
+
+Internal:
+  - Smart playlist format versioning for safe upgrades
+    - Playlists automatically regenerate when format changes
+    - Version tracked in: special://profile/addon_data/script.easytv/playlist_format.json
+  - Removed unused 'showname' field from internal playlist data structures
+
 v1.2.0 (2026-01-21)
 -------------------
 New Features:

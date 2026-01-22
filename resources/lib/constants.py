@@ -105,23 +105,34 @@ WATCHED_PLAYCOUNT = 1
 # =============================================================================
 # Smart Playlist Configuration
 # =============================================================================
+# Format version for playlist migration (increment when format changes)
+PLAYLIST_FORMAT_VERSION = 2
+PLAYLIST_FORMAT_FILENAME = "playlist_format.json"
+
 # Playlist filenames (stored in special://profile/playlists/video/)
 PLAYLIST_ALL_SHOWS = "EasyTV - All Shows.xsp"
 PLAYLIST_CONTINUE_WATCHING = "EasyTV - Continue Watching.xsp"
 PLAYLIST_START_FRESH = "EasyTV - Start Fresh.xsp"
+PLAYLIST_SHOW_PREMIERES = "EasyTV - Show Premieres.xsp"
+PLAYLIST_SEASON_PREMIERES = "EasyTV - Season Premieres.xsp"
 
 # Display names for playlists (shown in Kodi's playlist browser)
 PLAYLIST_NAME_ALL_SHOWS = "EasyTV - All Shows"
 PLAYLIST_NAME_CONTINUE_WATCHING = "EasyTV - Continue Watching"
 PLAYLIST_NAME_START_FRESH = "EasyTV - Start Fresh"
+PLAYLIST_NAME_SHOW_PREMIERES = "EasyTV - Show Premieres"
+PLAYLIST_NAME_SEASON_PREMIERES = "EasyTV - Season Premieres"
 
 # Episode threshold for categorization
 # Episode 1 (any season) = "Start Fresh", Episode > 1 = "Continue Watching"
+# S01E01 = "Show Premiere", S02E01+ = "Season Premiere"
 SEASON_START_EPISODE = 1
 
 # Category identifiers (returned by categorization logic)
 CATEGORY_START_FRESH = "start_fresh"
 CATEGORY_CONTINUE_WATCHING = "continue_watching"
+CATEGORY_SHOW_PREMIERE = "show_premiere"
+CATEGORY_SEASON_PREMIERE = "season_premiere"
 
 # XML template components for smart playlist files
 # Header: XML declaration + smartplaylist open + name + match rule
@@ -129,8 +140,8 @@ PLAYLIST_XML_HEADER = '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?><
 # Footer: order rule + smartplaylist close
 PLAYLIST_XML_FOOTER = '<order direction="ascending">random</order></smartplaylist>'
 # Show entry: comment-wrapped rule for a single show's episode
-# Format: <!--ShowName--><rule...>filename</rule><!--END-->
-PLAYLIST_XML_SHOW_ENTRY = '<!--{show}--><rule field="filename" operator="is"> <value>{filename}</value> </rule><!--END-->\n'
+# Format: <!--show_id--><rule...>filename</rule>
+PLAYLIST_XML_SHOW_ENTRY = '<!--{show_id}--><rule field="filename" operator="is"> <value>{filename}</value> </rule>\n'
 
 # =============================================================================
 # Limits

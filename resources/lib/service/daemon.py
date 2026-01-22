@@ -81,10 +81,17 @@ from resources.lib.constants import (
     PLAYLIST_ALL_SHOWS,
     PLAYLIST_CONTINUE_WATCHING,
     PLAYLIST_START_FRESH,
+    PLAYLIST_SHOW_PREMIERES,
+    PLAYLIST_SEASON_PREMIERES,
     PLAYLIST_NAME_ALL_SHOWS,
     PLAYLIST_NAME_CONTINUE_WATCHING,
     PLAYLIST_NAME_START_FRESH,
+    PLAYLIST_NAME_SHOW_PREMIERES,
+    PLAYLIST_NAME_SEASON_PREMIERES,
+    PLAYLIST_FORMAT_VERSION,
     CATEGORY_START_FRESH,
+    CATEGORY_SHOW_PREMIERE,
+    CATEGORY_SEASON_PREMIERE,
     # Playlist continuation
     PROP_PLAYLIST_CONFIG,
     PROP_PLAYLIST_REGENERATE,
@@ -111,6 +118,7 @@ from resources.lib.data.queries import (
 )
 from resources.lib.data.shows import (
     get_show_category,
+    get_premiere_category,
     fetch_show_episode_data,
 )
 from resources.lib.data.smart_playlists import (
@@ -118,6 +126,9 @@ from resources.lib.data.smart_playlists import (
     update_show_in_playlists,
     start_playlist_batch,
     flush_playlist_batch,
+    load_playlist_format_version,
+    save_playlist_format_version,
+    delete_easytv_playlists,
 )
 from resources.lib.data.duration_cache import (
     load_duration_cache,
@@ -880,6 +891,49 @@ class ServiceDaemon:
         
         self._log.info("Playlist regenerated", event="playlist.regenerated")
     
+    def _check_playlist_format_version(self) -> None:
+        """
+        Check playlist format version and migrate if needed.
+        
+        If the stored format version doesn't match the current version,
+        deletes all existing playlists so they will be regenerated fresh
+        during bulk_refresh.
+        
+        This ensures playlists are always in the current format after
+        addon updates that change the playlist structure.
+        """
+        if not self._settings.maintainsmartplaylist:
+            return
+        
+        stored_version = load_playlist_format_version()
+        
+        if stored_version != PLAYLIST_FORMAT_VERSION:
+            self._log.info(
+                "Playlist format version mismatch, migrating",
+                event="playlist.version_mismatch",
+                stored_version=stored_version,
+                current_version=PLAYLIST_FORMAT_VERSION
+            )
+            
+            # Delete old playlists
+            deleted_count = delete_easytv_playlists()
+            
+            # Save new version (will be confirmed after bulk_refresh completes)
+            addon_version = self._addon.getAddonInfo('version')
+            save_playlist_format_version(PLAYLIST_FORMAT_VERSION, addon_version)
+            
+            self._log.info(
+                "Playlist migration complete",
+                event="playlist.migration_complete",
+                deleted_count=deleted_count,
+                new_version=PLAYLIST_FORMAT_VERSION
+            )
+        else:
+            self._log.debug(
+                "Playlist format version OK",
+                version=PLAYLIST_FORMAT_VERSION
+            )
+    
     def _initial_library_scan(self) -> None:
         """
         Perform initial library scan with retry logic.
@@ -899,6 +953,9 @@ class ServiceDaemon:
         - Kodi abort requested
         """
         self._log.debug("Starting initial library scan")
+        
+        # Check playlist format version before bulk refresh
+        self._check_playlist_format_version()
         
         for attempt in range(DB_STARTUP_MAX_RETRIES):
             # Check for abort
@@ -1301,10 +1358,12 @@ class ServiceDaemon:
         """
         Update smart playlists for a TV show.
         
-        Maintains three smart playlists:
+        Maintains five smart playlists:
         - "All Shows": Every show with an ondeck episode
         - "Continue Watching": Shows where next episode > 1
         - "Start Fresh": Shows where next episode = 1
+        - "Show Premieres": Shows at S01E01 (brand new shows)
+        - "Season Premieres": Shows at S02E01+ (new season)
         
         Args:
             tvshowid: The TV show ID.
@@ -1314,52 +1373,69 @@ class ServiceDaemon:
         if not self._settings.maintainsmartplaylist or tvshowid == 'temp':
             return
         
-        show_data = fetch_show_episode_data(tvshowid)
-        if not show_data:
+        # Ensure tvshowid is an integer for playlist operations
+        try:
+            show_id = int(tvshowid)
+        except (ValueError, TypeError):
             if not quiet:
                 self._log.debug(
-                    "Smart playlist update skipped - no show data",
+                    "Smart playlist update skipped - invalid show ID",
                     show_id=tvshowid
                 )
             return
         
-        showname = show_data['showname']
+        show_data = fetch_show_episode_data(show_id)
+        if not show_data:
+            if not quiet:
+                self._log.debug(
+                    "Smart playlist update skipped - no show data",
+                    show_id=show_id
+                )
+            return
+        
         filename = show_data['filename']
         episode_number = show_data['episode_number']
+        season_number = show_data['season_number']
         episodeno = show_data['episodeno']
         
         if remove:
             remove_show_from_all_playlists(
-                showname,
+                show_id,
                 PLAYLIST_ALL_SHOWS, PLAYLIST_NAME_ALL_SHOWS,
                 PLAYLIST_CONTINUE_WATCHING, PLAYLIST_NAME_CONTINUE_WATCHING,
                 PLAYLIST_START_FRESH, PLAYLIST_NAME_START_FRESH,
+                PLAYLIST_SHOW_PREMIERES, PLAYLIST_NAME_SHOW_PREMIERES,
+                PLAYLIST_SEASON_PREMIERES, PLAYLIST_NAME_SEASON_PREMIERES,
                 quiet=quiet
             )
             if not quiet:
                 self._log.debug(
                     "Show removed from smart playlists",
-                    show_id=tvshowid,
-                    show_name=showname
+                    show_id=show_id
                 )
         else:
             category = get_show_category(episode_number)
+            premiere_category = get_premiere_category(season_number, episode_number)
             
             update_show_in_playlists(
-                showname, filename, category,
+                show_id, filename, category, premiere_category,
                 PLAYLIST_ALL_SHOWS, PLAYLIST_NAME_ALL_SHOWS,
                 PLAYLIST_CONTINUE_WATCHING, PLAYLIST_NAME_CONTINUE_WATCHING,
                 PLAYLIST_START_FRESH, PLAYLIST_NAME_START_FRESH,
+                PLAYLIST_SHOW_PREMIERES, PLAYLIST_NAME_SHOW_PREMIERES,
+                PLAYLIST_SEASON_PREMIERES, PLAYLIST_NAME_SEASON_PREMIERES,
                 CATEGORY_START_FRESH,
+                CATEGORY_SHOW_PREMIERE,
+                CATEGORY_SEASON_PREMIERE,
                 episodeno=episodeno,
                 quiet=quiet
             )
             if not quiet:
                 self._log.debug(
                     "Show added to smart playlists",
-                    show_id=tvshowid,
-                    show_name=showname,
+                    show_id=show_id,
                     category=category,
+                    premiere_category=premiere_category,
                     episode=episodeno
                 )
     
