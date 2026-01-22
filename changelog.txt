@@ -1,6 +1,20 @@
 EasyTV Changelog
 ================
 
+v1.2.2 (2026-01-22)
+------------------------
+Bug Fixes:
+  - Fixed smart playlists not updating when skipping quickly through episodes
+    - Previously, using 10-minute jumps to reach the end of an episode would
+      leave playlists stale because the update was deferred to a processing
+      cycle that never ran after playback ended
+    - Now updates playlists immediately when Kodi marks an episode as watched
+
+Internal:
+  - Removed monitor_override flag mechanism (~48 lines of code removed)
+    - Replaced deferred flag processing with direct refresh calls
+    - Simplifies code path and eliminates race condition
+
 v1.2.1 (2026-01-22)
 -------------------
 New Features:

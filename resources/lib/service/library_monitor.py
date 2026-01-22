@@ -21,7 +21,7 @@ Logging:
 from __future__ import annotations
 
 import ast
-from typing import Callable, List, Optional, TYPE_CHECKING, Union
+from typing import Callable, List, Optional, TYPE_CHECKING
 
 import xbmc
 import xbmcgui
@@ -56,10 +56,6 @@ class LibraryMonitor(xbmc.Monitor):
         on_library_updated: Callback to set library update flag.
         get_random_order_shows: Callback to get current random order shows list.
         on_refresh_show: Callback to refresh a specific show's episodes.
-        set_player_episode_id: Callback to set the player's current episode ID.
-        set_player_show_id: Callback to set the player's current show ID.
-        get_player_episode_id: Callback to get the player's current episode ID.
-        set_monitor_override: Callback to set the monitor override flag.
         logger: Optional logger instance.
     """
     
@@ -70,10 +66,6 @@ class LibraryMonitor(xbmc.Monitor):
         on_library_updated: Callable[[], None],
         get_random_order_shows: GetRandomShowsCallback,
         on_refresh_show: GetEpisodesCallback,
-        set_player_episode_id: Callable[[Union[int, bool]], None],
-        set_player_show_id: Callable[[Union[int, bool]], None],
-        get_player_episode_id: Callable[[], Union[int, bool]],
-        set_monitor_override: Callable[[bool], None],
         logger: Optional[StructuredLogger] = None,
     ):
         """Initialize the library monitor with callbacks."""
@@ -84,10 +76,6 @@ class LibraryMonitor(xbmc.Monitor):
         self._on_library_updated = on_library_updated
         self._get_random_order_shows = get_random_order_shows
         self._on_refresh_show = on_refresh_show
-        self._set_player_episode_id = set_player_episode_id
-        self._set_player_show_id = set_player_show_id
-        self._get_player_episode_id = get_player_episode_id
-        self._set_monitor_override = set_monitor_override
         self._log = logger or get_logger('library_monitor')
         
         # Notification data storage
@@ -122,7 +110,7 @@ class LibraryMonitor(xbmc.Monitor):
         Handle Kodi notifications.
         
         Processes VideoLibrary.OnUpdate notifications to detect:
-        - Episodes marked as watched: Triggers monitor override for next episode
+        - Episodes marked as watched: Refreshes show tracking
         - Episodes marked as unwatched: Refreshes show tracking
         
         Args:
@@ -169,7 +157,7 @@ class LibraryMonitor(xbmc.Monitor):
         Handle an episode being marked as watched.
         
         Checks if the episode is in the current show's ondeck/offdeck list
-        and triggers monitor override if so.
+        and refreshes the show's tracking data if so.
         
         Args:
             episode_id: The ID of the watched episode.
@@ -182,7 +170,6 @@ class LibraryMonitor(xbmc.Monitor):
             return
         
         show_id = result['episodedetails']['tvshowid']
-        self._set_player_episode_id(episode_id)
         
         random_order_shows = self._get_random_order_shows()
         proceed = False
@@ -201,20 +188,13 @@ class LibraryMonitor(xbmc.Monitor):
                 proceed = True
         
         if proceed:
-            self._set_monitor_override(True)
-            # Re-fetch show ID and set it on the player
-            result = json_query(
-                build_episode_show_id_query(self._get_player_episode_id()), True
+            self._log.info(
+                "Refreshing show after watched",
+                event="library.refresh_watched",
+                show_id=show_id,
+                episode_id=episode_id
             )
-            if 'episodedetails' in result:
-                self._set_player_show_id(result['episodedetails']['tvshowid'])
-                self._log.debug(
-                    "Monitor override triggered",
-                    show_id=result['episodedetails']['tvshowid'],
-                    episode_id=self._get_player_episode_id()
-                )
-        else:
-            self._set_player_episode_id(False)
+            self._on_refresh_show([show_id])
     
     def _handle_episode_unwatched(self, episode_id: int) -> None:
         """

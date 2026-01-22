@@ -167,9 +167,6 @@ class ServiceState:
     # Flag set by LibraryMonitor when database updates
     on_lib_update: bool = False
     
-    # Flag for monitor override (external watch marking)
-    monitor_override: bool = False
-    
     # List of show IDs with available next episodes
     shows_with_next_episodes: list[int] = field(default_factory=list)
 
@@ -285,10 +282,6 @@ class ServiceDaemon:
             on_library_updated=lambda: setattr(self._state, 'on_lib_update', True),
             get_random_order_shows=lambda: self._settings.random_order_shows,
             on_refresh_show=self.refresh_show_episodes,
-            set_player_episode_id=lambda epid: setattr(self._player, '_playing_epid', epid),
-            set_player_show_id=lambda showid: setattr(self._player, '_playing_showid', showid),
-            get_player_episode_id=lambda: self._player._playing_epid,
-            set_monitor_override=lambda val: setattr(self._state, 'monitor_override', val),
             logger=self._log,
         )
         
@@ -400,7 +393,6 @@ class ServiceDaemon:
         
         # Reset per-cycle state
         self._player._playing_showid = False
-        self._state.monitor_override = False
         self._is_random_show = False
     
     def _process_episode_playback(self) -> None:
@@ -534,15 +526,6 @@ class ServiceDaemon:
         
         self._player._playing_epid = False
         self._player._playing_showid = False
-        
-        # Handle monitor override (external watch marking)
-        if self._state.monitor_override:
-            self._log.debug("Monitor override: triggering swap (random show)")
-            self._state.monitor_override = False
-            self._player._playing_epid = False
-            self._state.target = False
-            self._pending_next_episode = False
-            self._episode_tracker.transition_to_next_episode(self._current_show_id)
     
     def _process_sequential_show_episode(
         self,
@@ -602,15 +585,6 @@ class ServiceDaemon:
                 episode_id=self._pending_next_episode,
                 new_ondeck=new_ondeck
             )
-            
-            # Handle monitor override
-            if self._state.monitor_override:
-                self._log.debug("Monitor override: triggering swap (sequential show)")
-                self._episode_tracker.transition_to_next_episode(self._current_show_id)
-                self._state.monitor_override = False
-                self._player._playing_epid = False
-                self._state.target = False
-                self._pending_next_episode = False
         else:
             # Last episode in list - mark show for removal
             self._log.debug("Last episode in list, marking show for removal")
@@ -708,7 +682,6 @@ class ServiceDaemon:
         self._current_show_id = False
         self._pending_next_episode = False
         self._state.target = False
-        self._state.monitor_override = False
     
     # =========================================================================
     # Show Management Methods
