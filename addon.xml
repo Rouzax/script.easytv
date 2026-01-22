@@ -2,7 +2,7 @@
 <addon id="script.easytv"
        name="EasyTV"
        version="1.2.0"
-       provider-name="KODeKarnage, Rouzax">
+       provider-name="Rouzax, KODeKarnage">
     <requires>
         <import addon="xbmc.python" version="3.0.1"/>
     </requires>
@@ -13,13 +13,11 @@
     </extension>
 
     <extension point="xbmc.service"
-               library="service.py"
-               start="startup"/>
+           library="service.py"/>
 
     <extension point="xbmc.addon.metadata">
         <summary lang="en_GB">No scrolling. No deciding. Just watching.</summary>
         <description lang="en_GB">Tired of scrolling through your library wondering what to watch? EasyTV handles it. It tracks your shows and always knows your next episode. When you're ready for something new, it'll suggest a show you haven't started. Throw in some movies if you want. Just sit down, press play, and enjoy. Built for Kodi 21+.</description>
-        <disclaimer lang="en_GB"></disclaimer>
         <language></language>
         <platform>all</platform>
         <license>GPL-3.0-only</license>
