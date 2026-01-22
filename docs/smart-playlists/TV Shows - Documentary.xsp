@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="tvshows">
-    <n>Currently Running Shows</n>
+    <n>TV Shows - Documentary</n>
     <match>all</match>
-    <rule field="status" operator="is">
-        <value>Continuing</value>
+    <rule field="genre" operator="is">
+        <value>Documentary</value>
     </rule>
 </smartplaylist>

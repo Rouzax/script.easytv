@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="movies">
-    <n>Short Movies Under 100min</n>
+    <n>Movies - Christmas</n>
     <match>all</match>
-    <rule field="time" operator="lessthan">
-        <value>100</value>
+    <rule field="tag" operator="is">
+        <value>christmas</value>
     </rule>
 </smartplaylist>

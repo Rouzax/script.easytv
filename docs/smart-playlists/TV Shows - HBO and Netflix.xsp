@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="tvshows">
-    <n>HBO and Netflix Shows</n>
+    <n>TV Shows - HBO and Netflix</n>
     <match>one</match>
     <rule field="studio" operator="contains">
         <value>HBO</value>

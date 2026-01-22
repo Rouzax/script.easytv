@@ -1,11 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="tvshows">
-    <name>Comedy Shows Only</name>
-    <match>one</match>
+    <n>TV Shows - Comedy</n>
+    <match>all</match>
     <rule field="genre" operator="is">
         <value>Comedy</value>
-    </rule>
-    <rule field="genre" operator="is">
-        <value>Sitcom</value>
     </rule>
 </smartplaylist>

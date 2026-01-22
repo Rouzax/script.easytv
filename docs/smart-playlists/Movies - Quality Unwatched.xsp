@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="movies">
-    <n>Highly Rated Movies</n>
+    <n>Movies - Quality Unwatched</n>
     <match>all</match>
+    <rule field="playcount" operator="is">
+        <value>0</value>
+    </rule>
     <rule field="rating" operator="greaterthan">
-        <value>6.9</value>
+        <value>7</value>
     </rule>
 </smartplaylist>

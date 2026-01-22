@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="movies">
-    <n>Recently Added Movies</n>
+    <n>Movies - Short</n>
     <match>all</match>
-    <rule field="dateadded" operator="inthelast">
-        <value>30 days</value>
+    <rule field="time" operator="lessthan">
+        <value>100</value>
     </rule>
 </smartplaylist>
