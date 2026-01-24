@@ -21,20 +21,21 @@ Logging:
 """
 
 import xbmcaddon
-from resources.lib.utils import get_logger, StructuredLogger
+from resources.lib.utils import get_logger, parse_version, StructuredLogger
 from resources.lib.service.daemon import ServiceDaemon
 
 if __name__ == "__main__":
     addon = xbmcaddon.Addon()
-    version = tuple(int(x) for x in addon.getAddonInfo('version').split('.'))
+    version_str = addon.getAddonInfo('version')
+    version = parse_version(version_str)
     log = get_logger('service')
 
-    log.info("Service started", event="service.start", version=version)
+    log.info("Service started", event="service.start", version=version_str)
 
     daemon = ServiceDaemon(addon=addon, logger=log)
     daemon.load_initial_settings()
     daemon.initialize()
     daemon.run()
 
-    log.info("Service stopped", event="service.stop", version=version)
+    log.info("Service stopped", event="service.stop", version=version_str)
     StructuredLogger.shutdown()

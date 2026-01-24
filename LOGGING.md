@@ -132,7 +132,7 @@ Events follow the pattern: `domain.action`
 | Domain     | Used For            | Example Events                                       |
 | ---------- | ------------------- | ---------------------------------------------------- |
 | `service`  | Service lifecycle   | `service.start`, `service.stop`, `service.init`      |
-| `settings` | Configuration       | `settings.load`, `settings.threshold`                |
+| `settings` | Configuration       | `settings.load`, `settings.migrate`, `settings.id_shift`, `settings.validation_complete`, `settings.orphan_cleanup` |
 | `library`  | Kodi library        | `library.refresh`, `library.fallback`                |
 | `playback` | Video playback      | `playback.start`, `playback.fallback`                |
 | `playlist` | Playlist operations | `playlist.create`, `playlist.start`, `playlist.fail` |

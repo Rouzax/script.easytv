@@ -61,6 +61,8 @@ from resources.lib.constants import (
     CONTROL_OK_BUTTON,
     CONTROL_HEADING,
     CONTROL_LIST,
+    CONTROL_CANCEL_BUTTON,
+    CONTROL_EXTRA_BUTTON2,
 )
 from resources.lib.utils import get_logger, lang, json_query
 
@@ -216,6 +218,21 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
             control_3 = self.getControl(3)
             control_3.setVisible(False)
             ok_button.controlRight(self.name_list)
+            
+            # Hide the Cancel button (ID 7) and Extra button 2 (ID 8)
+            # These buttons cause unintended playback when clicked because
+            # onClick receives their control ID which falls through to list handling
+            try:
+                cancel_button = self.getControl(CONTROL_CANCEL_BUTTON)
+                cancel_button.setVisible(False)
+            except RuntimeError:
+                pass  # Button may not exist in all skins
+            
+            try:
+                extra_button2 = self.getControl(CONTROL_EXTRA_BUTTON2)
+                extra_button2.setVisible(False)
+            except RuntimeError:
+                pass  # Button may not exist in all skins
             
         except RuntimeError:
             # Control 3 doesn't work in some skins - fallback needed
@@ -408,8 +425,13 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         Args:
             controlID: The ID of the clicked control
         """
-        if controlID == CONTROL_OK_BUTTON:
-            # OK button closes without selection
+        self._log.debug("Control clicked", control_id=controlID)
+        
+        # Handle Close/Cancel/Extra buttons - all should close without playback
+        # CONTROL_OK_BUTTON (5): Our "Close" button
+        # CONTROL_CANCEL_BUTTON (7): Standard cancel button (hidden but may still receive clicks)
+        # CONTROL_EXTRA_BUTTON2 (8): Extra button (hidden but may still receive clicks)
+        if controlID in (CONTROL_OK_BUTTON, CONTROL_CANCEL_BUTTON, CONTROL_EXTRA_BUTTON2):
             self._should_close = True
             self.close()
             return

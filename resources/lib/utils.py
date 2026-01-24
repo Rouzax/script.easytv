@@ -31,7 +31,8 @@ import time
 import traceback
 from contextlib import contextmanager
 from datetime import datetime as dt
-from typing import Any, Dict, Generator, Optional, TextIO
+import re
+from typing import Any, Dict, Generator, Optional, TextIO, Tuple
 
 import xbmc
 import xbmcaddon
@@ -48,6 +49,9 @@ from resources.lib.constants import (
     LOG_MAX_VALUE_LENGTH,
     LOG_TIMESTAMP_FORMAT,
     LOG_TIMESTAMP_TRIM,
+    VERSION_PRERELEASE_ALPHA,
+    VERSION_PRERELEASE_BETA,
+    VERSION_PRERELEASE_RELEASE,
 )
 
 
@@ -952,3 +956,125 @@ def parse_lastplayed_date(date_string: str) -> float:
         return time.mktime(dt.timetuple())
     except (ValueError, TypeError):
         return 0.0
+
+
+@contextmanager
+def busy_progress(message: str = "Loading...") -> Generator[None, None, None]:
+    """
+    Show a background progress dialog during slow operations.
+    
+    Uses DialogProgressBG which shows in the corner, non-modal.
+    Automatically closes on exit (normal or exception).
+    
+    Args:
+        message: Text to display in the progress dialog.
+        
+    Yields:
+        None - this is a simple context manager for visual feedback.
+        
+    Example:
+        with busy_progress("Loading shows..."):
+            slow_operation()
+    """
+    dialog = xbmcgui.DialogProgressBG()
+    dialog.create("EasyTV", message)
+    try:
+        yield
+    finally:
+        dialog.close()
+
+
+# =============================================================================
+# Version Parsing
+# =============================================================================
+
+# Regex pattern for version strings: major.minor.patch[~alpha|beta<num>]
+_VERSION_PATTERN = re.compile(r'^(\d+)\.(\d+)\.(\d+)(?:~(alpha|beta)(\d+))?$')
+
+
+def parse_version(version_str: str) -> Tuple[int, int, int, int, int]:
+    """
+    Parse version string with prerelease support.
+    
+    Handles Kodi addon version format including optional ~alpha/~beta suffixes.
+    Returns a 5-tuple suitable for comparison using Python's native tuple ordering.
+    
+    Args:
+        version_str: Version string like "1.2.3", "1.2.3~beta1", "1.2.3~alpha2"
+    
+    Returns:
+        Tuple of (major, minor, patch, prerelease_type, prerelease_num) where:
+        - prerelease_type: 0=alpha, 1=beta, 2=release
+        - prerelease_num: number after alpha/beta, or 0 for release
+    
+    Ordering (via tuple comparison):
+        1.2.3~alpha1 < 1.2.3~alpha2 < 1.2.3~beta1 < 1.2.3~beta10 < 1.2.3
+    
+    Example:
+        parse_version("1.2.3")        -> (1, 2, 3, 2, 0)
+        parse_version("1.2.3~beta1")  -> (1, 2, 3, 1, 1)
+        parse_version("1.2.3~alpha2") -> (1, 2, 3, 0, 2)
+    
+    Raises:
+        ValueError: If version string doesn't match expected format.
+    """
+    match = _VERSION_PATTERN.match(version_str)
+    if not match:
+        raise ValueError(f"Invalid version format: {version_str}")
+    
+    major = int(match.group(1))
+    minor = int(match.group(2))
+    patch = int(match.group(3))
+    prerelease_tag = match.group(4)  # 'alpha', 'beta', or None
+    prerelease_num_str = match.group(5)  # digit string or None
+    
+    if prerelease_tag is None:
+        # Release version
+        prerelease_type = VERSION_PRERELEASE_RELEASE
+        prerelease_num = 0
+    elif prerelease_tag == 'alpha':
+        prerelease_type = VERSION_PRERELEASE_ALPHA
+        prerelease_num = int(prerelease_num_str)
+    else:  # beta
+        prerelease_type = VERSION_PRERELEASE_BETA
+        prerelease_num = int(prerelease_num_str)
+    
+    return (major, minor, patch, prerelease_type, prerelease_num)
+
+
+def compare_versions(v1: str, v2: str) -> int:
+    """
+    Compare two version strings.
+    
+    Uses parse_version() to convert strings to comparable tuples,
+    then uses Python's native tuple comparison.
+    
+    Args:
+        v1: First version string
+        v2: Second version string
+    
+    Returns:
+        -1 if v1 < v2
+         0 if v1 == v2
+         1 if v1 > v2
+    
+    Ordering follows Kodi's versioning rules:
+        1.2.3~alpha1 < 1.2.3~beta1 < 1.2.3
+    
+    Example:
+        compare_versions("1.2.3~beta1", "1.2.3")  -> -1  (beta < release)
+        compare_versions("1.2.3", "1.2.3")        ->  0  (equal)
+        compare_versions("1.2.4", "1.2.3~beta1")  ->  1  (1.2.4 > 1.2.3~beta1)
+    
+    Raises:
+        ValueError: If either version string doesn't match expected format.
+    """
+    t1 = parse_version(v1)
+    t2 = parse_version(v2)
+    
+    if t1 < t2:
+        return -1
+    elif t1 > t2:
+        return 1
+    else:
+        return 0

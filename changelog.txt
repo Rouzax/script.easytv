@@ -1,6 +1,42 @@
 EasyTV Changelog
 ================
 
+v1.2.3 (2026-01-24)
+-------------------
+Improvements:
+  - Added visual feedback during slow operations
+    - Browse mode: "Loading shows..." indicator during data fetch
+    - Random playlist: "Building playlist..." indicator during playlist creation
+    - Clone creation: Modal progress dialog with step-by-step status updates
+    - Particularly helpful on low-powered devices like OSMC Vero V where
+      browse mode can take ~6.5 seconds to open with network-attached databases
+
+Bug Fixes:
+  - Fixed show selections becoming invalid after Kodi library rebuild
+    - When Kodi reassigns show IDs (after delete + rescan), settings now
+      detect the ID shift by comparing stored titles with current titles
+    - Shows are automatically migrated to their new IDs via title matching
+    - Protects both 'random_order_shows' and 'selection' settings
+  - Fixed browse mode buttons triggering unintended episode playback
+    - Cancel and empty buttons in Estuary's DialogSelect skin are now hidden
+    - Clicking any visible button correctly closes the dialog without playback
+  - Fixed smart playlists accumulating orphaned show entries
+    - After library wipe/rescan, deleted shows no longer persist in .xsp files
+    - Batch mode now performs full rebuild instead of merging with existing file
+  - Fixed duration filter being applied twice in browse mode
+  - Fixed version parsing crash with prerelease suffixes (e.g., "1.2.3~beta1")
+
+Internal:
+  - New storage format for show selections: {id: title} instead of [id]
+    - Enables title-based ID shift detection
+    - Existing settings auto-migrate on first load
+  - Refactored browse mode for cleaner architecture
+    - Data fetching moved into build_episode_list()
+    - default.py simplified to routing logic only
+  - New utilities: busy_progress() context manager, parse_version(), compare_versions()
+  - Added constants for DialogSelect button control IDs
+  - Added debug logging for onClick control ID (aids future debugging)
+
 v1.2.2 (2026-01-22)
 ------------------------
 Bug Fixes:

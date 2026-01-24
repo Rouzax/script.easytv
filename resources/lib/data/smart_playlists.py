@@ -32,6 +32,11 @@ Batch Mode:
     to collect all playlist updates and write them in a single operation per
     playlist file. This reduces individual file writes to just 5.
     
+    IMPORTANT: Batch mode performs a FULL REBUILD of playlist files. Only
+    entries collected during the batch operation are written - existing file
+    contents are ignored. This automatically eliminates orphaned entries
+    (shows deleted from the library) without needing explicit cleanup.
+    
     Usage:
         start_playlist_batch()
         # ... perform many playlist updates ...
@@ -241,8 +246,14 @@ def flush_playlist_batch() -> None:
     """
     Write all collected playlist updates and disable batch mode.
     
-    Reads each playlist file once, applies all pending changes for that file,
-    and writes it back. This is much more efficient than individual writes.
+    Performs a FULL REBUILD of each playlist file using only the entries
+    collected during batch mode. This eliminates orphaned entries (shows
+    that were deleted from the library) by design - if a show isn't in
+    the batch updates, it won't be in the output file.
+    
+    This approach is used because batch mode is only enabled during bulk
+    operations (startup, library rescan) where we process the entire library.
+    Any show not processed during these operations is no longer valid.
     
     After flushing, batch mode is disabled and subsequent updates will
     be written immediately as normal.
@@ -254,91 +265,52 @@ def flush_playlist_batch() -> None:
     
     with log_timing(log, "playlist_batch_flush"):
         files_written = 0
-        shows_updated = 0
+        shows_written = 0
         
         for playlist_filename, (playlist_name, show_updates) in _batch_updates.items():
-            if not show_updates:
-                continue
-            
             playlist_path = os.path.join(_get_playlist_location(), playlist_filename)
             
-            # Read existing file contents
-            try:
-                with open(playlist_path, 'r', encoding='utf-8') as f:
-                    all_lines = f.readlines()
-            except (IOError, OSError):
-                all_lines = []
-            
-            # Build a dict of existing entries: show_id (as string) -> line content
-            # We use string keys because XML markers are strings
-            existing_entries: Dict[str, str] = {}
-            header_lines = []
-            footer_line = ""
-            
-            header = PLAYLIST_XML_HEADER.format(name=playlist_name)
-            footer = PLAYLIST_XML_FOOTER.strip()
-            
-            for line in all_lines:
-                stripped = line.strip()
-                # Check if this is a show entry (contains <!--show_id-->)
-                if '<!--' in line and '-->' in line and '<rule' in line:
-                    # Extract show_id from comment marker
-                    start = line.find('<!--') + 4
-                    end = line.find('-->', start)
-                    if start > 3 and end > start:
-                        show_marker = line[start:end]
-                        existing_entries[show_marker] = line
-                elif stripped == footer:
-                    footer_line = line
-                elif stripped and not existing_entries:
-                    # Header lines (before any entries)
-                    header_lines.append(line)
-            
-            # Apply updates
+            # Collect only non-removed entries for writing
+            entries_to_write: Dict[int, str] = {}
             for show_id, (filename, remove) in show_updates.items():
-                show_id_str = str(show_id)
-                if remove:
-                    # Remove the entry
-                    existing_entries.pop(show_id_str, None)
-                else:
-                    # Add or update the entry (escape filename for XML safety)
+                if not remove and filename:
+                    # Escape filename for XML safety
                     escaped_filename = escape(filename)
                     show_entry = PLAYLIST_XML_SHOW_ENTRY.format(
                         show_id=show_id, filename=escaped_filename
                     )
-                    existing_entries[show_id_str] = show_entry
-                shows_updated += 1
+                    entries_to_write[show_id] = show_entry
             
-            # Write the file
+            # Build complete file content
+            header = PLAYLIST_XML_HEADER.format(name=playlist_name)
+            
             try:
-                # Small delay before file write (single delay per file, not per entry)
+                # Small delay before file write (single delay per file)
                 xbmc.sleep(FILE_WRITE_DELAY_MS)
                 
-                with open(playlist_path, 'w+', encoding='utf-8') as f:
-                    # Write header (use existing or create new)
-                    if header_lines:
-                        f.write(''.join(header_lines))
-                    else:
-                        f.write(header)
+                with open(playlist_path, 'w', encoding='utf-8') as f:
+                    # Write header
+                    f.write(header)
                     
-                    # Write all entries
-                    for entry in existing_entries.values():
-                        f.write(entry)
+                    # Write all entries (sorted by show_id for consistent output)
+                    for show_id in sorted(entries_to_write.keys()):
+                        f.write(entries_to_write[show_id])
                     
                     # Write footer
-                    f.write(footer_line if footer_line else PLAYLIST_XML_FOOTER)
+                    f.write(PLAYLIST_XML_FOOTER)
                 
                 files_written += 1
+                shows_written += len(entries_to_write)
                 
             except (IOError, OSError):
                 log.exception("Batch playlist write failed",
                              event="playlist.fail",
                              playlist=playlist_name)
         
-        log.debug("Playlist batch metrics",
+        log.debug("Playlist batch complete",
                  event="playlist.batch_flush",
                  files_written=files_written,
-                 shows_updated=shows_updated)
+                 shows_written=shows_written)
     
     # Reset batch state
     _batch_mode = False

@@ -36,14 +36,14 @@ from resources.lib.constants import (
     SERVICE_POLL_SLEEP_MS, SERVICE_POLL_TIMEOUT_TICKS,
 )
 from resources.lib.utils import (
-    lang, get_logger, get_bool_setting, get_int_setting, get_float_setting
+    lang, get_logger, get_bool_setting, get_int_setting, get_float_setting,
+    parse_version, compare_versions
 )
 from resources.lib.ui.dialogs import show_playlist_selection
 from resources.lib.playback.browse_mode import EpisodeListConfig, build_episode_list
 from resources.lib.playback.random_player import (
-    RandomPlaylistConfig, filter_shows_by_population, build_random_playlist
+    RandomPlaylistConfig, build_random_playlist
 )
-from resources.lib.data.shows import filter_shows_by_duration, validate_duration_settings
 
 
 def _get_population(filter_enabled, populate_by, playlist_source,
@@ -169,52 +169,9 @@ def main_entry(addon, log):
             logger=log
         )
     else:
-        # Browse mode - always uses unwatched episodes (primary use case)
-        show_data = filter_shows_by_population(
-            population, sort_by, sort_reverse, language, logger=log
-        )
-        
-        # Apply duration filter if enabled
-        duration_filter_enabled = get_bool_setting('duration_filter_enabled')
-        if duration_filter_enabled and show_data:
-            duration_min = get_int_setting('duration_min')
-            duration_max = get_int_setting('duration_max')
-            if validate_duration_settings(duration_min, duration_max):
-                show_data = filter_shows_by_duration(
-                    show_data, duration_min, duration_max
-                )
-        
-        # Filter out premieres based on settings
-        include_series_premieres = get_bool_setting('premieres')
-        include_season_premieres = get_bool_setting('season_premieres')
-        
-        if not include_series_premieres or not include_season_premieres:
-            def should_include(show_entry):
-                """Check if episode should be included based on premiere settings."""
-                episode_no = window.getProperty(f"EasyTV.{show_entry[1]}.EpisodeNo")
-                if not episode_no or len(episode_no) < 6:
-                    return True
-                
-                # Check if this is episode 1
-                try:
-                    episode_num = int(episode_no[4:6])
-                    if episode_num != 1:
-                        return True
-                    
-                    season_num = int(episode_no[1:3])
-                    if season_num == 1:
-                        # Series premiere (S01E01)
-                        return include_series_premieres
-                    else:
-                        # Season premiere (S02E01, S03E01, etc.)
-                        return include_season_premieres
-                except (ValueError, IndexError):
-                    return True
-            
-            show_data = [x for x in show_data if should_include(x)]
-        
+        # Browse mode - data fetching and filtering handled internally by build_episode_list
         build_episode_list(
-            show_data=show_data,
+            population=population,
             random_order_shows=random_order_shows,
             config=EpisodeListConfig(
                 skin=_get_skin_setting(addon),
@@ -225,7 +182,12 @@ def main_entry(addon, log):
                 script_path=script_path,
                 duration_filter_enabled=get_bool_setting('duration_filter_enabled'),
                 duration_min=get_int_setting('duration_min'),
-                duration_max=get_int_setting('duration_max')
+                duration_max=get_int_setting('duration_max'),
+                sort_by=sort_by,
+                sort_reverse=sort_reverse,
+                language=language,
+                include_series_premieres=get_bool_setting('premieres'),
+                include_season_premieres=get_bool_setting('season_premieres')
             ),
             monitor=xbmc.Monitor(),
             logger=log
@@ -309,21 +271,29 @@ def _check_service_running(window, log):
     return True
 
 
-def _handle_version_mismatch(addon_version, addon_id, script_path, script_name, window, dialog, log):
+def _handle_version_mismatch(addon_version, addon_version_str, addon_id, script_path, script_name, window, dialog, log):
     """Check version compatibility. Returns True if OK to proceed."""
     try:
-        service_version = ast.literal_eval(window.getProperty("EasyTV.Version"))
+        service_version_str = window.getProperty("EasyTV.Version")
+        if not service_version_str:
+            service_version = (0, 0, 0, 0, 0)
+            service_version_str = "0.0.0"
+        else:
+            service_version = parse_version(service_version_str)
     except (ValueError, SyntaxError):
-        service_version = (0, 0, 0)
+        service_version = (0, 0, 0, 0, 0)
+        service_version_str = "0.0.0"
 
     if addon_version != service_version and addon_id == "script.easytv":
         log.warning("Version mismatch", event="version.mismatch", 
-                    addon_version=addon_version, service_version=service_version)
+                    addon_version=addon_version_str, service_version=service_version_str)
         dialog.ok('EasyTV', lang(32108))
         return False
 
-    if addon_version < service_version and addon_id != "script.easytv":
-        log.warning("Clone addon out of date", event="clone.outdated")
+    # Check if clone is older than service (compare_versions returns -1 if v1 < v2)
+    if compare_versions(addon_version_str, service_version_str) < 0 and addon_id != "script.easytv":
+        log.warning("Clone addon out of date", event="clone.outdated",
+                    clone_version=addon_version_str, service_version=service_version_str)
         if dialog.yesno('EasyTV', lang(32110) + '\n' + lang(32111)) == 1:
             import os
             update_script = os.path.join(script_path, 'resources', 'update_clone.py')
@@ -337,13 +307,14 @@ def _handle_version_mismatch(addon_version, addon_id, script_path, script_name, 
 
 if __name__ == "__main__":
     addon = xbmcaddon.Addon()
-    addon_version = tuple(int(x) for x in addon.getAddonInfo('version').split('.'))
+    addon_version_str = addon.getAddonInfo('version')
+    addon_version = parse_version(addon_version_str)
     addon_id = addon.getAddonInfo('id')
     script_path = addon.getAddonInfo('path')
     script_name = addon.getAddonInfo('Name')
 
     log = get_logger('default')
-    log.info("EasyTV addon started", event="ui.start", addon_id=addon_id)
+    log.info("EasyTV addon started", event="ui.start", addon_id=addon_id, version=addon_version_str)
 
     # Handle special modes from command line
     if len(sys.argv) > 1:
@@ -373,7 +344,7 @@ if __name__ == "__main__":
         sys.exit()
 
     # Check version compatibility
-    if not _handle_version_mismatch(addon_version, addon_id, script_path, script_name, window, dialog, log):
+    if not _handle_version_mismatch(addon_version, addon_version_str, addon_id, script_path, script_name, window, dialog, log):
         sys.exit()
 
     main_entry(addon, log)

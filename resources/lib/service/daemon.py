@@ -137,7 +137,11 @@ from resources.lib.data.duration_cache import (
     get_shows_needing_calculation,
     build_updated_cache,
 )
-from resources.lib.service.settings import load_settings, ServiceSettings
+from resources.lib.service.settings import (
+    load_settings,
+    ServiceSettings,
+    validate_show_selections,
+)
 from resources.lib.service.library_monitor import LibraryMonitor
 from resources.lib.service.playback_monitor import PlaybackMonitor, PlaybackSettings
 from resources.lib.service.episode_tracker import EpisodeTracker, PROP_DURATION
@@ -240,8 +244,8 @@ class ServiceDaemon:
         )
         
         # Set initial window properties
-        version_tuple = tuple(int(x) for x in self._addon.getAddonInfo('version').split('.'))
-        self._window.setProperty("EasyTV.Version", str(version_tuple))
+        version_str = self._addon.getAddonInfo('version')
+        self._window.setProperty("EasyTV.Version", version_str)
         self._window.setProperty("EasyTV.ServicePath", str(self._addon.getAddonInfo('path')))
         self._window.setProperty('EasyTV_service_running', 'starting')
         
@@ -297,6 +301,15 @@ class ServiceDaemon:
         
         # Perform initial library scan with retry logic
         self._initial_library_scan()
+        
+        # Validate settings after library scan (removes orphaned show IDs)
+        if self._all_shows_list:
+            current_show_ids = set(self._all_shows_list)
+            validate_show_selections(
+                current_show_ids=current_show_ids,
+                addon=self._addon,
+                logger=self._log
+            )
         
         self._log.debug("Service components initialized")
     
@@ -368,6 +381,10 @@ class ServiceDaemon:
             self._state.on_lib_update = False
             self._retrieve_all_show_ids()
             self.refresh_show_episodes(showids=self._all_shows_list, bulk=True)
+            # Clean orphaned show IDs from settings after library changes
+            validate_show_selections(
+                set(self._all_shows_list), self._addon, self._log
+            )
         
         # Handle random order shuffle request
         shuffle_request = self._window.getProperty("EasyTV.random_order_shuffle")

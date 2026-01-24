@@ -138,16 +138,21 @@ def Main():
     temp_base = xbmcvfs.translatePath('special://temp/')
     temp_path = os.path.join(temp_base, f'easytv_clone_{san_name}')
     
+    # Show modal progress dialog during file operations
+    # DialogProgress appears on top of settings/addon menu unlike DialogProgressBG
+    progress = xbmcgui.DialogProgress()
+    progress.create("EasyTV", "Creating clone...")
     try:
         # Clean up any leftover temp folder
         if os.path.isdir(temp_path):
             shutil.rmtree(temp_path, ignore_errors=True)
 
+        progress.update(10, "Copying addon files...")
         # copy current addon to temp location first
         IGNORE_PATTERNS = ('.pyc','CVS','.git','tmp','.svn','__pycache__')
         shutil.copytree(scriptPath, temp_path, ignore=shutil.ignore_patterns(*IGNORE_PATTERNS))
 
-
+        progress.update(25, "Configuring clone...")
         # remove the unneeded files
         addon_file = os.path.join(temp_path,'addon.xml')
 
@@ -161,6 +166,7 @@ def Main():
         shutil.move( os.path.join(temp_path,'resources','addon_clone.xml') , addon_file )
         shutil.move( os.path.join(temp_path,'resources','settings_clone.xml') , os.path.join(temp_path,'resources','settings.xml') )
 
+        progress.update(35, "Updating settings...")
         # Update section id in settings.xml to match clone addon id
         # Without this, Kodi can't match settings to the clone addon
         settings_file = os.path.join(temp_path, 'resources', 'settings.xml')
@@ -168,6 +174,7 @@ def Main():
             print(line.replace('section id="script.easytv"', f'section id="{san_name}"'), end='')
         fileinput.close()
 
+        progress.update(45, "Updating language files...")
         # Update strings.po header in ALL language folders to match clone addon id
         # Without this, Kodi 21+ won't load language strings for the clone
         # This handles future Weblate translations (multiple language folders)
@@ -181,6 +188,7 @@ def Main():
                     print(line, end='')
                 fileinput.close()
 
+        progress.update(55, "Updating addon metadata...")
         # edit the addon.xml to set clone id, name, and version
         tree = et.parse(addon_file)
         root = tree.getroot()
@@ -190,6 +198,7 @@ def Main():
         tree.find('.//summary').text = clone_name
         tree.write(addon_file)
 
+        progress.update(65, "Updating scripts...")
         # replace the id on these files, avoids Access Violation
         py_files = [
             os.path.join(temp_path,'resources','selector.py'),
@@ -203,6 +212,7 @@ def Main():
                 print(line.replace('script.easytv', san_name), end='')
             fileinput.close()
 
+        progress.update(75, "Updating skins...")
         # Update skin XML files to use clone's addon ID for language strings
         # Without this, $ADDON[script.easytv ...] won't resolve in clones
         skin_files = [
@@ -216,6 +226,7 @@ def Main():
                     print(line.replace('$ADDON[script.easytv ', f'$ADDON[{san_name} '), end='')
                 fileinput.close()
 
+        progress.update(85, "Installing clone...")
         # All modifications complete - now move from temp to final location
         # This ensures Kodi sees a fully-prepared addon with correct strings.po
         shutil.move(temp_path, new_path)
@@ -225,15 +236,18 @@ def Main():
         # Clean up temp folder on error
         if os.path.isdir(temp_path):
             shutil.rmtree(temp_path, ignore_errors=True)
+        progress.close()  # Close dialog before error dialog
         errorHandle(e, tb, new_path)
 
     # Notify Kodi to scan for new addons, then enable the clone
     try:
+        progress.update(90, "Registering with Kodi...")
         # First, tell Kodi to rescan the addons directory
         xbmc.executebuiltin('UpdateLocalAddons')
         # Give Kodi time to fully scan - this can take a few seconds on large libraries
         xbmc.sleep(3000)
         
+        progress.update(95, "Enabling clone...")
         # Now enable the newly discovered addon
         xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Addons.SetAddonEnabled","id":1,"params":{"addonid":"%s","enabled":false}}' % san_name)
         xbmc.sleep(ADDON_ENABLE_DELAY_MS)
@@ -241,9 +255,12 @@ def Main():
         
         # Give Kodi time to fully enable the addon
         xbmc.sleep(1000)
+        progress.update(100, "Complete!")
             
     except Exception:
         pass  # Silently ignore - addon will still work after Kodi restart
+    finally:
+        progress.close()
 
     log.info("Clone created successfully", event="clone.create", name=clone_name, 
              addon_id=san_name, version=parent_version)

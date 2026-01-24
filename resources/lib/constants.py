@@ -203,6 +203,11 @@ CONTROL_OK_BUTTON = 5
 CONTROL_HEADING = 1
 CONTROL_LIST = 6
 
+# DialogSelect button control IDs (from Kodi's GUIDialogSelect.cpp)
+# These are additional buttons that may appear in DialogSelect
+CONTROL_CANCEL_BUTTON = 7     # Standard cancel button
+CONTROL_EXTRA_BUTTON2 = 8     # Second extra button
+
 # =============================================================================
 # String Utilities
 # =============================================================================
@@ -268,3 +273,12 @@ DURATION_CACHE_VERSION = 1
 PROP_LAZY_QUEUE_SESSION = "EasyTV.lazy_queue_session"
 # Number of items to maintain in playlist buffer
 LAZY_QUEUE_BUFFER_SIZE = 3
+
+# =============================================================================
+# Version Parsing
+# =============================================================================
+# Prerelease type ordering for version comparison
+# Lower value = earlier in release cycle (alpha < beta < release)
+VERSION_PRERELEASE_ALPHA = 0
+VERSION_PRERELEASE_BETA = 1
+VERSION_PRERELEASE_RELEASE = 2

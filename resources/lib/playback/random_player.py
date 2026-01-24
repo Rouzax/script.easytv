@@ -66,7 +66,7 @@ from resources.lib.data.shows import (
     validate_duration_settings,
 )
 from resources.lib.playback.playlist_session import PlaylistSession
-from resources.lib.utils import get_logger, json_query, log_timing
+from resources.lib.utils import get_logger, json_query, log_timing, busy_progress
 
 if TYPE_CHECKING:
     from resources.lib.utils import StructuredLogger
@@ -1050,144 +1050,148 @@ def build_random_playlist(
     with log_timing(log, "random_playlist_build", 
                    playlist_content=config.playlist_content,
                    length=config.length) as outer_timer:
-        # Skip TV show fetching for Movies Only mode
-        if config.playlist_content == CONTENT_MOVIES_ONLY:
-            stored_data_filtered = []
-        else:
-            # Get filtered show data based on episode selection mode
-            stored_data_filtered = filter_shows_by_population(
-                population, config.sort_by, config.sort_reverse, config.language,
-                episode_selection=config.episode_selection, logger=log
-            )
-            
-            # Apply duration filter if enabled
-            if config.duration_filter_enabled and stored_data_filtered:
-                if validate_duration_settings(config.duration_min, config.duration_max):
-                    stored_data_filtered = filter_shows_by_duration(
-                        stored_data_filtered,
-                        config.duration_min,
-                        config.duration_max
-                    )
-        
-        outer_timer.mark("show_fetch")
-        
-        log.debug("Building random playlist")
-        
-        # Clear existing playlist
-        json_query(get_clear_video_playlist_query(), False)
-        
-        added_ep_dict: dict = {}
-        count = 0
-        iterations = 0  # Track total iterations for summary
-        
-        # Determine movie inclusion based on playlist content type
-        include_movies = config.playlist_content != CONTENT_TV_ONLY
-        
-        # Get show count for movie limit calculation
-        stored_show_count = len(stored_data_filtered)
-        
-        # Fetch movies if enabled, with appropriate limit
-        movie_list: list[int] = []
-        if include_movies:
-            # Calculate movie limit based on content type and weight
+        # Show loading indicator during data fetching operations
+        with busy_progress("Building playlist..."):
+            # Skip TV show fetching for Movies Only mode
             if config.playlist_content == CONTENT_MOVIES_ONLY:
-                # Movies only: fetch up to playlist length
-                movie_limit = config.length
+                stored_data_filtered = []
             else:
-                # Mixed mode: calculate based on show count and weight
-                if config.movieweight == 0.0:
-                    movie_limit = 0
-                else:
-                    # movies = shows * weight, but at least 1
-                    movie_limit = max(int(round(stored_show_count * config.movieweight, 0)), 1)
-            
-            if movie_limit > 0:
-                # Extract movie IDs from playlist if filter is set
-                playlist_movie_ids: Optional[list[int]] = None
-                if config.movie_playlist:
-                    playlist_movie_ids = extract_movieids_from_playlist(config.movie_playlist)
-                    log.debug("Movie playlist filter applied", 
-                             playlist=config.movie_playlist, 
-                             movie_count=len(playlist_movie_ids))
-                
-                # Use optimized fetch with server-side random and limit
-                movie_list = _fetch_movies(
-                    config.movie_selection, 
-                    limit=movie_limit, 
-                    movie_ids=playlist_movie_ids,
-                    logger=log
+                # Get filtered show data based on episode selection mode
+                stored_data_filtered = filter_shows_by_population(
+                    population, config.sort_by, config.sort_reverse, config.language,
+                    episode_selection=config.episode_selection, logger=log
                 )
-        
-        # Handle content-type specific logic
-        if config.playlist_content == CONTENT_MOVIES_ONLY:
-            # Movies only: clear TV shows
-            stored_data_filtered = []
-            stored_show_count = 0
-        elif config.playlist_content == CONTENT_TV_ONLY:
-            # TV only: ensure no movies
-            movie_list = []
-        
-        # Log with content type name for clarity
-        content_names = ["TV only", "TV and movies", "Movies only"]
-        log.info("Random playlist starting", event="playlist.create",
-                 content=content_names[config.playlist_content],
-                 target_length=config.length,
-                 shows=stored_show_count, movies=len(movie_list))
-        
-        outer_timer.mark("movie_fetch")
-        
-        # Build candidate list with type prefixes
-        candidate_list = (
-            [f't{x[1]}' for x in stored_data_filtered] +
-            [f'm{x}' for x in movie_list]
-        )
-        random.shuffle(candidate_list)
-        
-        # Handle partial prioritization - find all partial items and move to front
-        if config.start_partials_tv or config.start_partials_movies:
-            with log_timing(log, "partial_prioritization", 
-                           tv_enabled=config.start_partials_tv,
-                           movies_enabled=config.start_partials_movies) as timer:
-                # Get show IDs for TV partial search
-                tv_show_ids = [int(x[1:]) for x in candidate_list if x.startswith('t')]
                 
-                # Find partial episodes (if TV partials enabled and we have TV content)
-                partial_episodes: List[Tuple[str, int, int, int, str]] = []
-                if config.start_partials_tv and tv_show_ids:
-                    partial_episodes = _find_all_partial_episodes(
-                        tv_show_ids, config.episode_selection, log
-                    )
-                    timer.mark("tv_episodes_query")
+                # Apply duration filter if enabled
+                if config.duration_filter_enabled and stored_data_filtered:
+                    if validate_duration_settings(config.duration_min, config.duration_max):
+                        stored_data_filtered = filter_shows_by_duration(
+                            stored_data_filtered,
+                            config.duration_min,
+                            config.duration_max
+                        )
+            
+            outer_timer.mark("show_fetch")
+            
+            log.debug("Building random playlist")
+            
+            # Clear existing playlist
+            json_query(get_clear_video_playlist_query(), False)
+            
+            added_ep_dict: dict = {}
+            count = 0
+            iterations = 0  # Track total iterations for summary
+            
+            # Determine movie inclusion based on playlist content type
+            include_movies = config.playlist_content != CONTENT_TV_ONLY
+            
+            # Get show count for movie limit calculation
+            stored_show_count = len(stored_data_filtered)
+            
+            # Fetch movies if enabled, with appropriate limit
+            movie_list: list[int] = []
+            if include_movies:
+                # Calculate movie limit based on content type and weight
+                if config.playlist_content == CONTENT_MOVIES_ONLY:
+                    # Movies only: fetch up to playlist length
+                    movie_limit = config.length
+                else:
+                    # Mixed mode: calculate based on show count and weight
+                    if config.movieweight == 0.0:
+                        movie_limit = 0
+                    else:
+                        # movies = shows * weight, but at least 1
+                        movie_limit = max(int(round(stored_show_count * config.movieweight, 0)), 1)
                 
-                # Find partial movies (if movie partials enabled and we have movies)
-                partial_movies: List[Tuple[str, int]] = []
-                if config.start_partials_movies and movie_list:
-                    # Get movie IDs from playlist filter if set
-                    playlist_movie_ids: Optional[List[int]] = None
+                if movie_limit > 0:
+                    # Extract movie IDs from playlist if filter is set
+                    playlist_movie_ids: Optional[list[int]] = None
                     if config.movie_playlist:
                         playlist_movie_ids = extract_movieids_from_playlist(config.movie_playlist)
-                    partial_movies = _find_all_partial_movies(
-                        playlist_movie_ids, config.movie_selection, log
-                    )
-                    timer.mark("movies_query")
-                
-                # Sort partials by recency and rebuild candidate list
-                if partial_episodes or partial_movies:
-                    sorted_partials = _sort_partials_for_priority(
-                        partial_episodes, partial_movies, log
-                    )
-                    timer.mark("sort")
+                        log.debug("Movie playlist filter applied", 
+                                 playlist=config.movie_playlist, 
+                                 movie_count=len(playlist_movie_ids))
                     
-                    # Remove partial items from shuffled list and prepend sorted partials
-                    partial_set = set(sorted_partials)
-                    non_partial_candidates = [c for c in candidate_list if c not in partial_set]
-                    candidate_list = sorted_partials + non_partial_candidates
+                    # Use optimized fetch with server-side random and limit
+                    movie_list = _fetch_movies(
+                        config.movie_selection, 
+                        limit=movie_limit, 
+                        movie_ids=playlist_movie_ids,
+                        logger=log
+                    )
+            
+            # Handle content-type specific logic
+            if config.playlist_content == CONTENT_MOVIES_ONLY:
+                # Movies only: clear TV shows
+                stored_data_filtered = []
+                stored_show_count = 0
+            elif config.playlist_content == CONTENT_TV_ONLY:
+                # TV only: ensure no movies
+                movie_list = []
+            
+            # Log with content type name for clarity
+            content_names = ["TV only", "TV and movies", "Movies only"]
+            log.info("Random playlist starting", event="playlist.create",
+                     content=content_names[config.playlist_content],
+                     target_length=config.length,
+                     shows=stored_show_count, movies=len(movie_list))
+            
+            outer_timer.mark("movie_fetch")
+            
+            # Build candidate list with type prefixes
+            candidate_list = (
+                [f't{x[1]}' for x in stored_data_filtered] +
+                [f'm{x}' for x in movie_list]
+            )
+            random.shuffle(candidate_list)
+            
+            # Handle partial prioritization - find all partial items and move to front
+            if config.start_partials_tv or config.start_partials_movies:
+                with log_timing(log, "partial_prioritization", 
+                               tv_enabled=config.start_partials_tv,
+                               movies_enabled=config.start_partials_movies) as timer:
+                    # Get show IDs for TV partial search
+                    tv_show_ids = [int(x[1:]) for x in candidate_list if x.startswith('t')]
                     
-                    log.debug("Partials prioritized", 
-                             partial_count=len(sorted_partials),
-                             remaining=len(non_partial_candidates))
+                    # Find partial episodes (if TV partials enabled and we have TV content)
+                    partial_episodes: List[Tuple[str, int, int, int, str]] = []
+                    if config.start_partials_tv and tv_show_ids:
+                        partial_episodes = _find_all_partial_episodes(
+                            tv_show_ids, config.episode_selection, log
+                        )
+                        timer.mark("tv_episodes_query")
+                    
+                    # Find partial movies (if movie partials enabled and we have movies)
+                    partial_movies: List[Tuple[str, int]] = []
+                    if config.start_partials_movies and movie_list:
+                        # Get movie IDs from playlist filter if set
+                        playlist_movie_ids: Optional[List[int]] = None
+                        if config.movie_playlist:
+                            playlist_movie_ids = extract_movieids_from_playlist(config.movie_playlist)
+                        partial_movies = _find_all_partial_movies(
+                            playlist_movie_ids, config.movie_selection, log
+                        )
+                        timer.mark("movies_query")
+                    
+                    # Sort partials by recency and rebuild candidate list
+                    if partial_episodes or partial_movies:
+                        sorted_partials = _sort_partials_for_priority(
+                            partial_episodes, partial_movies, log
+                        )
+                        timer.mark("sort")
+                        
+                        # Remove partial items from shuffled list and prepend sorted partials
+                        partial_set = set(sorted_partials)
+                        non_partial_candidates = [c for c in candidate_list if c not in partial_set]
+                        candidate_list = sorted_partials + non_partial_candidates
+                        
+                        log.debug("Partials prioritized", 
+                                 partial_count=len(sorted_partials),
+                                 remaining=len(non_partial_candidates))
+            
+            outer_timer.mark("partial_priority")
         
-        outer_timer.mark("partial_priority")
+        # Busy indicator now closed - ready for playlist building
         
         # Both mode with multiple_shows uses lazy queue for on-deck progression
         # This allows the same show to appear multiple times with its on-deck

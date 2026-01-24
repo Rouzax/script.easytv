@@ -179,28 +179,39 @@ class xGUI(xbmcgui.WindowXMLDialog):
         """
         Save the selection directly to addon settings.
         
+        Saves in new format: {"id": "title"} for ID stability protection.
+        When Kodi rebuilds its library, show IDs can change. By storing
+        titles alongside IDs, we can detect and recover from ID shifts.
+        
         With <close>true</close> on the action button, the settings dialog
         is already closed and saved before this script runs, so we can
         safely call setSetting() directly.
         """
+        # Build lookup dict from all_shows_data: (name, id, thumb) tuples
+        id_to_title = {show_id: name for name, show_id, _ in self.all_shows_data}
+        
+        # Build the new format dict: {str(id): title}
+        selection_dict = {str(show_id): id_to_title.get(show_id, '')
+                          for show_id in self.new_list}
+        
         if self.list_type == 'random_order_shows':
-            self.addon.setSetting(id="random_order_shows", value=str(self.new_list))
+            self.addon.setSetting(id="random_order_shows", value=str(selection_dict))
             # Update display setting
             count = len(self.new_list)
             display_text = lang(32569) % count if count > 0 else lang(32571)
             self.addon.setSetting(id="random_order_shows_display", value=display_text)
             if self.logger:
-                self.logger.info("Random order shows saved", event="selector.save", 
-                                 count=count, show_ids=self.new_list)
+                self.logger.info("Random order shows saved", event="selector.save",
+                                 count=count, format="id_title_dict")
         else:
-            self.addon.setSetting(id="selection", value=str(self.new_list))
+            self.addon.setSetting(id="selection", value=str(selection_dict))
             # Update display setting
             count = len(self.new_list)
             display_text = lang(32569) % count if count > 0 else lang(32571)
             self.addon.setSetting(id="selection_display", value=display_text)
             if self.logger:
                 self.logger.info("Selected shows saved", event="selector.save",
-                                 count=count, show_ids=self.new_list)
+                                 count=count, format="id_title_dict")
         
         self.saved = True
 
@@ -237,9 +248,19 @@ def Main():
 
     try:
         if list_type == 'random_order_shows':
-            current_list = ast.literal_eval(_setting_('random_order_shows'))
+            raw_setting = ast.literal_eval(_setting_('random_order_shows'))
         else:
-            current_list = ast.literal_eval(_setting_('selection'))
+            raw_setting = ast.literal_eval(_setting_('selection'))
+        
+        # Handle both old [id] format and new {id: title} format
+        if isinstance(raw_setting, dict):
+            # New format: extract integer IDs from string keys
+            current_list = [int(k) for k in raw_setting.keys()]
+        elif isinstance(raw_setting, list):
+            # Old format: use directly
+            current_list = raw_setting
+        else:
+            current_list = []
     except (ValueError, SyntaxError):
         current_list = []
 

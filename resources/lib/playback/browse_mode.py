@@ -50,11 +50,12 @@ from resources.lib.data.queries import (
     build_add_episode_query,
     build_shows_art_query,
 )
-from resources.lib.utils import get_logger, json_query, log_timing
+from resources.lib.utils import get_logger, json_query, log_timing, busy_progress
 from resources.lib.ui.browse_window import (
     BrowseWindow, BrowseWindowConfig, get_skin_xml_file
 )
 from resources.lib.playback.browse_player import BrowseModePlayer
+from resources.lib.playback.random_player import filter_shows_by_population
 from resources.lib.data.shows import filter_shows_by_duration
 
 if TYPE_CHECKING:
@@ -139,6 +140,11 @@ class EpisodeListConfig:
         duration_filter_enabled: Whether to filter shows by episode duration
         duration_min: Minimum episode duration in minutes (0 = no minimum)
         duration_max: Maximum episode duration in minutes (0 = no maximum)
+        sort_by: Sort method for shows (0=name, 1=last played, 2=random)
+        sort_reverse: Whether to reverse the sort order
+        language: System language for sorting
+        include_series_premieres: Whether to include series premieres (S01E01)
+        include_season_premieres: Whether to include season premieres (SxxE01)
     """
     skin: int = 0
     limit_shows: bool = False
@@ -149,10 +155,15 @@ class EpisodeListConfig:
     duration_filter_enabled: bool = False
     duration_min: int = 0
     duration_max: int = 0
+    sort_by: int = 1
+    sort_reverse: bool = False
+    language: str = 'English'
+    include_series_premieres: bool = True
+    include_season_premieres: bool = True
 
 
 def build_episode_list(
-    show_data: list,
+    population: dict,
     random_order_shows: list,
     config: EpisodeListConfig,
     monitor: Optional[xbmc.Monitor] = None,
@@ -161,16 +172,19 @@ def build_episode_list(
     """
     Build and display an episode list window for browsing TV shows.
     
-    Creates a browse window showing next unwatched episodes for all shows
-    (or a filtered subset). Users can select episodes for playback,
-    use context menu options, and interact with the list.
+    Fetches show data based on population filter, applies duration and premiere
+    filters, then creates a browse window showing next unwatched episodes.
+    Users can select episodes for playback, use context menu options, and
+    interact with the list.
     
     The function runs a modal loop until the user closes the window or
     Kodi requests abort.
     
     Args:
-        show_data: List of show data [[lastplayed, showid, episodeid], ...]
-                   typically from process_stored() or fetch_unwatched_shows()
+        population: Dict with one of:
+            - {'playlist': path} - Filter by smart playlist contents
+            - {'usersel': [show_ids]} - Filter by user-selected shows
+            - {'none': ''} - No filtering
         random_order_shows: List of show IDs marked for random ordering
         config: EpisodeListConfig with display and behavior settings
         monitor: Optional xbmc.Monitor for abort checking (creates one if None)
@@ -187,33 +201,69 @@ def build_episode_list(
             skin=1,
             limit_shows=True,
             window_length=25,
-            script_path='/path/to/addon'
+            script_path='/path/to/addon',
+            sort_by=1,
+            language='English'
         )
-        show_data = process_stored({'none': ''})
-        build_episode_list(show_data, [], config)
+        build_episode_list({'none': ''}, [], config)
         ```
     """
     log = logger or _get_log()
     mon = monitor or xbmc.Monitor()
     
-    # Filter out random-order shows if configured
-    if config.excl_random_order_shows and random_order_shows:
-        filtered_data = [x for x in show_data if x[1] not in random_order_shows]
-    else:
-        filtered_data = show_data
-    
-    # Apply duration filter if enabled
-    if config.duration_filter_enabled:
-        filtered_data = filter_shows_by_duration(
-            filtered_data,
-            min_minutes=config.duration_min,
-            max_minutes=config.duration_max
+    # Show loading indicator during data fetching operations
+    with busy_progress("Loading shows..."):
+        # Fetch show data based on population filter
+        # Browse mode always uses unwatched episodes (primary use case)
+        show_data = filter_shows_by_population(
+            population, config.sort_by, config.sort_reverse, config.language, logger=log
         )
-    
-    log.info("Browse mode starting", event="browse.start", show_count=len(filtered_data))
-    
-    # Fetch show art if not already cached this session
-    _fetch_show_art(log)
+        
+        # Apply duration filter if enabled
+        if config.duration_filter_enabled and show_data:
+            show_data = filter_shows_by_duration(
+                show_data,
+                min_minutes=config.duration_min,
+                max_minutes=config.duration_max
+            )
+        
+        # Apply premiere filter if needed
+        if not config.include_series_premieres or not config.include_season_premieres:
+            def should_include(show_entry):
+                """Check if episode should be included based on premiere settings."""
+                # Episode number is stored in window properties by the service
+                episode_no = WINDOW.getProperty(f"EasyTV.{show_entry[1]}.EpisodeNo")
+                if not episode_no or len(episode_no) < 6:
+                    return True
+                
+                # Check if this is episode 1
+                try:
+                    episode_num = int(episode_no[4:6])
+                    if episode_num != 1:
+                        return True
+                    
+                    season_num = int(episode_no[1:3])
+                    if season_num == 1:
+                        # Series premiere (S01E01)
+                        return config.include_series_premieres
+                    else:
+                        # Season premiere (S02E01, S03E01, etc.)
+                        return config.include_season_premieres
+                except (ValueError, IndexError):
+                    return True
+            
+            show_data = [x for x in show_data if should_include(x)]
+        
+        # Filter out random-order shows if configured
+        if config.excl_random_order_shows and random_order_shows:
+            filtered_data = [x for x in show_data if x[1] not in random_order_shows]
+        else:
+            filtered_data = show_data
+        
+        log.info("Browse mode starting", event="browse.start", show_count=len(filtered_data))
+        
+        # Fetch show art if not already cached this session
+        _fetch_show_art(log)
     
     # Get appropriate XML file for skin
     xmlfile = get_skin_xml_file(config.skin)
