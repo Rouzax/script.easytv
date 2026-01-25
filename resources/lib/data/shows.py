@@ -469,16 +469,17 @@ def fetch_shows_with_watched_episodes(
     return stored_data
 
 
-def extract_showids_from_playlist(playlist_path: str) -> list[int]:
+def extract_showids_from_playlist(playlist_path: str, silent: bool = False) -> list[int]:
     """
     Extract TV show IDs from a smart playlist file.
     
     Reads the contents of a video smart playlist and returns the IDs
     of all TV shows contained within it. Shows an error dialog if the
-    playlist is empty or contains no TV shows.
+    playlist is empty or contains no TV shows (unless silent=True).
     
     Args:
         playlist_path: Full path to the playlist file.
+        silent: If True, suppress error dialogs (for background operations).
     
     Returns:
         List of TV show IDs in the playlist, or empty list on error.
@@ -489,14 +490,16 @@ def extract_showids_from_playlist(playlist_path: str) -> list[int]:
     
     playlist_contents = json_query(build_playlist_get_items_query(clean_path), True)
     
-    dialog = xbmcgui.Dialog()
-    
     if 'files' not in playlist_contents:
-        dialog.ok("EasyTV", lang(32575))
+        if not silent:
+            dialog = xbmcgui.Dialog()
+            dialog.ok("EasyTV", lang(32575))
         return []
     
     if not playlist_contents['files']:
-        dialog.ok("EasyTV", lang(32576))
+        if not silent:
+            dialog = xbmcgui.Dialog()
+            dialog.ok("EasyTV", lang(32576))
         return []
     
     filtered_showids = [
@@ -507,7 +510,9 @@ def extract_showids_from_playlist(playlist_path: str) -> list[int]:
     log.debug("Shows extracted from playlist", show_ids=filtered_showids)
     
     if not filtered_showids:
-        dialog.ok("EasyTV", lang(32577))
+        if not silent:
+            dialog = xbmcgui.Dialog()
+            dialog.ok("EasyTV", lang(32577))
         return []
     
     return filtered_showids
@@ -651,7 +656,7 @@ def fetch_show_episode_data(tvshowid: int) -> Optional[dict[str, Any]]:
         tvshowid: The TV show ID.
     
     Returns:
-        Dict with keys: filename, episode_number, season_number, episodeno
+        Dict with keys: filename, episode_number, season_number, episodeno, show_title
         Returns None if the show is not available (no title found).
     """
     showname = WINDOW.getProperty("EasyTV.%s.TVshowTitle" % tvshowid)
@@ -685,7 +690,8 @@ def fetch_show_episode_data(tvshowid: int) -> Optional[dict[str, Any]]:
         'filename': filename,
         'episode_number': episode_number,
         'season_number': season_number,
-        'episodeno': episodeno
+        'episodeno': episodeno,
+        'show_title': showname
     }
 
 

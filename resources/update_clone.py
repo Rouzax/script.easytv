@@ -33,6 +33,15 @@ Update Process:
     4. Re-registration:
        - Disable and re-enable the addon via JSON-RPC
        - This ensures Kodi recognizes the updated files
+       
+    5. Update Flag:
+       - Sets window property 'EasyTV.UpdateComplete.{addon_id}' = '{version}'
+       - Stores the target version (not just 'true') so we can detect if another
+         update happened between setting the flag and the clone launching
+       - Kodi's addon metadata cache may not refresh immediately, so the clone
+         might still report the old version on next launch
+       - default.py checks for this flag and skips the version check only if the
+         flag version matches the current service version
 
 Arguments (via sys.argv):
     1. src_path: Path to main EasyTV installation
@@ -40,12 +49,13 @@ Arguments (via sys.argv):
     3. san_name: Sanitized addon ID (e.g., script.easytv.kids)
     4. clone_name: Human-readable name (e.g., "Kids Shows")
 
+Note:
+    This script is self-contained and does NOT import from resources.lib.
+    This is required because RunScript() executes from the resources/ folder
+    context, which breaks the normal import paths used elsewhere in the addon.
+
 Logging:
-    Module: update_clone
-    Events:
-        - clone.update (INFO): Clone updated successfully
-        - clone.update_fail (ERROR): Clone update failed
-        - clone.register_fail (WARNING): Addon re-registration failed
+    Uses xbmc.log() directly (not StructuredLogger) due to import constraints.
 """
 
 import shutil
@@ -57,67 +67,81 @@ import os
 from xml.etree import ElementTree as et
 import fileinput
 
-# Import shared utilities
-# NOTE: This script is executed via RunScript() from default.py, which sets
-# the working directory to the addon's resources/ folder. Therefore we use
-# "from lib." instead of "from resources.lib." which is used elsewhere.
-# See clone.py for contrast - it's imported as a module, not executed directly.
-from lib.utils import lang, get_logger
-from lib.constants import ADDON_ENABLE_DELAY_MS
+# Constants (inlined to avoid import issues)
+ADDON_ENABLE_DELAY_MS = 1000
 
+# Parse arguments
 src_path   = sys.argv[1]
 new_path   = sys.argv[2]
 san_name   = sys.argv[3]
 clone_name = sys.argv[4]
 
-__addon__        = xbmcaddon.Addon('script.easytv')
-__addonid__      = __addon__.getAddonInfo('id')
-__setting__      = __addon__.getSetting
-dialog           = xbmcgui.Dialog()
-
-log              = get_logger('update_clone')
+# Get main addon for localized strings and version info
+__addon__ = xbmcaddon.Addon('script.easytv')
+dialog = xbmcgui.Dialog()
 
 
+def _log(message, level=xbmc.LOGINFO):
+    """Simple logging wrapper."""
+    xbmc.log(f"[EasyTV.update_clone] {message}", level)
 
-def errorHandle(exception, trace, new_path=False):
 
-    log.error("Clone update failed", event="clone.update_fail", error=str(exception), trace=str(trace))
+def _lang(string_id):
+    """Get localized string from main addon."""
+    return __addon__.getLocalizedString(string_id)
 
-    dialog.ok('EasyTV', lang(32148) + '\n' + lang(32141))
-    if new_path:
-        shutil.rmtree(new_path, ignore_errors=True)
+
+def errorHandle(exception, trace, path_to_clean=False):
+    """Handle errors during update."""
+    _log(f"Clone update failed: {exception}", xbmc.LOGERROR)
+    
+    # 32148 = "Clone update failed"
+    # 32141 = "Please check the log for details"
+    dialog.ok('EasyTV', _lang(32148) + '\n' + _lang(32141))
+    if path_to_clean:
+        shutil.rmtree(path_to_clean, ignore_errors=True)
     sys.exit()
 
 
 def Main():
+    # Show modal progress dialog during file operations
+    progress = xbmcgui.DialogProgress()
+    progress.create("EasyTV", "Updating clone...")
+    
     try:
-        # remove the existing clone (the settings will be saved in the userdata/addon folder)
+        progress.update(10, "Removing old files...")
+        # Remove the existing clone (settings are preserved in userdata folder)
         shutil.rmtree(new_path)
 
+        progress.update(25, "Copying addon files...")
+        # Copy current addon to new location
+        IGNORE_PATTERNS = ('.pyc', 'CVS', '.git', 'tmp', '.svn', '__pycache__')
+        shutil.copytree(src_path, new_path, ignore=shutil.ignore_patterns(*IGNORE_PATTERNS))
 
-        # copy current addon to new location
-        IGNORE_PATTERNS = ('.pyc','CVS','.git','tmp','.svn','__pycache__')
-        shutil.copytree(src_path,new_path, ignore=shutil.ignore_patterns(*IGNORE_PATTERNS))
+        progress.update(35, "Configuring clone...")
+        # Remove unneeded files
+        addon_file = os.path.join(new_path, 'addon.xml')
 
-        # remove the unneeded files
-        addon_file = os.path.join(new_path,'addon.xml')
-
-        os.remove(os.path.join(new_path,'service.py'))
+        os.remove(os.path.join(new_path, 'service.py'))
         os.remove(addon_file)
-        os.remove(os.path.join(new_path,'resources','settings.xml'))
-        os.remove(os.path.join(new_path,'resources','clone.py'))
+        os.remove(os.path.join(new_path, 'resources', 'settings.xml'))
+        os.remove(os.path.join(new_path, 'resources', 'clone.py'))
 
-        # replace the settings file and addon file with the truncated one
-        shutil.move( os.path.join(new_path,'resources','addon_clone.xml') , addon_file )
-        shutil.move( os.path.join(new_path,'resources','settings_clone.xml') , os.path.join(new_path,'resources','settings.xml') )
+        # Replace settings file and addon file with clone versions
+        shutil.move(os.path.join(new_path, 'resources', 'addon_clone.xml'), addon_file)
+        shutil.move(os.path.join(new_path, 'resources', 'settings_clone.xml'),
+                    os.path.join(new_path, 'resources', 'settings.xml'))
 
-        # Update section id in settings.xml to match clone addon id
-        # Without this, Kodi can't match settings to the clone addon
+        progress.update(45, "Updating settings...")
+        # Update all script.easytv references in settings.xml to match clone addon id
+        # This includes: section id, RunScript() calls for selector/playlist/exporter
+        # Without this, settings actions would invoke the main addon instead of the clone
         settings_file = os.path.join(new_path, 'resources', 'settings.xml')
         for line in fileinput.input(settings_file, inplace=True):
-            print(line.replace('section id="script.easytv"', f'section id="{san_name}"'), end='')
+            print(line.replace('script.easytv', san_name), end='')
         fileinput.close()
 
+        progress.update(55, "Updating language files...")
         # Update strings.po header in ALL language folders to match clone addon id
         # Without this, Kodi 21+ won't load language strings for the clone
         language_dir = os.path.join(new_path, 'resources', 'language')
@@ -131,25 +155,31 @@ def Main():
                 fileinput.close()
 
     except Exception as e:
-        _, _, tb = sys.exc_info()  # Only need traceback
+        _, _, tb = sys.exc_info()
+        progress.close()
         errorHandle(e, tb, new_path)
 
+    progress.update(65, "Updating addon metadata...")
     # Get parent version to use for clone
     parent_version = __addon__.getAddonInfo('version')
 
-    # edit the addon.xml to point to the right folder
+    # Edit the addon.xml to set clone id, name, and version
     tree = et.parse(addon_file)
     root = tree.getroot()
     root.set('id', san_name)
     root.set('name', clone_name)
-    root.set('version', parent_version)  # Clone inherits parent version
+    root.set('version', parent_version)
     tree.find('.//summary').text = clone_name
     tree.write(addon_file)
 
-
-
-    # replace the id on these files, avoids Access Violation
-    py_files = [os.path.join(new_path,'resources','selector.py') , os.path.join(new_path,'resources','playlists.py'),os.path.join(new_path,'resources','update_clone.py'),os.path.join(new_path,'resources','episode_exporter.py')]
+    progress.update(75, "Updating scripts...")
+    # Replace the addon id in Python files to avoid access violations
+    py_files = [
+        os.path.join(new_path, 'resources', 'selector.py'),
+        os.path.join(new_path, 'resources', 'playlists.py'),
+        os.path.join(new_path, 'resources', 'update_clone.py'),
+        os.path.join(new_path, 'resources', 'episode_exporter.py')
+    ]
 
     for py in py_files:
         try:
@@ -158,6 +188,7 @@ def Main():
         finally:
             fileinput.close()
 
+    progress.update(85, "Updating skins...")
     # Update skin XML files to use clone's addon ID for language strings
     # Without this, $ADDON[script.easytv ...] won't resolve in clones
     skin_files = [
@@ -171,22 +202,43 @@ def Main():
                 print(line.replace('$ADDON[script.easytv ', f'$ADDON[{san_name} '), end='')
             fileinput.close()
 
-    # stop and start the addon to have it show in the Video Addons window
+    # Disable and re-enable the addon to register the updated files
     try:
-        log.debug("Toggling addon registration", addon_id=san_name)
-        xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Addons.SetAddonEnabled","id":1,"params":{"addonid":"%s","enabled":false}}' % san_name)
+        progress.update(90, "Registering with Kodi...")
+        _log(f"Toggling addon registration: {san_name}")
+        xbmc.executeJSONRPC(
+            '{"jsonrpc":"2.0","method":"Addons.SetAddonEnabled",'
+            f'"id":1,"params":{{"addonid":"{san_name}","enabled":false}}}}'
+        )
         xbmc.sleep(ADDON_ENABLE_DELAY_MS)
-        xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Addons.SetAddonEnabled","id":1,"params":{"addonid":"%s", "enabled":true}}' % san_name)
+        xbmc.executeJSONRPC(
+            '{"jsonrpc":"2.0","method":"Addons.SetAddonEnabled",'
+            f'"id":1,"params":{{"addonid":"{san_name}","enabled":true}}}}'
+        )
     except Exception:
-        log.warning("Addon re-registration failed", event="clone.register_fail", addon_id=san_name)
+        _log(f"Addon re-registration failed: {san_name}", xbmc.LOGWARNING)
 
-    dialog.ok('EasyTV', lang(32149) + '\n' + lang(32147))
+    progress.update(95, "Finalizing...")
+    # Set flag to skip version check on next launch
+    # Kodi's addon metadata cache may not refresh immediately after disable/enable,
+    # so the clone might still report the old version. This flag tells the clone
+    # to skip the version check on its next launch.
+    # Store the target version (not just 'true') so we can detect if another update
+    # happened between setting the flag and the clone launching.
+    xbmcgui.Window(10000).setProperty(f'EasyTV.UpdateComplete.{san_name}', parent_version)
+    _log(f"Set update complete flag for: {san_name} -> {parent_version}")
+
+    progress.update(100, "Complete!")
+    xbmc.sleep(500)  # Brief pause to show completion
+    progress.close()
+
+    # 32149 = "Clone updated successfully"
+    dialog.ok('EasyTV', _lang(32149))
+
 
 if __name__ == "__main__":
-
-    log.info("Clone update started", event="clone.update_start", clone_name=clone_name)
-
+    _log(f"Clone update started: {clone_name}")
+    
     Main()
-
-    log.info("Clone update completed", event="clone.update_complete", 
-             clone_name=clone_name, version=__addon__.getAddonInfo('version'))
+    
+    _log(f"Clone update completed: {clone_name} -> {__addon__.getAddonInfo('version')}")

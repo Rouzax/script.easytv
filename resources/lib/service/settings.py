@@ -426,7 +426,17 @@ class ServiceSettings:
     
     # Feature flags
     startup: bool = False
-    maintainsmartplaylist: bool = False
+    maintainsmartplaylist: bool = False  # Legacy - kept for Phase 4 migration
+    
+    # Smart playlist export settings
+    # Episode playlists default True for migration compatibility (existing users had this enabled)
+    # TVShow playlists default False (new feature, opt-in)
+    playlist_export_episodes: bool = True
+    playlist_export_tvshows: bool = False
+    smartplaylist_filter_enabled: bool = False
+    
+    # Show filter playlist path (used for smart playlist filtering)
+    user_playlist_path: str = 'none'
     
     # Random order shows (list of show IDs)
     random_order_shows: list[int] = field(default_factory=list)
@@ -476,6 +486,8 @@ def init_display_settings(addon: Optional[xbmcaddon.Addon] = None) -> None:
     else:
         display_text = lang(32570)
     addon.setSetting(id="playlist_file_display", value=display_text)
+    # Mirror to Advanced settings section
+    addon.setSetting(id="smartplaylist_filter_display", value=display_text)
     log.debug("Init playlist_file_display", value=display_text, path=playlist_path)
     
     # Movie playlist file display
@@ -553,12 +565,60 @@ def load_settings(
         playlist_continuation_duration=int(float(setting('playlist_continuation_duration'))),
     )
     
-    # Handle maintainsmartplaylist setting
+    # Handle maintainsmartplaylist setting (legacy)
     # Note: We only parse the setting here. The actual playlist updates
     # are triggered in daemon._on_settings_changed() AFTER self._settings
     # is updated, to avoid race condition where _update_smartplaylist
     # checks self._settings.maintainsmartplaylist (the old value).
     settings.maintainsmartplaylist = setting('maintainsmartplaylist') == 'true'
+    
+    # New playlist export settings with migration from old maintainsmartplaylist
+    episode_setting = setting('playlist_export_episodes')
+    tvshow_setting = setting('playlist_export_tvshows')
+    old_maintain_setting = setting('maintainsmartplaylist')
+    
+    # Migration logic: if old setting exists but new settings don't, migrate
+    # This handles upgrade from versions that used maintainsmartplaylist
+    if episode_setting == '' and old_maintain_setting != '':
+        # Old setting exists, new one doesn't - perform migration
+        if old_maintain_setting == 'true':
+            # User had playlists enabled - enable Episode playlists
+            settings.playlist_export_episodes = True
+            addon.setSetting('playlist_export_episodes', 'true')
+            log.info(
+                "Migrated maintainsmartplaylist to playlist_export_episodes",
+                event="settings.migrate",
+                old_value=True,
+                new_episode_value=True
+            )
+        else:
+            # User had playlists disabled - keep disabled
+            settings.playlist_export_episodes = False
+            addon.setSetting('playlist_export_episodes', 'false')
+            log.info(
+                "Migrated maintainsmartplaylist to playlist_export_episodes",
+                event="settings.migrate",
+                old_value=False,
+                new_episode_value=False
+            )
+        # TVShow playlists default to False (new opt-in feature)
+        settings.playlist_export_tvshows = False
+        addon.setSetting('playlist_export_tvshows', 'false')
+        # Clear the old setting to complete migration
+        addon.setSetting('maintainsmartplaylist', '')
+    else:
+        # Normal load - read from settings or use defaults
+        if episode_setting != '':
+            settings.playlist_export_episodes = episode_setting == 'true'
+        # else: keep dataclass default (True)
+        
+        if tvshow_setting != '':
+            settings.playlist_export_tvshows = tvshow_setting == 'true'
+        # else: keep dataclass default (False)
+    
+    # Smart playlist filter settings
+    settings.smartplaylist_filter_enabled = setting('smartplaylist_filter_enabled') == 'true'
+    settings.user_playlist_path = setting('user_playlist_path') or 'none'
     
     # Parse random_order_shows - handles both old [id] and new {id: title} formats
     show_dict, needs_migration = _parse_show_setting(setting('random_order_shows'))
@@ -661,6 +721,9 @@ def load_settings(
             resume_partials_tv=settings.resume_partials_tv,
             resume_partials_movies=settings.resume_partials_movies,
             maintain_smartplaylist=settings.maintainsmartplaylist,
+            playlist_export_episodes=settings.playlist_export_episodes,
+            playlist_export_tvshows=settings.playlist_export_tvshows,
+            smartplaylist_filter=settings.smartplaylist_filter_enabled,
         )
         
         # Initialize display settings with current values

@@ -14,6 +14,11 @@ EasyTV constants - centralized magic values.
 This module consolidates all hardcoded values from throughout the codebase
 to improve maintainability and make the code self-documenting.
 """
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import List
+from xml.sax.saxutils import escape
 
 # =============================================================================
 # Episode Selection Modes (parallel to movie_selection)
@@ -106,23 +111,167 @@ WATCHED_PLAYCOUNT = 1
 # Smart Playlist Configuration
 # =============================================================================
 # Format version for playlist migration (increment when format changes)
-PLAYLIST_FORMAT_VERSION = 2
+# Version 3: Renamed playlists with Episode/TVShow prefixes
+PLAYLIST_FORMAT_VERSION = 3
 PLAYLIST_FORMAT_FILENAME = "playlist_format.json"
 
-# Playlist filenames (stored in special://profile/playlists/video/)
-PLAYLIST_ALL_SHOWS = "EasyTV - All Shows.xsp"
-PLAYLIST_CONTINUE_WATCHING = "EasyTV - Continue Watching.xsp"
-PLAYLIST_START_FRESH = "EasyTV - Start Fresh.xsp"
-PLAYLIST_SHOW_PREMIERES = "EasyTV - Show Premieres.xsp"
-PLAYLIST_SEASON_PREMIERES = "EasyTV - Season Premieres.xsp"
 
-# Display names for playlists (shown in Kodi's playlist browser)
-PLAYLIST_NAME_ALL_SHOWS = "EasyTV - All Shows"
-PLAYLIST_NAME_CONTINUE_WATCHING = "EasyTV - Continue Watching"
-PLAYLIST_NAME_START_FRESH = "EasyTV - Start Fresh"
-PLAYLIST_NAME_SHOW_PREMIERES = "EasyTV - Show Premieres"
-PLAYLIST_NAME_SEASON_PREMIERES = "EasyTV - Season Premieres"
+@dataclass(frozen=True)
+class PlaylistDef:
+    """Definition for a single smart playlist file."""
+    filename: str
+    display_name: str
 
+
+@dataclass(frozen=True)
+class PlaylistCategory:
+    """
+    Group of 5 playlists for one content type (Episode or TVShow).
+    
+    Each category contains playlists for:
+    - all_shows: Every show with an ondeck episode
+    - continue_watching: Shows where next episode > 1 (mid-season)
+    - start_fresh: Shows where next episode = 1 (any season start)
+    - show_premieres: Shows at S01E01 (brand new shows)
+    - season_premieres: Shows at S02E01+ (new season of existing show)
+    """
+    all_shows: PlaylistDef
+    continue_watching: PlaylistDef
+    start_fresh: PlaylistDef
+    show_premieres: PlaylistDef
+    season_premieres: PlaylistDef
+
+
+@dataclass(frozen=True)
+class PlaylistConfig:
+    """
+    Complete smart playlist configuration for EasyTV.
+    
+    Contains definitions for both Episode and TVShow playlist types,
+    plus methods for generating XML content.
+    """
+    episode: PlaylistCategory
+    tvshow: PlaylistCategory
+    episode_xml_footer: str
+    tvshow_xml_footer: str
+    
+    def episode_xml_header(self, name: str) -> str:
+        """Generate XML header for an Episode playlist."""
+        return (
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>'
+            '<smartplaylist type="episodes">'
+            '<name>{name}</name>'
+            '<match>one</match>\n'
+        ).format(name=escape(name))
+    
+    def tvshow_xml_header(self, name: str) -> str:
+        """Generate XML header for a TVShow playlist."""
+        return (
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>'
+            '<smartplaylist type="tvshows">'
+            '<name>{name}</name>'
+            '<match>one</match>\n'
+        ).format(name=escape(name))
+    
+    def episode_entry(self, show_id: int, filename: str) -> str:
+        """Generate an Episode playlist entry (matches by filename)."""
+        return '<!--{show_id}--><rule field="filename" operator="is"><value>{filename}</value></rule>\n'.format(
+            show_id=show_id, filename=escape(filename)
+        )
+    
+    def tvshow_entry(self, show_id: int, title: str) -> str:
+        """Generate a TVShow playlist entry (matches by show title)."""
+        return '<!--{show_id}--><rule field="title" operator="is"><value>{title}</value></rule>\n'.format(
+            show_id=show_id, title=escape(title)
+        )
+    
+    def all_episode_filenames(self) -> List[str]:
+        """Return list of all Episode playlist filenames."""
+        return [
+            self.episode.all_shows.filename,
+            self.episode.continue_watching.filename,
+            self.episode.start_fresh.filename,
+            self.episode.show_premieres.filename,
+            self.episode.season_premieres.filename,
+        ]
+    
+    def all_tvshow_filenames(self) -> List[str]:
+        """Return list of all TVShow playlist filenames."""
+        return [
+            self.tvshow.all_shows.filename,
+            self.tvshow.continue_watching.filename,
+            self.tvshow.start_fresh.filename,
+            self.tvshow.show_premieres.filename,
+            self.tvshow.season_premieres.filename,
+        ]
+    
+    def all_filenames(self) -> List[str]:
+        """Return list of all playlist filenames (Episode + TVShow)."""
+        return self.all_episode_filenames() + self.all_tvshow_filenames()
+
+
+# Singleton configuration instance
+PLAYLIST_CONFIG = PlaylistConfig(
+    episode=PlaylistCategory(
+        all_shows=PlaylistDef(
+            "EasyTV - Episode - All Shows.xsp",
+            "EasyTV - Episode - All Shows"
+        ),
+        continue_watching=PlaylistDef(
+            "EasyTV - Episode - Continue Watching.xsp",
+            "EasyTV - Episode - Continue Watching"
+        ),
+        start_fresh=PlaylistDef(
+            "EasyTV - Episode - Start Fresh.xsp",
+            "EasyTV - Episode - Start Fresh"
+        ),
+        show_premieres=PlaylistDef(
+            "EasyTV - Episode - Show Premieres.xsp",
+            "EasyTV - Episode - Show Premieres"
+        ),
+        season_premieres=PlaylistDef(
+            "EasyTV - Episode - Season Premieres.xsp",
+            "EasyTV - Episode - Season Premieres"
+        ),
+    ),
+    tvshow=PlaylistCategory(
+        all_shows=PlaylistDef(
+            "EasyTV - TVShow - All Shows.xsp",
+            "EasyTV - TVShow - All Shows"
+        ),
+        continue_watching=PlaylistDef(
+            "EasyTV - TVShow - Continue Watching.xsp",
+            "EasyTV - TVShow - Continue Watching"
+        ),
+        start_fresh=PlaylistDef(
+            "EasyTV - TVShow - Start Fresh.xsp",
+            "EasyTV - TVShow - Start Fresh"
+        ),
+        show_premieres=PlaylistDef(
+            "EasyTV - TVShow - Show Premieres.xsp",
+            "EasyTV - TVShow - Show Premieres"
+        ),
+        season_premieres=PlaylistDef(
+            "EasyTV - TVShow - Season Premieres.xsp",
+            "EasyTV - TVShow - Season Premieres"
+        ),
+    ),
+    episode_xml_footer='<order direction="ascending">random</order></smartplaylist>',
+    tvshow_xml_footer='<order direction="ascending">sorttitle</order></smartplaylist>'
+)
+
+# Legacy playlist filenames (for cleanup during format migration)
+LEGACY_PLAYLIST_FILES = [
+    "EasyTV - All Shows.xsp",
+    "EasyTV - Continue Watching.xsp",
+    "EasyTV - Start Fresh.xsp",
+    "EasyTV - Show Premieres.xsp",
+    "EasyTV - Season Premieres.xsp",
+]
+
+# =============================================================================
+# Show Categorization Constants
+# =============================================================================
 # Episode threshold for categorization
 # Episode 1 (any season) = "Start Fresh", Episode > 1 = "Continue Watching"
 # S01E01 = "Show Premiere", S02E01+ = "Season Premiere"
@@ -133,15 +282,6 @@ CATEGORY_START_FRESH = "start_fresh"
 CATEGORY_CONTINUE_WATCHING = "continue_watching"
 CATEGORY_SHOW_PREMIERE = "show_premiere"
 CATEGORY_SEASON_PREMIERE = "season_premiere"
-
-# XML template components for smart playlist files
-# Header: XML declaration + smartplaylist open + name + match rule
-PLAYLIST_XML_HEADER = '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?><smartplaylist type="episodes"><n>{name}</n><match>one</match>\n'
-# Footer: order rule + smartplaylist close
-PLAYLIST_XML_FOOTER = '<order direction="ascending">random</order></smartplaylist>'
-# Show entry: comment-wrapped rule for a single show's episode
-# Format: <!--show_id--><rule...>filename</rule>
-PLAYLIST_XML_SHOW_ENTRY = '<!--{show_id}--><rule field="filename" operator="is"> <value>{filename}</value> </rule>\n'
 
 # =============================================================================
 # Limits

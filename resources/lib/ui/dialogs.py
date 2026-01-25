@@ -12,7 +12,6 @@
 EasyTV Dialog Helpers.
 
 Provides common dialog functions used throughout the addon:
-- show_error_and_exit: Display error and gracefully exit
 - show_playlist_selection: Present smart playlist chooser
 
 Extracted from default.py as part of modularization.
@@ -27,7 +26,7 @@ Logging:
 """
 from __future__ import annotations
 
-import sys
+import os
 import xml.etree.ElementTree as ET
 from typing import Optional, TYPE_CHECKING
 
@@ -39,6 +38,11 @@ from resources.lib.data.queries import get_playlist_files_query
 
 if TYPE_CHECKING:
     from resources.lib.utils import StructuredLogger
+
+
+# Prefix for auto-generated EasyTV TVShow playlists (excluded from selector)
+# User-created playlists should not use this prefix
+EASYTV_TVSHOW_PREFIX = "EasyTV - TVShow - "
 
 
 # Module-level logger (initialized lazily)
@@ -99,33 +103,6 @@ def _get_playlist_type(filepath: str) -> Optional[str]:
         return None
 
 
-def show_error_and_exit(
-    message: str,
-    title: str = "EasyTV",
-    dialog: Optional[xbmcgui.Dialog] = None,
-) -> None:
-    """
-    Display an error dialog and exit the addon gracefully.
-    
-    Shows a modal OK dialog with the error message, then terminates
-    the addon script. Use this for fatal errors that prevent the
-    addon from functioning.
-    
-    Args:
-        message: The error message to display.
-        title: Dialog title (defaults to "EasyTV").
-        dialog: Optional Dialog instance. If None, creates one.
-    
-    Note:
-        This function does not return - it calls sys.exit().
-    """
-    if dialog is None:
-        dialog = xbmcgui.Dialog()
-    
-    dialog.ok(title, message)
-    sys.exit()
-
-
 def show_playlist_selection(
     dialog: Optional[xbmcgui.Dialog] = None,
     logger: Optional[StructuredLogger] = None,
@@ -166,14 +143,28 @@ def show_playlist_selection(
     
     # Build dict for label -> file path mapping
     # Optionally filter by playlist type
+    # Exclude auto-generated EasyTV TVShow playlists
     playlist_file_dict = {}
+    excluded_count = 0
     for item in playlist_files:
+        # Extract filename from path for exclusion check
+        filename = os.path.basename(item['file'])
+        
+        # Exclude auto-generated EasyTV TVShow playlists
+        # These are for skin widgets, not for user selection
+        if filename.startswith(EASYTV_TVSHOW_PREFIX):
+            excluded_count += 1
+            continue
+        
         if playlist_type is not None:
             # Check playlist type matches filter
             detected_type = _get_playlist_type(item['file'])
             if detected_type != playlist_type:
                 continue
         playlist_file_dict[item['label']] = item['file']
+    
+    if excluded_count > 0:
+        log.debug("Excluded auto-generated EasyTV TVShow playlists", count=excluded_count)
     
     # Handle no matching playlists after filtering
     if not playlist_file_dict:

@@ -538,10 +538,32 @@
 					<control type="toggle" />
 				</setting>
 
-				<setting id="maintainsmartplaylist" type="boolean" label="32536" help="32431">
+				<setting id="playlist_export_episodes" type="boolean" label="32536" help="32431">
 					<level>2</level>
 					<default>false</default>
 					<control type="toggle" />
+				</setting>
+
+				<setting id="playlist_export_tvshows" type="boolean" label="32639" help="32640">
+					<level>2</level>
+					<default>false</default>
+					<control type="toggle" />
+				</setting>
+
+				<setting id="smartplaylist_filter_enabled" type="boolean" label="32641" help="32642">
+					<level>2</level>
+					<default>false</default>
+					<control type="toggle" />
+				</setting>
+
+				<setting id="smartplaylist_filter_display" type="string" label="32643" help="">
+					<level>2</level>
+					<default>No playlist selected</default>
+					<dependencies>
+						<dependency type="visible" setting="smartplaylist_filter_enabled">true</dependency>
+					</dependencies>
+					<enable>false</enable>
+					<control type="edit" format="string" />
 				</setting>
 			</group>
 

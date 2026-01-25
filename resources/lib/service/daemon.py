@@ -77,21 +77,8 @@ from resources.lib.constants import (
     # Database startup timing
     DB_STARTUP_CHECK_INTERVAL_MS,
     DB_STARTUP_MAX_RETRIES,
-    # Smart playlist constants
-    PLAYLIST_ALL_SHOWS,
-    PLAYLIST_CONTINUE_WATCHING,
-    PLAYLIST_START_FRESH,
-    PLAYLIST_SHOW_PREMIERES,
-    PLAYLIST_SEASON_PREMIERES,
-    PLAYLIST_NAME_ALL_SHOWS,
-    PLAYLIST_NAME_CONTINUE_WATCHING,
-    PLAYLIST_NAME_START_FRESH,
-    PLAYLIST_NAME_SHOW_PREMIERES,
-    PLAYLIST_NAME_SEASON_PREMIERES,
+    # Smart playlist format version
     PLAYLIST_FORMAT_VERSION,
-    CATEGORY_START_FRESH,
-    CATEGORY_SHOW_PREMIERE,
-    CATEGORY_SEASON_PREMIERE,
     # Playlist continuation
     PROP_PLAYLIST_CONFIG,
     PROP_PLAYLIST_REGENERATE,
@@ -120,6 +107,7 @@ from resources.lib.data.shows import (
     get_show_category,
     get_premiere_category,
     fetch_show_episode_data,
+    extract_showids_from_playlist,
 )
 from resources.lib.data.smart_playlists import (
     remove_show_from_all_playlists,
@@ -129,6 +117,7 @@ from resources.lib.data.smart_playlists import (
     load_playlist_format_version,
     save_playlist_format_version,
     delete_easytv_playlists,
+    is_batch_mode,
 )
 from resources.lib.data.duration_cache import (
     load_duration_cache,
@@ -1082,7 +1071,9 @@ class ServiceDaemon:
                 timer.mark("episode_query")
             
             # Start batch mode for playlist writes in bulk mode
-            if bulk and self._settings.maintainsmartplaylist:
+            # Only if at least one playlist type is enabled
+            if bulk and (self._settings.playlist_export_episodes or 
+                         self._settings.playlist_export_tvshows):
                 start_playlist_batch()
             
             # Timing instrumentation for processing breakdown
@@ -1321,8 +1312,22 @@ class ServiceDaemon:
                     timer.mark("duration_save")
             
             # Flush batched playlist writes
-            if bulk and self._settings.maintainsmartplaylist:
-                flush_playlist_batch()
+            if bulk and (self._settings.playlist_export_episodes or 
+                         self._settings.playlist_export_tvshows):
+                # Build filter set if filtering is enabled
+                filter_show_ids = None
+                if self._settings.smartplaylist_filter_enabled:
+                    playlist_path = self._settings.user_playlist_path
+                    if playlist_path and playlist_path not in ('none', 'empty', ''):
+                        filter_show_ids = set(
+                            extract_showids_from_playlist(playlist_path, silent=True)
+                        )
+                
+                flush_playlist_batch(
+                    episode_enabled=self._settings.playlist_export_episodes,
+                    tvshow_enabled=self._settings.playlist_export_tvshows,
+                    filter_show_ids=filter_show_ids
+                )
                 if timer is not None:
                     timer.mark("playlists")
             
@@ -1348,7 +1353,7 @@ class ServiceDaemon:
         """
         Update smart playlists for a TV show.
         
-        Maintains five smart playlists:
+        Maintains two sets of five smart playlists (Episode and TVShow types):
         - "All Shows": Every show with an ondeck episode
         - "Continue Watching": Shows where next episode > 1
         - "Start Fresh": Shows where next episode = 1
@@ -1360,7 +1365,11 @@ class ServiceDaemon:
             remove: If True, remove show from all playlists.
             quiet: If True, suppress debug logging (for bulk operations).
         """
-        if not self._settings.maintainsmartplaylist or tvshowid == 'temp':
+        # Check if at least one playlist type is enabled
+        episode_enabled = self._settings.playlist_export_episodes
+        tvshow_enabled = self._settings.playlist_export_tvshows
+        
+        if not (episode_enabled or tvshow_enabled) or tvshowid == 'temp':
             return
         
         # Ensure tvshowid is an integer for playlist operations
@@ -1374,6 +1383,21 @@ class ServiceDaemon:
                 )
             return
         
+        # Check filter for non-batch mode (batch mode handles filtering in flush)
+        if not is_batch_mode() and self._settings.smartplaylist_filter_enabled:
+            playlist_path = self._settings.user_playlist_path
+            if playlist_path and playlist_path not in ('none', 'empty', ''):
+                allowed_shows = set(
+                    extract_showids_from_playlist(playlist_path, silent=True)
+                )
+                if show_id not in allowed_shows:
+                    if not quiet:
+                        self._log.debug(
+                            "Smart playlist update skipped - show not in filter",
+                            show_id=show_id
+                        )
+                    return
+        
         show_data = fetch_show_episode_data(show_id)
         if not show_data:
             if not quiet:
@@ -1384,18 +1408,15 @@ class ServiceDaemon:
             return
         
         filename = show_data['filename']
+        show_title = show_data['show_title']
         episode_number = show_data['episode_number']
         season_number = show_data['season_number']
-        episodeno = show_data['episodeno']
         
         if remove:
             remove_show_from_all_playlists(
                 show_id,
-                PLAYLIST_ALL_SHOWS, PLAYLIST_NAME_ALL_SHOWS,
-                PLAYLIST_CONTINUE_WATCHING, PLAYLIST_NAME_CONTINUE_WATCHING,
-                PLAYLIST_START_FRESH, PLAYLIST_NAME_START_FRESH,
-                PLAYLIST_SHOW_PREMIERES, PLAYLIST_NAME_SHOW_PREMIERES,
-                PLAYLIST_SEASON_PREMIERES, PLAYLIST_NAME_SEASON_PREMIERES,
+                episode_enabled=episode_enabled,
+                tvshow_enabled=tvshow_enabled,
                 quiet=quiet
             )
             if not quiet:
@@ -1408,16 +1429,13 @@ class ServiceDaemon:
             premiere_category = get_premiere_category(season_number, episode_number)
             
             update_show_in_playlists(
-                show_id, filename, category, premiere_category,
-                PLAYLIST_ALL_SHOWS, PLAYLIST_NAME_ALL_SHOWS,
-                PLAYLIST_CONTINUE_WATCHING, PLAYLIST_NAME_CONTINUE_WATCHING,
-                PLAYLIST_START_FRESH, PLAYLIST_NAME_START_FRESH,
-                PLAYLIST_SHOW_PREMIERES, PLAYLIST_NAME_SHOW_PREMIERES,
-                PLAYLIST_SEASON_PREMIERES, PLAYLIST_NAME_SEASON_PREMIERES,
-                CATEGORY_START_FRESH,
-                CATEGORY_SHOW_PREMIERE,
-                CATEGORY_SEASON_PREMIERE,
-                episodeno=episodeno,
+                show_id,
+                filename,
+                show_title,
+                category,
+                premiere_category,
+                episode_enabled=episode_enabled,
+                tvshow_enabled=tvshow_enabled,
                 quiet=quiet
             )
             if not quiet:
@@ -1425,8 +1443,7 @@ class ServiceDaemon:
                     "Show added to smart playlists",
                     show_id=show_id,
                     category=category,
-                    premiere_category=premiere_category,
-                    episode=episodeno
+                    premiere_category=premiere_category
                 )
     
     # =========================================================================

@@ -35,7 +35,7 @@ from __future__ import annotations
 
 import os
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional, TYPE_CHECKING, Union
 
 import xbmc
@@ -101,21 +101,6 @@ class BrowseWindowConfig:
     limit_shows: bool = False
     window_length: int = 20
     skin_return: bool = True
-
-
-@dataclass
-class BrowseWindowResult:
-    """
-    Result from the BrowseWindow interaction.
-    
-    Attributes:
-        selected_episodes: List of episode IDs to play (or empty if cancelled)
-        should_close: Whether the window should close (user pressed back)
-        needs_refresh: Whether the episode list needs a full refresh
-    """
-    selected_episodes: list[int] = field(default_factory=list)
-    should_close: bool = False
-    needs_refresh: bool = False
 
 
 class BrowseWindow(xbmcgui.WindowXMLDialog):

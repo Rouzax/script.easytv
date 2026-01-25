@@ -1,6 +1,39 @@
 EasyTV Changelog
 ================
 
+v1.2.4 (2026-01-25)
+-------------------
+BREAKING CHANGE:
+  - Smart playlist filenames have changed! If you have skin widgets or menu
+    entries pointing to EasyTV playlists, you must update them:
+      Old: "EasyTV - All Shows.xsp"          → New: "EasyTV - Episode - All Shows.xsp"
+      Old: "EasyTV - Continue Watching.xsp"  → New: "EasyTV - Episode - Continue Watching.xsp"
+      Old: "EasyTV - Start Fresh.xsp"        → New: "EasyTV - Episode - Start Fresh.xsp"
+  - Old playlist files are automatically deleted on upgrade
+  - Settings migrate automatically
+
+New Features:
+  - TVShow smart playlists for skin widgets - browse your next episodes by show
+    instead of episode list (great for home screen widgets)
+  - Two new playlist categories:
+    - Show Premieres - shows you haven't started yet (S01E01)
+    - Season Premieres - new seasons of shows you're watching (S02E01, S03E01, etc.)
+  - Apply your show filter to smart playlists (main addon only, since it
+    maintains the playlists) - if you filter random playback to a playlist,
+    your smart playlists can now use the same filter
+
+Bug Fixes:
+  - Fixed clones repeatedly asking to update after each launch
+  - Fixed clone settings changes saving to the wrong addon
+  - Fixed clone updates sometimes failing with errors
+
+Improvements:
+  - Clone updates now show a progress dialog so you know what's happening
+
+Internal:
+  - Major code cleanup and refactoring of smart playlist system
+  - Removed ~285 lines of unused code
+
 v1.2.3 (2026-01-24)
 -------------------
 Improvements:

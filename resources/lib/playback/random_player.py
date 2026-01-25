@@ -31,7 +31,7 @@ import ast
 import json
 import random
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import xbmc
 import xbmcgui
@@ -54,7 +54,6 @@ from resources.lib.data.queries import (
     build_inprogress_episodes_query,
     build_inprogress_movies_query,
     get_episode_filter,
-    get_movie_filter,
 )
 from resources.lib.data.shows import (
     find_next_episode,
@@ -136,6 +135,40 @@ class RandomPlaylistConfig:
     duration_filter_enabled: bool = False
     duration_min: int = 0
     duration_max: int = 0
+
+
+def _serialize_playlist_config(config: RandomPlaylistConfig) -> Dict[str, Any]:
+    """
+    Serialize a RandomPlaylistConfig to a dictionary for storage.
+    
+    Used for both lazy queue sessions and playlist continuation state.
+    
+    Args:
+        config: The playlist configuration to serialize.
+    
+    Returns:
+        Dictionary with all config fields suitable for JSON serialization.
+    """
+    return {
+        'length': config.length,
+        'playlist_content': config.playlist_content,
+        'episode_selection': config.episode_selection,
+        'movie_selection': config.movie_selection,
+        'movieweight': config.movieweight,
+        'start_partials_tv': config.start_partials_tv,
+        'start_partials_movies': config.start_partials_movies,
+        'premieres': config.premieres,
+        'season_premieres': config.season_premieres,
+        'multiple_shows': config.multiple_shows,
+        'sort_by': config.sort_by,
+        'sort_reverse': config.sort_reverse,
+        'language': config.language,
+        'movie_playlist': config.movie_playlist,
+        'unwatched_ratio': config.unwatched_ratio,
+        'duration_filter_enabled': config.duration_filter_enabled,
+        'duration_min': config.duration_min,
+        'duration_max': config.duration_max,
+    }
 
 
 def filter_shows_by_population(
@@ -249,7 +282,7 @@ def _fetch_movies(
     log = logger or _get_log()
     
     # Get the appropriate filter for the selection mode
-    watch_filter = get_movie_filter(movie_selection)
+    watch_filter = get_episode_filter(movie_selection)
     filters = [watch_filter] if watch_filter else []
     
     # When playlist filter is active, don't limit the query - we need to
@@ -898,26 +931,7 @@ def _build_lazy_queue_playlist(
                     buffer_size=LAZY_QUEUE_BUFFER_SIZE,
                     target_length=config.length) as timer:
         # Serialize config for session storage
-        config_dict = {
-            'length': config.length,
-            'playlist_content': config.playlist_content,
-            'episode_selection': config.episode_selection,
-            'movie_selection': config.movie_selection,
-            'movieweight': config.movieweight,
-            'start_partials_tv': config.start_partials_tv,
-            'start_partials_movies': config.start_partials_movies,
-            'premieres': config.premieres,
-            'season_premieres': config.season_premieres,
-            'multiple_shows': config.multiple_shows,
-            'sort_by': config.sort_by,
-            'sort_reverse': config.sort_reverse,
-            'language': config.language,
-            'movie_playlist': config.movie_playlist,
-            'unwatched_ratio': config.unwatched_ratio,
-            'duration_filter_enabled': config.duration_filter_enabled,
-            'duration_min': config.duration_min,
-            'duration_max': config.duration_max,
-        }
+        config_dict = _serialize_playlist_config(config)
         
         # Clear any existing lazy queue session
         PlaylistSession.clear()
@@ -1280,26 +1294,7 @@ def build_random_playlist(
         playlist_state = {
             'population': population,
             'random_order_shows': random_order_shows,
-            'config': {
-                'length': config.length,
-                'playlist_content': config.playlist_content,
-                'episode_selection': config.episode_selection,
-                'movie_selection': config.movie_selection,
-                'movieweight': config.movieweight,
-                'start_partials_tv': config.start_partials_tv,
-                'start_partials_movies': config.start_partials_movies,
-                'premieres': config.premieres,
-                'season_premieres': config.season_premieres,
-                'multiple_shows': config.multiple_shows,
-                'sort_by': config.sort_by,
-                'sort_reverse': config.sort_reverse,
-                'language': config.language,
-                'movie_playlist': config.movie_playlist,
-                'unwatched_ratio': config.unwatched_ratio,
-                'duration_filter_enabled': config.duration_filter_enabled,
-                'duration_min': config.duration_min,
-                'duration_max': config.duration_max,
-            }
+            'config': _serialize_playlist_config(config)
         }
         WINDOW.setProperty(PROP_PLAYLIST_CONFIG, json.dumps(playlist_state))
         

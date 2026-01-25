@@ -167,11 +167,12 @@ def Main():
         shutil.move( os.path.join(temp_path,'resources','settings_clone.xml') , os.path.join(temp_path,'resources','settings.xml') )
 
         progress.update(35, "Updating settings...")
-        # Update section id in settings.xml to match clone addon id
-        # Without this, Kodi can't match settings to the clone addon
+        # Update all script.easytv references in settings.xml to match clone addon id
+        # This includes: section id, RunScript() calls for selector/playlist/exporter
+        # Without this, settings actions would invoke the main addon instead of the clone
         settings_file = os.path.join(temp_path, 'resources', 'settings.xml')
         for line in fileinput.input(settings_file, inplace=True):
-            print(line.replace('section id="script.easytv"', f'section id="{san_name}"'), end='')
+            print(line.replace('script.easytv', san_name), end='')
         fileinput.close()
 
         progress.update(45, "Updating language files...")

@@ -99,23 +99,6 @@ def get_episode_filter(selection_mode: int) -> Optional[Dict[str, str]]:
         return None
 
 
-def get_movie_filter(selection_mode: int) -> Optional[Dict[str, str]]:
-    """
-    Get the appropriate playcount filter for the given movie selection mode.
-    
-    This is the movie equivalent of get_episode_filter() for consistency.
-    Movie selection uses the same constants as episode selection.
-    
-    Args:
-        selection_mode: One of EPISODE_SELECTION_UNWATCHED (0),
-                       EPISODE_SELECTION_WATCHED (1), or EPISODE_SELECTION_BOTH (2).
-    
-    Returns:
-        Filter dict for unwatched/watched, or None for "both" (no filter needed).
-    """
-    return get_episode_filter(selection_mode)
-
-
 def build_random_episodes_query(
     tvshowid: int,
     filters: Optional[List[Dict[str, Any]]] = None,
@@ -186,7 +169,7 @@ def build_random_movies_query(
     
     Args:
         filters: Optional list of filter dicts to combine with AND.
-                 Use get_movie_filter() to generate watch status filters.
+                 Use get_episode_filter() to generate watch status filters.
         limit: Optional maximum number of movies to return.
                When set, uses Kodi's limits parameter for efficiency.
     
@@ -195,7 +178,7 @@ def build_random_movies_query(
     
     Example:
         # Get 5 random watched movies
-        watch_filter = get_movie_filter(EPISODE_SELECTION_WATCHED)
+        watch_filter = get_episode_filter(EPISODE_SELECTION_WATCHED)
         query = build_random_movies_query(
             filters=[watch_filter] if watch_filter else [],
             limit=5
@@ -392,67 +375,6 @@ def build_add_movie_query(movie_id: int) -> dict[str, Any]:
 # =============================================================================
 # Movie Queries
 # =============================================================================
-
-def get_unwatched_movies_query() -> dict[str, Any]:
-    """
-    Get all unwatched movies (playcount = 0).
-    
-    Returns:
-        Query for unwatched movies with playcount and title properties.
-    """
-    return {
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "VideoLibrary.GetMovies",
-        "params": {
-            "filter": {
-                "field": "playcount",
-                "operator": "is",
-                "value": "0"
-            },
-            "properties": ["playcount", "title"]
-        }
-    }
-
-
-def get_watched_movies_query() -> dict[str, Any]:
-    """
-    Get all watched movies (playcount >= 1).
-    
-    Returns:
-        Query for watched movies with playcount and title properties.
-    """
-    return {
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "VideoLibrary.GetMovies",
-        "params": {
-            "filter": {
-                "field": "playcount",
-                "operator": "greaterthan",
-                "value": "0"
-            },
-            "properties": ["playcount", "title"]
-        }
-    }
-
-
-def get_all_movies_query() -> dict[str, Any]:
-    """
-    Get all movies regardless of watch status.
-    
-    Returns:
-        Query for all movies with playcount and title properties.
-    """
-    return {
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "VideoLibrary.GetMovies",
-        "params": {
-            "properties": ["playcount", "title"]
-        }
-    }
-
 
 # =============================================================================
 # TV Show Queries
@@ -702,27 +624,6 @@ def build_episode_details_query(episode_id: int) -> dict[str, Any]:
     }
 
 
-def build_episode_playcount_query(episode_id: int) -> dict[str, Any]:
-    """
-    Get playcount and show ID for an episode.
-    
-    Args:
-        episode_id: The Kodi episode ID.
-    
-    Returns:
-        Query for episode playcount and tvshowid.
-    """
-    return {
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "VideoLibrary.GetEpisodeDetails",
-        "params": {
-            "episodeid": episode_id,
-            "properties": ["playcount", "tvshowid"]
-        }
-    }
-
-
 def build_episode_show_id_query(episode_id: int) -> dict[str, Any]:
     """
     Get the TV show ID and last played date for an episode.
@@ -849,41 +750,6 @@ def build_player_seek_time_query(seconds: int) -> dict[str, Any]:
 # Batch Operations
 # =============================================================================
 
-def build_set_episode_details_query(
-    episode_id: int,
-    playcount: Optional[int] = None,
-    lastplayed: Optional[str] = None,
-    resume: Optional[dict[str, Any]] = None
-) -> dict[str, Any]:
-    """
-    Build a query to update episode details (playcount, lastplayed, resume).
-    
-    Args:
-        episode_id: The Kodi episode ID.
-        playcount: New playcount value (optional).
-        lastplayed: New lastplayed date string (optional).
-        resume: Resume position dict with 'position' and 'total' (optional).
-    
-    Returns:
-        Query to update the episode details.
-    """
-    params: dict[str, Any] = {"episodeid": episode_id}
-    
-    if playcount is not None:
-        params["playcount"] = playcount
-    if lastplayed is not None:
-        params["lastplayed"] = lastplayed
-    if resume is not None:
-        params["resume"] = resume
-    
-    return {
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "VideoLibrary.SetEpisodeDetails",
-        "params": params
-    }
-
-
 def build_playlist_get_items_query(playlist_path: str) -> dict[str, Any]:
     """
     Get contents of a smart playlist file.
@@ -902,31 +768,5 @@ def build_playlist_get_items_query(playlist_path: str) -> dict[str, Any]:
             "directory": playlist_path,
             "media": "video",
             "properties": ["tvshowid"]
-        }
-    }
-
-
-# =============================================================================
-# Addon Control
-# =============================================================================
-
-def build_addon_enabled_query(addon_id: str, enabled: bool) -> dict[str, Any]:
-    """
-    Enable or disable an addon.
-    
-    Args:
-        addon_id: The addon ID (e.g., 'script.easytv').
-        enabled: True to enable, False to disable.
-    
-    Returns:
-        Query to set addon enabled state.
-    """
-    return {
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "Addons.SetAddonEnabled",
-        "params": {
-            "addonid": addon_id,
-            "enabled": enabled
         }
     }

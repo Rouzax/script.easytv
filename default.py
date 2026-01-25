@@ -20,6 +20,8 @@ Logging:
         - playlist.save (INFO): Playlist saved to file
         - version.mismatch (WARNING): Addon/service version mismatch
         - clone.outdated (WARNING): Clone addon needs update
+        - clone.update_flag_cleared (INFO): Skipped version check after recent update
+        - clone.update_flag_stale (INFO): Update flag outdated, another update occurred
         - service.missing (WARNING): EasyTV service not running
 """
 
@@ -196,43 +198,21 @@ def main_entry(addon, log):
 
 def _handle_special_modes(mode, addon, log):
     """Handle special invocation modes (from settings actions)."""
-    import os
-
     if mode == 'playlist':
         # Parse optional playlist type from argv[2]
         playlist_type = sys.argv[2] if len(sys.argv) > 2 else None
         log.debug("Playlist selection mode", playlist_type=playlist_type)
-        pl = show_playlist_selection(
-            dialog=xbmcgui.Dialog(), 
-            logger=log,
-            playlist_type=playlist_type
-        )
-        if pl != 'empty':
-            # With <close>true</close>, settings dialog is already closed
-            # so we can use setSetting() directly
-            # Determine which settings to update based on playlist type
-            if playlist_type == 'movies':
-                path_setting = "movie_user_playlist_path"
-                display_setting = "movie_playlist_file_display"
-            else:
-                path_setting = "user_playlist_path"
-                display_setting = "playlist_file_display"
-            
-            addon.setSetting(id=path_setting, value=pl)
-            # Update display setting with filename only
-            filename = os.path.basename(pl)
-            if filename.endswith('.xsp'):
-                filename = filename[:-4]
-            addon.setSetting(id=display_setting, value=filename)
-            log.info("Playlist saved", event="playlist.save", path=pl, 
-                     display=filename, playlist_type=playlist_type)
+        from resources import playlists
+        playlists.Main(playlist_type)
         
         # Force-close any lingering dialog instances to prevent stale cache
         # Then reopen settings as a fresh instance after a short delay
         # Note: Using 00:01 (MM:SS) format for AlarmClock compatibility
+        # Use addon's own ID so clones reopen their own settings, not main addon's
+        addon_id = addon.getAddonInfo('id')
         xbmc.executebuiltin('Dialog.Close(all,true)')
         xbmc.executebuiltin(
-            'AlarmClock(EasyTVSettings,Addon.OpenSettings(script.easytv),00:01,silent)'
+            f'AlarmClock(EasyTVSettings,Addon.OpenSettings({addon_id}),00:01,silent)'
         )
 
     elif mode == 'selector':
@@ -243,9 +223,11 @@ def _handle_special_modes(mode, addon, log):
         # Force-close any lingering dialog instances to prevent stale cache
         # Then reopen settings as a fresh instance after a short delay
         # Note: Using 00:01 (MM:SS) format for AlarmClock compatibility
+        # Use addon's own ID so clones reopen their own settings, not main addon's
+        addon_id = addon.getAddonInfo('id')
         xbmc.executebuiltin('Dialog.Close(all,true)')
         xbmc.executebuiltin(
-            'AlarmClock(EasyTVSettings,Addon.OpenSettings(script.easytv),00:01,silent)'
+            f'AlarmClock(EasyTVSettings,Addon.OpenSettings({addon_id}),00:01,silent)'
         )
 
     elif mode == 'clone':
@@ -292,13 +274,35 @@ def _handle_version_mismatch(addon_version, addon_version_str, addon_id, script_
 
     # Check if clone is older than service (compare_versions returns -1 if v1 < v2)
     if compare_versions(addon_version_str, service_version_str) < 0 and addon_id != "script.easytv":
+        # Check if we just completed an update - Kodi's addon cache may still report old version
+        # Flag contains the target version we updated to, so we can detect if another update
+        # happened after the flag was set (service moved past the flagged version)
+        update_flag = f'EasyTV.UpdateComplete.{addon_id}'
+        update_flag_version = window.getProperty(update_flag)
+        if update_flag_version:
+            window.clearProperty(update_flag)
+            if update_flag_version == service_version_str:
+                # We just updated to this exact version - skip check
+                log.info("Clone update flag detected, skipping version check", 
+                         event="clone.update_flag_cleared", addon_id=addon_id,
+                         flag_version=update_flag_version)
+                return True
+            else:
+                # Flag exists but for old version - another update happened since
+                log.info("Clone update flag outdated, proceeding with version check",
+                         event="clone.update_flag_stale", addon_id=addon_id,
+                         flag_version=update_flag_version, service_version=service_version_str)
+        
         log.warning("Clone addon out of date", event="clone.outdated",
                     clone_version=addon_version_str, service_version=service_version_str)
         if dialog.yesno('EasyTV', lang(32110) + '\n' + lang(32111)) == 1:
             import os
-            update_script = os.path.join(script_path, 'resources', 'update_clone.py')
+            # Use main addon's update_clone.py, not the clone's old version
+            # This ensures clones get the latest update logic (e.g., fixed settings replacement)
+            service_path = window.getProperty("EasyTV.ServicePath")
+            update_script = os.path.join(service_path, 'resources', 'update_clone.py')
             xbmc.executebuiltin(
-                f'RunScript({update_script},{window.getProperty("EasyTV.ServicePath")},'
+                f'RunScript({update_script},{service_path},'
                 f'{script_path},{addon_id},{script_name})'
             )
             return False

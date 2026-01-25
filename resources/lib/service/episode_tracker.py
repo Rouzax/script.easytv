@@ -36,7 +36,6 @@ Logging:
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, Callable, Dict, Optional, TYPE_CHECKING, Union
 
 import xbmcgui
@@ -108,38 +107,6 @@ TEMP_SHOW_ID = "temp"
 
 # Property prefix for EasyTV window properties
 PROPERTY_PREFIX = "EasyTV"
-
-
-# =============================================================================
-# Data Classes
-# =============================================================================
-
-@dataclass
-class EpisodeData:
-    """
-    Container for episode metadata.
-    
-    Holds all the information stored in window properties for a single episode.
-    """
-    title: str = ""
-    episode: str = ""
-    episode_no: str = ""
-    season: str = ""
-    tvshow_title: str = ""
-    art_thumb: str = ""
-    art_poster: str = ""
-    resume: str = "false"
-    percent_played: str = "0%"
-    count_watched: str = "0"
-    count_unwatched: str = "0"
-    count_ondeck: str = "0"
-    episode_id: str = ""
-    ondeck_list: str = "[]"
-    offdeck_list: str = "[]"
-    file: str = ""
-    art_fanart: str = ""
-    premiered: str = ""
-    plot: str = ""
 
 
 # =============================================================================

@@ -506,7 +506,7 @@ msgid "Display a notification when EasyTV finishes scanning your library after K
 msgstr ""
 
 msgctxt "#32431"
-msgid "Create and maintain three smart playlists: All Shows, Continue Watching, and Start Fresh. Useful for home screen widgets."
+msgid "Create Episode-type smart playlists for channel surfing. Five playlists are maintained: All Shows, Continue Watching, Start Fresh, Show Premieres, and Season Premieres. Episodes are ordered randomly."
 msgstr ""
 
 msgctxt "#32432"
@@ -682,7 +682,7 @@ msgid "Show notification when ready"
 msgstr ""
 
 msgctxt "#32536"
-msgid "Auto-create 'Next Episodes' playlists"
+msgid "Export Episode smart playlists"
 msgstr ""
 
 msgctxt "#32537"
@@ -1039,4 +1039,24 @@ msgstr ""
 
 msgctxt "#32638"
 msgid "Minimum duration cannot be greater than maximum. Duration filter disabled."
+msgstr ""
+
+msgctxt "#32639"
+msgid "Export TVShow smart playlists"
+msgstr ""
+
+msgctxt "#32640"
+msgid "Create TVShow-type smart playlists for skin widgets. Five playlists are maintained: All Shows, Continue Watching, Start Fresh, Show Premieres, and Season Premieres. Shows are ordered alphabetically by title."
+msgstr ""
+
+msgctxt "#32641"
+msgid "Apply show filter to smart playlists"
+msgstr ""
+
+msgctxt "#32642"
+msgid "When enabled, only shows matching the TV show playlist filter (configured in Shows settings) will be included in the generated smart playlists."
+msgstr ""
+
+msgctxt "#32643"
+msgid "Using playlist:"
 msgstr ""
