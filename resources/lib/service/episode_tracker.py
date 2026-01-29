@@ -36,6 +36,7 @@ Logging:
 """
 from __future__ import annotations
 
+import ast
 from typing import Any, Callable, Dict, Optional, TYPE_CHECKING, Union
 
 import xbmcgui
@@ -48,6 +49,7 @@ from resources.lib.utils import (
     service_heartbeat,
 )
 from resources.lib.data.queries import build_episode_details_query
+from resources.lib.data.storage import get_storage
 
 if TYPE_CHECKING:
     from resources.lib.utils import StructuredLogger
@@ -78,6 +80,7 @@ PROP_PREMIERED = "Premiered"
 PROP_PLOT = "Plot"
 PROP_IS_SKIPPED = "IsSkipped"
 PROP_DURATION = "Duration"
+PROP_YEAR = "Year"
 
 # All properties that need to be copied during swap_over
 EPISODE_PROPERTIES = [
@@ -310,6 +313,33 @@ class EpisodeTracker:
         if normalized_show_id != TEMP_SHOW_ID and self._on_update_smartplaylist:
             self._on_update_smartplaylist(normalized_show_id, quiet=quiet)
         
+        # Write-through to shared storage (multi-instance sync)
+        # Only for non-temp show IDs - temp is staging data that doesn't need persistence
+        if normalized_show_id != TEMP_SHOW_ID:
+            try:
+                storage = get_storage()
+                # Get show_year from window property (set during bulk refresh)
+                show_year_str = self._get_property(normalized_show_id, PROP_YEAR)
+                show_year = int(show_year_str) if show_year_str else None
+                # Get show title from window property (just set above)
+                show_title = self._get_property(normalized_show_id, PROP_TVSHOW_TITLE)
+                
+                storage.set_ondeck(normalized_show_id, {
+                    'show_title': show_title,
+                    'show_year': show_year,
+                    'ondeck_episode_id': episode_id,
+                    'ondeck_list': ondeck_list,
+                    'offdeck_list': offdeck_list,
+                    'watched_count': int(watched_count) if watched_count else 0,
+                    'unwatched_count': int(unwatched_count) if unwatched_count else 0,
+                })
+            except Exception as e:
+                # Log but don't fail - graceful degradation
+                self._log.warning("Storage write failed",
+                                event="storage.write_error",
+                                show_id=normalized_show_id,
+                                error=str(e))
+        
         if not quiet:
             self._log.debug(
                 "Episode cached",
@@ -340,6 +370,49 @@ class EpisodeTracker:
         # Update smart playlists
         if self._on_update_smartplaylist:
             self._on_update_smartplaylist(show_id)
+        
+        # Write-through to shared storage (multi-instance sync)
+        # Data was just copied from temp, so read from actual show_id properties
+        try:
+            storage = get_storage()
+            
+            # Parse ondeck/offdeck lists from window properties
+            ondeck_str = self._get_property(show_id, PROP_ONDECK_LIST)
+            offdeck_str = self._get_property(show_id, PROP_OFFDECK_LIST)
+            ondeck_list = ast.literal_eval(ondeck_str) if ondeck_str else []
+            offdeck_list = ast.literal_eval(offdeck_str) if offdeck_str else []
+            
+            # Get episode ID
+            episode_id_str = self._get_property(show_id, PROP_EPISODE_ID)
+            episode_id = int(episode_id_str) if episode_id_str else None
+            
+            # Get counts
+            watched_str = self._get_property(show_id, PROP_COUNT_WATCHED)
+            unwatched_str = self._get_property(show_id, PROP_COUNT_UNWATCHED)
+            watched_count = int(watched_str) if watched_str else 0
+            unwatched_count = int(unwatched_str) if unwatched_str else 0
+            
+            # Get show metadata (year is on show_id, not temp)
+            show_year_str = self._get_property(show_id, PROP_YEAR)
+            show_year = int(show_year_str) if show_year_str else None
+            show_title = self._get_property(show_id, PROP_TVSHOW_TITLE)
+            
+            if episode_id is not None:
+                storage.set_ondeck(int(show_id), {
+                    'show_title': show_title,
+                    'show_year': show_year,
+                    'ondeck_episode_id': episode_id,
+                    'ondeck_list': ondeck_list,
+                    'offdeck_list': offdeck_list,
+                    'watched_count': watched_count,
+                    'unwatched_count': unwatched_count,
+                })
+        except Exception as e:
+            # Log but don't fail - graceful degradation
+            self._log.warning("Storage write failed during transition",
+                            event="storage.transition_error",
+                            show_id=show_id,
+                            error=str(e))
         
         self._log.debug("Episode transition complete", show_id=show_id)
     

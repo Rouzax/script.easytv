@@ -1,6 +1,26 @@
 EasyTV Changelog
 ================
 
+v1.3.0~beta1 (2026-01-29)
+-------------------------
+New Features:
+  - Multi-instance sync: Share watch progress across multiple Kodi devices
+    - When you watch Episode 5 on one device, all other devices know to queue Episode 6
+    - Requires Kodi configured with a shared MySQL/MariaDB video database
+    - Requires script.module.pymysql addon (auto-installed with EasyTV)
+    - Enable in Settings → Advanced → "Multi-instance sync"
+    - Auto-detects database configuration from advancedsettings.xml
+  - Automatic recovery after Kodi library rebuilds via title+year matching
+  - Automatic cleanup of orphaned database entries on startup
+  - Graceful fallback to Kodi video DB if dedicated easytv database unavailable
+
+Known Limitations:
+  - For consistent "next episode" recommendations, configure random_order_shows
+    identically on all Kodi devices sharing the same database
+
+Internal:
+  - Removed non-functional "Watch Order" settings from clone settings template
+
 v1.2.4 (2026-01-25)
 -------------------
 BREAKING CHANGE:

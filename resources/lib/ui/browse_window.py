@@ -64,6 +64,7 @@ from resources.lib.constants import (
     CONTROL_CANCEL_BUTTON,
     CONTROL_EXTRA_BUTTON2,
 )
+from resources.lib.data.storage import get_storage
 from resources.lib.utils import get_logger, lang, json_query
 
 if TYPE_CHECKING:
@@ -182,6 +183,21 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         
         if self._ctrl6failed:
             return
+        
+        # Refresh from shared storage if stale (multi-instance sync)
+        # This ensures browse window shows fresh data on each open
+        if self._data:
+            storage = get_storage()
+            if storage.needs_refresh():
+                show_ids = [show[1] for show in self._data]
+                self._log.debug("Cache stale, refreshing before browse window",
+                               event="ui.refresh", show_count=len(show_ids))
+                try:
+                    _, revision = storage.get_ondeck_bulk(show_ids, refresh_display=True)
+                    storage.mark_refreshed(revision)
+                except Exception as e:
+                    self._log.warning("Refresh failed, using cached data",
+                                     event="ui.refresh_error", error=str(e))
         
         self._populate_list()
         self.setFocus(self.name_list)

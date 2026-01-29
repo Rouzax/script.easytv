@@ -422,3 +422,19 @@ LAZY_QUEUE_BUFFER_SIZE = 3
 VERSION_PRERELEASE_ALPHA = 0
 VERSION_PRERELEASE_BETA = 1
 VERSION_PRERELEASE_RELEASE = 2
+
+# =============================================================================
+# Shared Database Configuration (Multi-Instance Sync)
+# =============================================================================
+# EasyTV database naming: easytv_{kodi_base_name} (e.g., easytv_mastervideo)
+EASYTV_DB_PREFIX = "easytv_"
+# Table prefix for fallback when CREATE DATABASE denied
+EASYTV_TABLE_PREFIX = "easytv_"
+# Schema version for migrations (increment when schema changes)
+EASYTV_SCHEMA_VERSION = 1
+# Backoff period after DB connection failure (seconds)
+EASYTV_DB_BACKOFF_SECONDS = 30
+# Migration lock TTL for crash recovery (minutes)
+EASYTV_MIGRATION_LOCK_TTL_MINUTES = 5
+# Default Kodi video database base name
+KODI_DEFAULT_VIDEO_DB_NAME = "MyVideos"

@@ -576,7 +576,25 @@
 				</setting>
 			</group>
 
-			<!-- Group 6.3: Tools -->
+			<!-- Group 6.3: Multi-Instance Sync -->
+			<group id="sync" label="32700">
+				<setting id="multi_instance_sync" type="boolean" label="32701" help="32702">
+					<level>2</level>
+					<default>false</default>
+					<control type="toggle" />
+				</setting>
+
+				<setting id="clear_sync_data" type="action" label="32703" help="32704">
+					<level>2</level>
+					<dependencies>
+						<dependency type="visible" setting="multi_instance_sync">true</dependency>
+					</dependencies>
+					<data>RunScript(script.easytv,clear_sync_data)</data>
+					<control type="button" format="action" />
+				</setting>
+			</group>
+
+			<!-- Group 6.4: Tools -->
 			<group id="tools" label="32566">
 				<setting id="clone" type="action" label="32538" help="32433">
 					<level>2</level>

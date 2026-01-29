@@ -386,7 +386,7 @@ def get_unwatched_shows_query() -> dict[str, Any]:
     
     Returns:
         Query for shows with unwatched episodes, including metadata
-        for display (genre, title, mpaa, episode counts, thumbnail).
+        for display (genre, title, mpaa, episode counts, thumbnail, year).
     """
     return {
         "jsonrpc": "2.0",
@@ -400,7 +400,7 @@ def get_unwatched_shows_query() -> dict[str, Any]:
             },
             "properties": [
                 "genre", "title", "playcount", "mpaa",
-                "watchedepisodes", "episode", "thumbnail"
+                "watchedepisodes", "episode", "thumbnail", "year"
             ]
         }
     }
@@ -408,17 +408,17 @@ def get_unwatched_shows_query() -> dict[str, Any]:
 
 def get_all_shows_query() -> dict[str, Any]:
     """
-    Get all TV shows (for title lookup).
+    Get all TV shows (for title lookup and ID recovery).
     
     Returns:
-        Query for all shows with title property only.
+        Query for all shows with title and year properties.
     """
     return {
         "jsonrpc": "2.0",
         "id": 1,
         "method": "VideoLibrary.GetTVShows",
         "params": {
-            "properties": ["title"]
+            "properties": ["title", "year"]
         }
     }
 
@@ -440,7 +440,7 @@ def get_shows_by_lastplayed_query() -> dict[str, Any]:
                 "operator": "is",
                 "value": "0"
             },
-            "properties": ["lastplayed"],
+            "properties": ["lastplayed", "year"],
             "sort": {
                 "order": "descending",
                 "method": "lastplayed"
@@ -457,7 +457,7 @@ def build_show_details_query(tvshowid: int) -> dict[str, Any]:
         tvshowid: The Kodi TV show ID.
     
     Returns:
-        Query for show details including title.
+        Query for show details including title and year.
     """
     return {
         "jsonrpc": "2.0",
@@ -465,7 +465,7 @@ def build_show_details_query(tvshowid: int) -> dict[str, Any]:
         "method": "VideoLibrary.GetTVShowDetails",
         "params": {
             "tvshowid": tvshowid,
-            "properties": ["title"]
+            "properties": ["title", "year"]
         }
     }
 

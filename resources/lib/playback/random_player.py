@@ -65,6 +65,7 @@ from resources.lib.data.shows import (
     validate_duration_settings,
 )
 from resources.lib.playback.playlist_session import PlaylistSession
+from resources.lib.data.storage import get_storage
 from resources.lib.utils import get_logger, json_query, log_timing, busy_progress
 
 if TYPE_CHECKING:
@@ -1084,6 +1085,20 @@ def build_random_playlist(
                             config.duration_min,
                             config.duration_max
                         )
+                
+                # Refresh from shared storage if stale (multi-instance sync)
+                if stored_data_filtered:
+                    storage = get_storage()
+                    if storage.needs_refresh():
+                        show_ids = [show[1] for show in stored_data_filtered]
+                        log.debug("Cache stale, refreshing before playlist build",
+                                 event="playlist.refresh", show_count=len(show_ids))
+                        try:
+                            _, revision = storage.get_ondeck_bulk(show_ids, refresh_display=True)
+                            storage.mark_refreshed(revision)
+                        except Exception as e:
+                            log.warning("Refresh failed, using cached data",
+                                       event="playlist.refresh_error", error=str(e))
             
             outer_timer.mark("show_fetch")
             

@@ -1,7 +1,7 @@
 # EasyTV Logging Guide
 
-**Version:** 1.0  
-**Last Updated:** 2025-01-15
+**Version:** 1.1  
+**Last Updated:** 2026-01-26
 
 This guide covers the logging system in EasyTV for both users and developers.
 
@@ -72,9 +72,9 @@ Logger names by package:
 | ------------ | ------------------------------------------------ |
 | `service/`   | `'daemon'` or `'service'`                        |
 | `ui/`        | `'ui'`                                           |
-| `data/`      | `'data'`                                         |
+| `data/`      | `'data'`, `'shareddb'`, `'storage'`              |
 | `playback/`  | `'playback'`                                     |
-| Entry points | `'default'`, `'clone'`, `'selector'`, `'export'` |
+| Entry points | `'default'`, `'clone'`, `'selector'`, `'export'`, `'clear_sync'` |
 
 ### Log Levels
 
@@ -132,7 +132,7 @@ Events follow the pattern: `domain.action`
 | Domain     | Used For            | Example Events                                       |
 | ---------- | ------------------- | ---------------------------------------------------- |
 | `service`  | Service lifecycle   | `service.start`, `service.stop`, `service.init`      |
-| `settings` | Configuration       | `settings.load`, `settings.migrate`, `settings.id_shift`, `settings.validation_complete`, `settings.orphan_cleanup` |
+| `settings` | Configuration       | `settings.load`, `settings.migrate`, `settings.id_shift`, `settings.validation_complete`, `settings.orphan_cleanup`, `settings.sync_toggle` |
 | `library`  | Kodi library        | `library.refresh`, `library.fallback`                |
 | `playback` | Video playback      | `playback.start`, `playback.fallback`                |
 | `playlist` | Playlist operations | `playlist.create`, `playlist.start`, `playlist.fail` |
@@ -141,6 +141,9 @@ Events follow the pattern: `domain.action`
 | `export`   | Episode export      | `export.start`, `export.complete`, `export.fail`     |
 | `ui`       | User interface      | `ui.open`, `ui.select`, `ui.fallback`                |
 | `selector` | Show selector       | `selector.open`, `selector.save`                     |
+| `shareddb` | Shared DB sync      | `shareddb.connect`, `shareddb.backoff`, `shareddb.write` |
+| `storage`  | Storage abstraction | `storage.init_local`, `storage.init_shared`, `storage.reset` |
+| `sync`     | Sync operations     | `sync.clear_requested`, `sync.clear_success`, `sync.clear_failed` |
 
 ### When to Add Logging
 
@@ -302,6 +305,75 @@ log.debug("Processing complete")
 2025-01-15 14:45:12.401 [INFO ] [EasyTV.module] message | event=domain.action, key=value
 2025-01-15 14:45:12.402 [DEBUG] [EasyTV.module] developer details | count=47
 ```
+
+---
+
+## Multi-Instance Sync Events
+
+The multi-instance sync feature introduces several new logging domains for tracking database synchronization across Kodi devices.
+
+### shareddb Events (Logger: 'shareddb')
+
+Database connection and operations.
+
+| Event | Level | Description |
+|-------|-------|-------------|
+| `shareddb.connect` | INFO | Connected to MySQL/MariaDB |
+| `shareddb.reconnect` | INFO | Connection recovered after disconnect |
+| `shareddb.backoff` | WARNING | Connection failed, backing off 30s |
+| `shareddb.backoff_active` | WARNING | Still in backoff period |
+| `shareddb.config_found` | DEBUG | Found advancedsettings.xml |
+| `shareddb.config_error` | WARNING | Failed to parse advancedsettings.xml |
+| `shareddb.no_video_db` | WARNING | Kodi video database not found |
+| `shareddb.found_video_db` | DEBUG | Located Kodi video database |
+| `shareddb.init_separate` | INFO | Using dedicated easytv database |
+| `shareddb.init_fallback` | INFO | Using Kodi DB (CREATE DATABASE denied) |
+| `shareddb.init_prefixed` | INFO | Using prefixed tables in Kodi DB |
+| `shareddb.schema_migrate` | INFO | Schema migration applied |
+| `shareddb.migration_claimed` | INFO | Migration lock acquired |
+| `shareddb.migration_lock_stolen` | WARNING | Stale lock stolen (crashed instance) |
+| `shareddb.migration_skipped` | INFO | Another instance is migrating |
+| `shareddb.migration_complete` | INFO | Migration lock released |
+| `shareddb.id_recovered` | INFO | Show ID recovered via title+year |
+| `shareddb.orphans_deleted` | INFO | Orphaned shows cleaned up |
+| `shareddb.validate_complete` | INFO | ID validation completed |
+| `shareddb.clear` | INFO | All sync data cleared |
+| `shareddb.clear_error` | ERROR | Failed to clear sync data |
+
+### storage Events (Logger: 'storage')
+
+Storage abstraction layer.
+
+| Event | Level | Description |
+|-------|-------|-------------|
+| `storage.init_local` | INFO | Using window property storage |
+| `storage.init_shared` | INFO | Using shared database storage |
+| `storage.pymysql_missing` | WARNING | pymysql not installed, falling back |
+| `storage.clear_stale` | DEBUG | Cleared props for show deleted elsewhere |
+| `storage.reset` | INFO | Storage singleton reset |
+
+### sync Events (Logger: 'clear_sync')
+
+Sync data management.
+
+| Event | Level | Description |
+|-------|-------|-------------|
+| `sync.clear_requested` | INFO | User initiated clear operation |
+| `sync.clear_success` | INFO | Data cleared successfully |
+| `sync.clear_failed` | WARNING | Clear operation failed |
+| `sync.clear_cancelled` | INFO | User cancelled clear dialog |
+
+### Timing Events for Sync Operations
+
+The following operations are instrumented with `log_timing`:
+
+| Operation | Logger | Description |
+|-----------|--------|-------------|
+| `shareddb.schema_init` | shareddb | Database schema creation |
+| `shareddb.write` | shareddb | Show tracking write |
+| `shareddb.bulk_read` | shareddb | Bulk show data fetch |
+| `shareddb.validate_ids` | shareddb | ID validation after rebuild |
+| `shareddb.migration_claim` | shareddb | Migration lock acquisition |
 
 ---
 

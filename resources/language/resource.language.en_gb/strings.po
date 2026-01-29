@@ -1060,3 +1060,64 @@ msgstr ""
 msgctxt "#32643"
 msgid "Using playlist:"
 msgstr ""
+
+
+# =============================================================================
+# MULTI-INSTANCE SYNC STRINGS (32700-32799)
+# Settings and dialogs for multi-instance synchronization
+# =============================================================================
+
+#. Multi-instance sync group label
+msgctxt "#32700"
+msgid "Multi-Instance Sync"
+msgstr ""
+
+#. Multi-instance sync setting label
+msgctxt "#32701"
+msgid "Enable multi-instance sync"
+msgstr ""
+
+#. Multi-instance sync setting help
+msgctxt "#32702"
+msgid "Sync episode tracking across multiple Kodi instances sharing the same MySQL/MariaDB library. Requires PyMySQL addon."
+msgstr ""
+
+#. Clear sync data button label
+msgctxt "#32703"
+msgid "Clear sync data..."
+msgstr ""
+
+#. Clear sync data button help
+msgctxt "#32704"
+msgid "Remove all EasyTV sync data from the shared database. Use for troubleshooting or when disabling sync permanently."
+msgstr ""
+
+#. Clear sync data confirmation dialog title
+msgctxt "#32705"
+msgid "Clear sync data?"
+msgstr ""
+
+#. Clear sync data confirmation dialog message
+msgctxt "#32706"
+msgid "This will remove all EasyTV tracking data from the shared database. Other instances will lose their sync state. Continue?"
+msgstr ""
+
+#. Clear sync data success notification
+msgctxt "#32707"
+msgid "Sync data cleared"
+msgstr ""
+
+#. Clear sync data failure notification
+msgctxt "#32708"
+msgid "Failed to clear sync data"
+msgstr ""
+
+#. Database unavailable message
+msgctxt "#32709"
+msgid "Database is not available. Check your MySQL/MariaDB configuration."
+msgstr ""
+
+#. PyMySQL addon not installed message
+msgctxt "#32710"
+msgid "Multi-instance sync requires the PyMySQL addon which is not installed. The setting has been disabled."
+msgstr ""

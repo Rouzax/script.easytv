@@ -20,9 +20,33 @@ Logging:
         - service.stop (INFO): Service has stopped
 """
 
+import xbmc
 import xbmcaddon
 from resources.lib.utils import get_logger, parse_version, StructuredLogger
 from resources.lib.service.daemon import ServiceDaemon
+
+
+def _get_device_name() -> str:
+    """Get device identifier for logging. Prefers friendly name, falls back to hostname."""
+    friendly = xbmc.getInfoLabel('System.FriendlyName')
+    if friendly:
+        return friendly
+    # Fallback to hostname if friendly name not set
+    import socket
+    try:
+        return socket.gethostname()
+    except Exception:
+        return 'unknown'
+
+
+def _get_kodi_version() -> str:
+    """Get Kodi version string (e.g., '21.1')."""
+    # BuildVersion format: "21.1 (21.1.0) Git:..." - extract first part
+    build = xbmc.getInfoLabel('System.BuildVersion')
+    if build:
+        return build.split()[0]
+    return 'unknown'
+
 
 if __name__ == "__main__":
     addon = xbmcaddon.Addon()
@@ -30,12 +54,24 @@ if __name__ == "__main__":
     version = parse_version(version_str)
     log = get_logger('service')
 
-    log.info("Service started", event="service.start", version=version_str)
+    # Startup banner with device identification for multi-instance debugging
+    log.info(
+        "Service started",
+        event="service.start",
+        version=version_str,
+        device=_get_device_name(),
+        kodi=_get_kodi_version()
+    )
 
     daemon = ServiceDaemon(addon=addon, logger=log)
     daemon.load_initial_settings()
     daemon.initialize()
     daemon.run()
 
-    log.info("Service stopped", event="service.stop", version=version_str)
+    log.info(
+        "Service stopped",
+        event="service.stop",
+        version=version_str,
+        device=_get_device_name()
+    )
     StructuredLogger.shutdown()

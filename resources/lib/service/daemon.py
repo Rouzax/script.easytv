@@ -54,11 +54,12 @@ Logging:
 from __future__ import annotations
 
 import ast
+import contextlib
 import json
 import random
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
 
 import xbmc
 import xbmcaddon
@@ -134,6 +135,7 @@ from resources.lib.service.settings import (
 from resources.lib.service.library_monitor import LibraryMonitor
 from resources.lib.service.playback_monitor import PlaybackMonitor, PlaybackSettings
 from resources.lib.service.episode_tracker import EpisodeTracker, PROP_DURATION
+from resources.lib.data.storage import get_storage, reset_storage, SharedDatabaseStorage
 
 if TYPE_CHECKING:
     from resources.lib.utils import StructuredLogger
@@ -216,6 +218,9 @@ class ServiceDaemon:
         self._eject: bool = False
         self._is_random_show: bool = False
         
+        # Track multi-instance sync setting for change detection
+        self._sync_enabled: bool = False
+        
         # Cache playback completion threshold from Kodi settings
         self._playback_complete_threshold = get_playcount_minimum_percent() / 100.0
         self._log.info(
@@ -290,6 +295,12 @@ class ServiceDaemon:
         
         # Perform initial library scan with retry logic
         self._initial_library_scan()
+        
+        # Initialize storage and perform migration if needed (multi-instance sync)
+        self._initialize_storage()
+        
+        # Track initial sync setting for change detection
+        self._sync_enabled = get_bool_setting('multi_instance_sync')
         
         # Validate settings after library scan (removes orphaned show IDs)
         if self._all_shows_list:
@@ -1043,11 +1054,22 @@ class ServiceDaemon:
             
             if 'tvshows' not in lshows_result:
                 show_lw = []
+                show_years: Dict[int, int] = {}
             else:
                 show_lw = [
                     x['tvshowid'] for x in lshows_result['tvshows']
                     if x['tvshowid'] in showids
                 ]
+                # Extract show years for ID recovery (multi-instance sync)
+                show_years = {
+                    x['tvshowid']: x.get('year', 0)
+                    for x in lshows_result['tvshows']
+                    if x['tvshowid'] in showids
+                }
+            
+            # Store show years in window properties (for write-through to shared DB)
+            for show_id, year in show_years.items():
+                self._window.setProperty(f"EasyTV.{show_id}.Year", str(year) if year else '')
             
             # Mark end of show query phase
             if timer is not None:
@@ -1082,138 +1104,151 @@ class ServiceDaemon:
             _proc_cache_time_ms = 0
             _proc_logic_time_ms = 0
             
-            for my_showid in show_lw:
-                _proc_shows_iterated += 1
-                _logic_start = time.perf_counter()
-                service_heartbeat()
-                
-                # Get episodes: from pre-fetched bulk data or per-show query
-                if bulk:
-                    eps = episodes_by_show.get(my_showid, [])
-                else:
-                    ep_result = json_query(build_show_episodes_query(my_showid), True)
-                    if 'episodes' not in ep_result:
-                        continue
-                    eps = ep_result['episodes']
-                
-                if not eps:
-                    continue
-                
-                _proc_shows_with_eps += 1
-                all_unplayed = []
-                season = FIRST_REGULAR_SEASON
-                episode = EPISODE_INITIAL_VALUE
-                watched_showcount = 0
-                on_deck_epid: Optional[int] = None
-                
-                # Find highest watched episode and collect unwatched
-                for ep in eps:
-                    if ep['playcount'] != 0:
-                        watched_showcount += 1
-                        if ((ep['season'] == season and ep['episode'] > episode) or
-                                ep['season'] > season):
-                            season = ep['season']
-                            episode = ep['episode']
-                    else:
-                        all_unplayed.append(ep)
-                
-                # Sort by season/episode before dedup to ensure multi-episode files
-                # consistently select the lowest episode number as representative
-                all_unplayed.sort(key=lambda x: (x['season'], x['episode']))
-                
-                # Remove duplicate files (double episodes) using set for O(1) lookup
-                seen_files: set[str] = set()
-                unique_unplayed = []
-                for ep in all_unplayed:
-                    if ep['file'] and ep['file'] not in seen_files:
-                        seen_files.add(ep['file'])
-                        unique_unplayed.append(ep)
-                all_unplayed = unique_unplayed
-                del seen_files, unique_unplayed
-                
-                # Separate into ondeck and offdeck
-                unordered_ondeck_eps = [
-                    x for x in all_unplayed
-                    if x['season'] > season or
-                    (x['season'] == season and x['episode'] > episode)
-                ]
-                # Use set for O(1) lookup instead of O(n) list membership
-                ondeck_ep_ids = {ep['episodeid'] for ep in unordered_ondeck_eps}
-                offdeck_eps = [
-                    x for x in all_unplayed
-                    if x['episodeid'] not in ondeck_ep_ids
-                ]
-                
-                # Calculate counts
-                count_eps = len(eps)
-                count_weps = watched_showcount
-                count_uweps = count_eps - count_weps
-                
-                # Sort ondeck by season/episode
-                ondeck_eps = [
-                    ep for ep in sorted(unordered_ondeck_eps, key=lambda x: (x['season'], x['episode']))
-                    if ep
-                ]
-                
-                if not ondeck_eps and not offdeck_eps:
-                    if my_showid in self._state.shows_with_next_episodes:
-                        self._remove_from_shows_with_next_episodes(my_showid)
-                    continue
-                
-                # Determine if this is a skipped episode selection
-                is_skipped_episode = False
-                selected_ep_data: Optional[Dict[str, Any]] = None
-                
-                # Select the next episode
-                if my_showid in self._settings.random_order_shows:
-                    # Random shows: combine and shuffle all episodes
-                    combined_deck_list = ondeck_eps + offdeck_eps
-                    random.shuffle(combined_deck_list)
-                    on_deck_epid = combined_deck_list[0]['episodeid']
-                    selected_ep_data = combined_deck_list[0] if bulk else None
-                elif ondeck_eps:
-                    # Sequential show with ondeck episodes: pick first
-                    on_deck_epid = ondeck_eps[0]['episodeid']
-                    selected_ep_data = ondeck_eps[0] if bulk else None
-                else:
-                    # Sequential show with ONLY offdeck episodes: pick earliest skipped
-                    # (offdeck_eps is already sorted by season/episode from earlier sort)
-                    on_deck_epid = offdeck_eps[0]['episodeid']
-                    selected_ep_data = offdeck_eps[0] if bulk else None
-                    is_skipped_episode = True
-                    if not bulk:
-                        self._log.debug(
-                            "Selecting skipped episode (no ondeck available)",
-                            show_id=my_showid,
-                            episode_id=on_deck_epid
-                        )
-                
-                # Build episode ID lists
-                on_deck_list = [
-                    x['episodeid'] for x in ondeck_eps
-                ] if ondeck_eps else []
-                off_deck_list = [
-                    x['episodeid'] for x in offdeck_eps
-                ] if offdeck_eps else []
-                
-                # Track logic time (everything before cache)
-                _proc_logic_time_ms += int((time.perf_counter() - _logic_start) * 1000)
-                
-                # Cache episode data in window properties
-                _cache_start = time.perf_counter()
-                self._episode_tracker.cache_next_episode(
-                    on_deck_epid, my_showid,
-                    on_deck_list, off_deck_list,
-                    count_uweps, count_weps,
-                    is_skipped=is_skipped_episode,
-                    quiet=bulk,
-                    ep_data=selected_ep_data
+            # Batch database writes during bulk refresh
+            # Preload existing data to skip unchanged writes
+            storage = get_storage()
+            if bulk and isinstance(storage, SharedDatabaseStorage):
+                preload_data, current_rev = storage.get_ondeck_bulk(show_lw)
+                batch_ctx = storage.db.batch_write(
+                    preload=preload_data,
+                    current_rev=current_rev
                 )
-                _proc_cache_time_ms += int((time.perf_counter() - _cache_start) * 1000)
-                
-                # Add to tracked shows
-                if my_showid not in self._state.shows_with_next_episodes:
-                    self._state.shows_with_next_episodes.append(my_showid)
+            else:
+                batch_ctx = contextlib.nullcontext()
+            
+            with batch_ctx:
+                for my_showid in show_lw:
+                    _proc_shows_iterated += 1
+                    _logic_start = time.perf_counter()
+                    service_heartbeat()
+                    
+                    # Get episodes: from pre-fetched bulk data or per-show query
+                    if bulk:
+                        eps = episodes_by_show.get(my_showid, [])
+                    else:
+                        ep_result = json_query(build_show_episodes_query(my_showid), True)
+                        if 'episodes' not in ep_result:
+                            continue
+                        eps = ep_result['episodes']
+                    
+                    if not eps:
+                        continue
+                    
+                    _proc_shows_with_eps += 1
+                    all_unplayed = []
+                    season = FIRST_REGULAR_SEASON
+                    episode = EPISODE_INITIAL_VALUE
+                    watched_showcount = 0
+                    on_deck_epid: Optional[int] = None
+                    
+                    # Find highest watched episode and collect unwatched
+                    for ep in eps:
+                        if ep['playcount'] != 0:
+                            watched_showcount += 1
+                            if ((ep['season'] == season and ep['episode'] > episode) or
+                                    ep['season'] > season):
+                                season = ep['season']
+                                episode = ep['episode']
+                        else:
+                            all_unplayed.append(ep)
+                    
+                    # Sort by season/episode before dedup to ensure multi-episode files
+                    # consistently select the lowest episode number as representative
+                    all_unplayed.sort(key=lambda x: (x['season'], x['episode']))
+                    
+                    # Remove duplicate files (double episodes) using set for O(1) lookup
+                    seen_files: set[str] = set()
+                    unique_unplayed = []
+                    for ep in all_unplayed:
+                        if ep['file'] and ep['file'] not in seen_files:
+                            seen_files.add(ep['file'])
+                            unique_unplayed.append(ep)
+                    all_unplayed = unique_unplayed
+                    del seen_files, unique_unplayed
+                    
+                    # Separate into ondeck and offdeck
+                    unordered_ondeck_eps = [
+                        x for x in all_unplayed
+                        if x['season'] > season or
+                        (x['season'] == season and x['episode'] > episode)
+                    ]
+                    # Use set for O(1) lookup instead of O(n) list membership
+                    ondeck_ep_ids = {ep['episodeid'] for ep in unordered_ondeck_eps}
+                    offdeck_eps = [
+                        x for x in all_unplayed
+                        if x['episodeid'] not in ondeck_ep_ids
+                    ]
+                    
+                    # Calculate counts
+                    count_eps = len(eps)
+                    count_weps = watched_showcount
+                    count_uweps = count_eps - count_weps
+                    
+                    # Sort ondeck by season/episode
+                    ondeck_eps = [
+                        ep for ep in sorted(unordered_ondeck_eps, key=lambda x: (x['season'], x['episode']))
+                        if ep
+                    ]
+                    
+                    if not ondeck_eps and not offdeck_eps:
+                        if my_showid in self._state.shows_with_next_episodes:
+                            self._remove_from_shows_with_next_episodes(my_showid)
+                        continue
+                    
+                    # Determine if this is a skipped episode selection
+                    is_skipped_episode = False
+                    selected_ep_data: Optional[Dict[str, Any]] = None
+                    
+                    # Select the next episode
+                    if my_showid in self._settings.random_order_shows:
+                        # Random shows: combine and shuffle all episodes
+                        combined_deck_list = ondeck_eps + offdeck_eps
+                        random.shuffle(combined_deck_list)
+                        on_deck_epid = combined_deck_list[0]['episodeid']
+                        selected_ep_data = combined_deck_list[0] if bulk else None
+                    elif ondeck_eps:
+                        # Sequential show with ondeck episodes: pick first
+                        on_deck_epid = ondeck_eps[0]['episodeid']
+                        selected_ep_data = ondeck_eps[0] if bulk else None
+                    else:
+                        # Sequential show with ONLY offdeck episodes: pick earliest skipped
+                        # (offdeck_eps is already sorted by season/episode from earlier sort)
+                        on_deck_epid = offdeck_eps[0]['episodeid']
+                        selected_ep_data = offdeck_eps[0] if bulk else None
+                        is_skipped_episode = True
+                        if not bulk:
+                            self._log.debug(
+                                "Selecting skipped episode (no ondeck available)",
+                                show_id=my_showid,
+                                episode_id=on_deck_epid
+                            )
+                    
+                    # Build episode ID lists
+                    on_deck_list = [
+                        x['episodeid'] for x in ondeck_eps
+                    ] if ondeck_eps else []
+                    off_deck_list = [
+                        x['episodeid'] for x in offdeck_eps
+                    ] if offdeck_eps else []
+                    
+                    # Track logic time (everything before cache)
+                    _proc_logic_time_ms += int((time.perf_counter() - _logic_start) * 1000)
+                    
+                    # Cache episode data in window properties
+                    _cache_start = time.perf_counter()
+                    self._episode_tracker.cache_next_episode(
+                        on_deck_epid, my_showid,
+                        on_deck_list, off_deck_list,
+                        count_uweps, count_weps,
+                        is_skipped=is_skipped_episode,
+                        quiet=bulk,
+                        ep_data=selected_ep_data
+                    )
+                    _proc_cache_time_ms += int((time.perf_counter() - _cache_start) * 1000)
+                    
+                    # Add to tracked shows
+                    if my_showid not in self._state.shows_with_next_episodes:
+                        self._state.shows_with_next_episodes.append(my_showid)
             
             # Log processing breakdown
             if bulk:
@@ -1480,6 +1515,19 @@ class ServiceDaemon:
         # Store old maintainsmartplaylist value before reload
         old_maintainsmartplaylist = self._settings.maintainsmartplaylist
         
+        # Check if multi_instance_sync setting changed
+        new_sync_enabled = get_bool_setting('multi_instance_sync')
+        sync_changed = new_sync_enabled != self._sync_enabled
+        
+        if sync_changed:
+            self._log.info(
+                "Multi-instance sync setting changed",
+                event="settings.sync_toggle",
+                enabled=new_sync_enabled
+            )
+            reset_storage()
+            self._sync_enabled = new_sync_enabled
+        
         self._settings = load_settings(
             firstrun=False,
             window=self._window,
@@ -1492,6 +1540,10 @@ class ServiceDaemon:
             on_update_smartplaylist=self._update_smartplaylist,
             shows_with_next_episodes=self._state.shows_with_next_episodes,
         )
+        
+        # Re-initialize storage if sync setting was just enabled
+        if sync_changed and new_sync_enabled:
+            self._initialize_storage()
         
         # Check if smart playlist setting was just enabled
         # Now self._settings has the new value, so _update_smartplaylist will work
@@ -1525,3 +1577,186 @@ class ServiceDaemon:
         )
         
         self._log.info("Initial settings loaded", event="settings.load")
+    
+    def _initialize_storage(self) -> None:
+        """
+        Initialize storage backend and perform migration if needed.
+        
+        When multi-instance sync is first enabled and the shared database
+        is empty, migrate existing window property data to the database.
+        Uses atomic locking to handle race conditions when multiple
+        instances start simultaneously.
+        
+        When database already has data, validate stored show IDs against
+        current Kodi library and migrate/cleanup as needed.
+        """
+        storage = get_storage()
+        
+        # Only perform migration for shared database storage
+        if not isinstance(storage, SharedDatabaseStorage):
+            return
+        
+        # Check if database is empty (first-time enable)
+        if storage.db.is_empty():
+            # First-time migration: move window props to database
+            self._migrate_to_shared_storage(storage)
+        else:
+            # Database has existing data - validate IDs against current library
+            self._validate_storage_ids(storage)
+    
+    def _migrate_to_shared_storage(self, storage: SharedDatabaseStorage) -> None:
+        """
+        Migrate window property data to shared database (first-time enable).
+        
+        Args:
+            storage: The SharedDatabaseStorage instance.
+        """
+        import socket
+        import os
+        
+        # Check if we have any data to migrate
+        if not self._state.shows_with_next_episodes:
+            self._log.debug("No local data to migrate")
+            return
+        
+        # Generate unique instance ID for migration lock
+        instance_id = f"{socket.gethostname()}-{os.getpid()}"
+        
+        # Try to claim migration lock (first-writer-wins)
+        if storage.db.try_claim_migration(instance_id):
+            try:
+                self._log.info(
+                    "Starting migration to shared database",
+                    event="storage.migration_start",
+                    instance_id=instance_id,
+                    show_count=len(self._state.shows_with_next_episodes)
+                )
+                
+                migrated_count = 0
+                with storage.db.batch_write():
+                    for show_id in self._state.shows_with_next_episodes:
+                        # Get data from window properties
+                        episode_id_str = self._window.getProperty(f"EasyTV.{show_id}.EpisodeID")
+                        if not episode_id_str:
+                            continue
+                        
+                        ondeck_str = self._window.getProperty(f"EasyTV.{show_id}.ondeck_list")
+                        offdeck_str = self._window.getProperty(f"EasyTV.{show_id}.offdeck_list")
+                        watched_str = self._window.getProperty(f"EasyTV.{show_id}.CountWatchedEps")
+                        unwatched_str = self._window.getProperty(f"EasyTV.{show_id}.CountUnwatchedEps")
+                        show_title = self._window.getProperty(f"EasyTV.{show_id}.TVshowTitle")
+                        year_str = self._window.getProperty(f"EasyTV.{show_id}.Year")
+                        
+                        try:
+                            ondeck_list = ast.literal_eval(ondeck_str) if ondeck_str else []
+                        except (ValueError, SyntaxError):
+                            ondeck_list = []
+                        
+                        try:
+                            offdeck_list = ast.literal_eval(offdeck_str) if offdeck_str else []
+                        except (ValueError, SyntaxError):
+                            offdeck_list = []
+                        
+                        try:
+                            watched_count = int(watched_str) if watched_str else 0
+                        except ValueError:
+                            watched_count = 0
+                        
+                        try:
+                            unwatched_count = int(unwatched_str) if unwatched_str else 0
+                        except ValueError:
+                            unwatched_count = 0
+                        
+                        try:
+                            show_year = int(year_str) if year_str else None
+                        except ValueError:
+                            show_year = None
+                        
+                        # Write to shared storage
+                        try:
+                            storage.set_ondeck(show_id, {
+                                'show_title': show_title,
+                                'show_year': show_year,
+                                'ondeck_episode_id': int(episode_id_str),
+                                'ondeck_list': ondeck_list,
+                                'offdeck_list': offdeck_list,
+                                'watched_count': watched_count,
+                                'unwatched_count': unwatched_count,
+                            })
+                            migrated_count += 1
+                        except Exception as e:
+                            self._log.warning(
+                                "Failed to migrate show",
+                                event="storage.migration_show_error",
+                                show_id=show_id,
+                                error=str(e)
+                            )
+                
+                self._log.info(
+                    "Migration to shared database complete",
+                    event="storage.migration_complete",
+                    migrated_count=migrated_count
+                )
+                
+            finally:
+                storage.db.release_migration_lock()
+        else:
+            self._log.info(
+                "Migration handled by another instance",
+                event="storage.migration_skipped"
+            )
+    
+    def _validate_storage_ids(self, storage: SharedDatabaseStorage) -> None:
+        """
+        Validate stored show IDs against current Kodi library.
+        
+        Handles library rebuilds where show IDs may have shifted.
+        Shows are matched by title+year, and orphaned shows are cleaned up.
+        
+        Args:
+            storage: The SharedDatabaseStorage instance.
+        """
+        # Build current_shows dictionary from window properties
+        # Format: {show_id: (title, year)}
+        current_shows: Dict[int, Tuple[str, Optional[int]]] = {}
+        
+        for show_id in self._all_shows_list:
+            title = self._window.getProperty(f"EasyTV.{show_id}.TVshowTitle")
+            year_str = self._window.getProperty(f"EasyTV.{show_id}.Year")
+            
+            try:
+                year = int(year_str) if year_str else None
+            except ValueError:
+                year = None
+            
+            # Only include shows with titles (indicates they were processed)
+            if title:
+                current_shows[show_id] = (title, year)
+        
+        if not current_shows:
+            self._log.debug("No current shows to validate against")
+            return
+        
+        try:
+            migrated, orphaned, valid = storage.db.validate_and_migrate_ids(current_shows)
+            
+            if migrated > 0 or orphaned > 0:
+                self._log.info(
+                    "Show ID validation completed",
+                    event="storage.id_validation",
+                    valid=valid,
+                    migrated=migrated,
+                    orphaned=orphaned
+                )
+            else:
+                self._log.debug(
+                    "Show ID validation completed, all IDs valid",
+                    valid=valid
+                )
+                
+        except Exception as e:
+            self._log.warning(
+                "Show ID validation failed",
+                event="storage.id_validation_error",
+                error=str(e)
+            )

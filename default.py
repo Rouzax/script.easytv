@@ -102,7 +102,7 @@ def main_entry(addon, log):
     sort_reverse = get_bool_setting('sort_reverse')
 
     try:
-        selected_shows = ast.literal_eval(addon.getSetting('selection'))
+        selected_shows = ast.literal_eval(window.getProperty("EasyTV.selection"))
     except (ValueError, SyntaxError):
         selected_shows = []
 
@@ -239,6 +239,11 @@ def _handle_special_modes(mode, addon, log):
         log.debug("Exporter mode")
         from resources import episode_exporter
         episode_exporter.Main()
+
+    elif mode == 'clear_sync_data':
+        log.debug("Clear sync data mode")
+        from resources import clear_sync_data
+        clear_sync_data.main()
 
 
 def _check_service_running(window, log):

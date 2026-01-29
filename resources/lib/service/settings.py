@@ -441,6 +441,9 @@ class ServiceSettings:
     # Random order shows (list of show IDs)
     random_order_shows: list[int] = field(default_factory=list)
     
+    # Manual show selection (list of show IDs for usersel filter)
+    selection: list[int] = field(default_factory=list)
+    
     # Logging
     keep_logs: bool = False
 
@@ -709,6 +712,20 @@ def load_settings(
                         on_remove_show(old_show_id)
     
     log.debug("Random order shows", shows=settings.random_order_shows)
+    
+    # Parse selection (usersel) - handles both old [id] and new {id: title} formats
+    # Unlike random_order_shows, selection has no change callbacks - it's just a filter
+    # read at runtime by default.py
+    show_dict, needs_migration = _parse_show_setting(setting('selection'))
+    if needs_migration:
+        show_dict = _migrate_show_setting('selection', show_dict, addon, log)
+    # Extract list[int] from dict keys for consumers
+    settings.selection = [int(sid) for sid in show_dict.keys()]
+    
+    # Update window property for default.py to read
+    window.setProperty("EasyTV.selection", str(settings.selection))
+    
+    log.debug("Selection shows", shows=settings.selection)
     
     if firstrun:
         log.info(

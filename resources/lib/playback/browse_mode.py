@@ -57,6 +57,7 @@ from resources.lib.ui.browse_window import (
 from resources.lib.playback.browse_player import BrowseModePlayer
 from resources.lib.playback.random_player import filter_shows_by_population
 from resources.lib.data.shows import filter_shows_by_duration
+from resources.lib.data.storage import get_storage
 
 if TYPE_CHECKING:
     from resources.lib.utils import StructuredLogger
@@ -259,6 +260,21 @@ def build_episode_list(
             filtered_data = [x for x in show_data if x[1] not in random_order_shows]
         else:
             filtered_data = show_data
+        
+        # Refresh from shared storage if stale (multi-instance sync)
+        # This ensures window properties are up-to-date before displaying
+        if filtered_data:
+            storage = get_storage()
+            if storage.needs_refresh():
+                show_ids = [show[1] for show in filtered_data]
+                log.debug("Cache stale, refreshing before browse",
+                         event="browse.refresh", show_count=len(show_ids))
+                try:
+                    _, revision = storage.get_ondeck_bulk(show_ids, refresh_display=True)
+                    storage.mark_refreshed(revision)
+                except Exception as e:
+                    log.warning("Refresh failed, using cached data",
+                               event="browse.refresh_error", error=str(e))
         
         log.info("Browse mode starting", event="browse.start", show_count=len(filtered_data))
         

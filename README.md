@@ -24,6 +24,7 @@ EasyTV maintains a list of the **next episode to watch** for every TV show in yo
 ## Key Features
 
 - **Smart Episode Tracking** — Always knows your next episode, even with gaps in watch history
+- **Multi-Instance Sync** — Share watch progress across multiple Kodi devices
 - **Mix in Movies** — Add movies to your random playlists
 - **Smart Playlist Filtering** — Use Kodi smart playlists to filter content
 - **Duration Filtering** — Only shows with episodes under 30 minutes? Done.
@@ -39,6 +40,23 @@ EasyTV maintains a list of the **next episode to watch** for every TV show in yo
 - A TV library with watched/unwatched episodes
 
 > ⚠️ **Not compatible** with Kodi 20 or earlier versions.
+
+---
+
+## Multi-Instance Sync (Optional)
+
+If you run Kodi on multiple devices (living room, bedroom, etc.) with a **shared MySQL/MariaDB video database**, EasyTV can sync watch progress between them. When you watch Episode 5 on one device, all other devices know to queue Episode 6.
+
+**Requirements:**
+- Kodi configured with a shared MySQL/MariaDB video database
+- The `pymysql` Python library (install via: `pip install pymysql`)
+
+**Quick Setup:**
+1. Install pymysql on all Kodi devices
+2. Enable **"Multi-instance sync"** in EasyTV Settings → Advanced
+3. That's it — EasyTV auto-detects your database from `advancedsettings.xml`
+
+For detailed setup, see the [Multi-Instance Sync](https://github.com/Rouzax/script.easytv/wiki/Multi-Instance-Sync) wiki page.
 
 ---
 
@@ -65,6 +83,7 @@ EasyTV maintains a list of the **next episode to watch** for every TV show in yo
 | [Smart Playlist Integration](https://github.com/Rouzax/script.easytv/wiki/Smart-Playlist-Integration) | Advanced filtering |
 | [Smart Playlist Examples](https://github.com/Rouzax/script.easytv/wiki/Smart-Playlist-Examples) | Ready-to-use playlist files |
 | [Random-Order Shows](https://github.com/Rouzax/script.easytv/wiki/Random-Order-Shows) | Shuffle-friendly content |
+| [Multi-Instance Sync](https://github.com/Rouzax/script.easytv/wiki/Multi-Instance-Sync) | Share progress across devices |
 | [Advanced Features](https://github.com/Rouzax/script.easytv/wiki/Advanced-Features) | Clones, exporter, more |
 | [Troubleshooting & FAQ](https://github.com/Rouzax/script.easytv/wiki/Troubleshooting-and-FAQ) | Common issues |
 

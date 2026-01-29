@@ -56,6 +56,8 @@ from resources.lib.constants import (
     CONTROL_OK_BUTTON,
     CONTROL_HEADING,
     CONTROL_LIST,
+    CONTROL_CANCEL_BUTTON,
+    CONTROL_EXTRA_BUTTON2,
 )
 
 __addon__ = xbmcaddon.Addon('script.easytv')
@@ -128,6 +130,13 @@ class xGUI(xbmcgui.WindowXMLDialog):
         # Set action when clicking right from the Save button
         self.ok.controlRight(self.name_list)
 
+        # Hide Extra button 2 (ID 8) - appears as blank button in some skins
+        try:
+            extra_button2 = self.getControl(CONTROL_EXTRA_BUTTON2)
+            extra_button2.setVisible(False)
+        except RuntimeError:
+            pass  # Button may not exist in all skins
+
         self.item_count = 2
 
         for show_name, show_id, thumbnail in self.all_shows_data:
@@ -161,6 +170,10 @@ class xGUI(xbmcgui.WindowXMLDialog):
             # Kodi may abort scripts from RunScript() immediately after doModal() returns,
             # so we must save before calling close() to ensure data is persisted.
             self._save_settings()
+            self.close()
+
+        elif controlID == CONTROL_CANCEL_BUTTON:
+            # Cancel - close without saving
             self.close()
 
         else:

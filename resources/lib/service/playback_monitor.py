@@ -61,6 +61,7 @@ from resources.lib.data.shows import (
     parse_season_episode_string,
     resolve_istream_episode,
 )
+from resources.lib.data.storage import get_storage
 from resources.lib.playback.playlist_session import PlaylistSession
 
 if TYPE_CHECKING:
@@ -284,6 +285,19 @@ class PlaybackMonitor(xbmc.Player):
         if (previous_episode_check and 
             now_playing_show_id not in random_order_shows and 
             self._pl_running_local != 'true'):
+            # Refresh from shared storage if stale (multi-instance sync)
+            # This ensures we use fresh ondeck data before warning about missed episodes
+            storage = get_storage()
+            if storage.needs_refresh():
+                self._log.debug("Cache stale, refreshing before previous episode check",
+                               event="playback.refresh", show_id=now_playing_show_id)
+                try:
+                    _, revision = storage.get_ondeck_bulk([now_playing_show_id])
+                    storage.mark_refreshed(revision)
+                except Exception as e:
+                    self._log.warning("Refresh failed, using cached data",
+                                     event="playback.refresh_error", error=str(e))
+            
             self._check_previous_episode(
                 now_playing_show_id, now_playing_episode_id, showtitle
             )

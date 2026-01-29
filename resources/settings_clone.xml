@@ -163,25 +163,9 @@
 				</setting>
 			</group>
 
-			<!-- Group 2.4: Watch Order (shuffle-friendly shows) -->
-			<group id="watch_order" label="32591" help="32597">
-				<setting id="select_random_order_shows" type="action" label="32513" help="32406">
-					<level>0</level>
-					<data>RunScript(script.easytv,selector,random_order_shows)</data>
-					<control type="button" format="action">
-						<close>true</close>
-					</control>
-				</setting>
-
-				<setting id="random_order_shows_display" type="string" label="32568" help="">
-					<level>0</level>
-					<default>No shows selected</default>
-					<enable>false</enable>
-					<control type="edit" format="string" />
-				</setting>
-			</group>
-
-			<!-- Group 2.5: Sorting -->
+			<!-- Group 2.4: Sorting -->
+			<!-- Note: "Watch Order" (random_order_shows) is configured in main EasyTV only,
+			     as it's a library-wide behavior setting, not a per-clone preference -->
 			<group id="sorting" label="32556">
 				<setting id="sort_by" type="integer" label="32516" help="32410">
 					<level>0</level>
@@ -503,11 +487,8 @@
 					<control type="edit" format="string" />
 				</setting>
 
-				<setting id="random_order_shows" type="string" visible="false">
-					<level>4</level>
-					<default>none</default>
-					<control type="edit" format="string" />
-				</setting>
+				<!-- Note: random_order_shows is NOT stored in clones - clones read from
+				     main EasyTV's window property (EasyTV.random_order_shows) -->
 
 				<setting id="selection" type="string" visible="false">
 					<level>4</level>
