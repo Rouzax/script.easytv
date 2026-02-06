@@ -109,6 +109,7 @@ from resources.lib.data.shows import (
     get_premiere_category,
     fetch_show_episode_data,
     extract_showids_from_playlist,
+    get_episode_sort_key,
 )
 from resources.lib.data.smart_playlists import (
     remove_show_from_all_playlists,
@@ -1154,7 +1155,9 @@ class ServiceDaemon:
                     
                     # Sort by season/episode before dedup to ensure multi-episode files
                     # consistently select the lowest episode number as representative
-                    all_unplayed.sort(key=lambda x: (x['season'], x['episode']))
+                    all_unplayed.sort(key=lambda x: get_episode_sort_key(
+                        x, self._settings.include_positioned_specials
+                    ))
                     
                     # Remove duplicate files (double episodes) using set for O(1) lookup
                     seen_files: set[str] = set()
@@ -1166,11 +1169,14 @@ class ServiceDaemon:
                     all_unplayed = unique_unplayed
                     del seen_files, unique_unplayed
                     
-                    # Separate into ondeck and offdeck
+                    # Separate into ondeck and offdeck using sort keys
+                    # Reference point: last watched episode (regular episode format)
+                    last_watched_key = (season, episode, 0, episode)
+                    include_specials = self._settings.include_positioned_specials
+                    
                     unordered_ondeck_eps = [
                         x for x in all_unplayed
-                        if x['season'] > season or
-                        (x['season'] == season and x['episode'] > episode)
+                        if get_episode_sort_key(x, include_specials) > last_watched_key
                     ]
                     # Use set for O(1) lookup instead of O(n) list membership
                     ondeck_ep_ids = {ep['episodeid'] for ep in unordered_ondeck_eps}
@@ -1184,9 +1190,12 @@ class ServiceDaemon:
                     count_weps = watched_showcount
                     count_uweps = count_eps - count_weps
                     
-                    # Sort ondeck by season/episode
+                    # Sort ondeck by sort key (handles positioned specials)
                     ondeck_eps = [
-                        ep for ep in sorted(unordered_ondeck_eps, key=lambda x: (x['season'], x['episode']))
+                        ep for ep in sorted(
+                            unordered_ondeck_eps,
+                            key=lambda x: get_episode_sort_key(x, include_specials)
+                        )
                         if ep
                     ]
                     

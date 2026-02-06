@@ -29,6 +29,7 @@ EasyTV maintains a list of the **next episode to watch** for every TV show in yo
 - **Smart Playlist Filtering** — Use Kodi smart playlists to filter content
 - **Duration Filtering** — Only shows with episodes under 30 minutes? Done.
 - **Random-Order Shows** — Shuffle-friendly content like sitcoms and cartoons
+- **Positioned Specials** — Include TVDB-positioned specials in the watch order
 - **Partial Prioritization** — Unfinished content plays first
 - **Clone Support** — Multiple EasyTV instances with different configurations
 
@@ -55,6 +56,8 @@ If you run Kodi on multiple devices (living room, bedroom, etc.) with a **shared
 1. Install pymysql on all Kodi devices
 2. Enable **"Multi-instance sync"** in EasyTV Settings → Advanced
 3. That's it — EasyTV auto-detects your database from `advancedsettings.xml`
+
+> **Note:** Some settings affect episode ordering and must match across all synced devices: **Random-order shows** and **Include positioned specials**. Mismatched settings will cause each device to calculate different "next episodes."
 
 For detailed setup, see the [Multi-Instance Sync](https://github.com/Rouzax/script.easytv/wiki/Multi-Instance-Sync) wiki page.
 

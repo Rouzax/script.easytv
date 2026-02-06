@@ -31,7 +31,7 @@ from __future__ import annotations
 import ast
 import os
 import random
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 import xbmc
 import xbmcgui
@@ -155,6 +155,53 @@ def parse_season_episode_string(value: Union[int, str]) -> str:
     if len(str_value) == 1:
         return '0' + str_value
     return str_value
+
+
+def get_episode_sort_key(
+    ep: Dict[str, Any],
+    include_positioned_specials: bool = False
+) -> Tuple[int, int, int, int]:
+    """
+    Get sort key for episode ordering, optionally including positioned specials.
+    
+    Args:
+        ep: Episode dict with 'season', 'episode', and optionally 
+            'specialsortseason', 'specialsortepisode' fields.
+        include_positioned_specials: If True, positioned specials sort
+            at their designated position (just before the target episode).
+    
+    Returns:
+        Tuple of (sort_season, sort_episode, priority, actual_episode) for sorting.
+        - Regular episodes: (season, episode, 0, episode)
+        - Positioned specials: (specialsortseason, specialsortepisode, -1, episode)
+        The -1 priority ensures specials sort before the episode they're
+        positioned at. The actual_episode field breaks ties when multiple
+        specials are positioned at the same point.
+    
+    Example:
+        Regular episode S10E55:            (10, 55, 0, 55)
+        Special S00E05 before S10E56:      (10, 56, -1, 5)
+        Special S00E10 before S10E56:      (10, 56, -1, 10)
+        Regular episode S10E56:            (10, 56, 0, 56)
+        Non-positioned special S00E20:     (0, 20, 0, 20)
+        
+        Sort order: S10E55 → S00E05 → S00E10 → S10E56
+    """
+    season = ep.get('season', 0)
+    episode = ep.get('episode', 0)
+    
+    # Check for positioned special
+    if include_positioned_specials and season == 0:
+        sort_season = ep.get('specialsortseason', -1)
+        sort_episode = ep.get('specialsortepisode', -1)
+        
+        # Valid positioning: both values must be >= 0
+        if sort_season >= 0 and sort_episode >= 0:
+            # Priority -1 ensures special sorts before target episode
+            return (sort_season, sort_episode, -1, episode)
+    
+    # Regular episode or non-positioned special
+    return (season, episode, 0, episode)
 
 
 def find_next_episode(

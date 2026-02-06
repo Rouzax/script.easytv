@@ -123,6 +123,12 @@
 					<default>true</default>
 					<control type="toggle" />
 				</setting>
+
+				<setting id="include_positioned_specials" type="boolean" label="32711" help="32712">
+					<level>1</level>
+					<default>false</default>
+					<control type="toggle" />
+				</setting>
 			</group>
 
 			<!-- Group 2.2: Episode Duration Filter -->

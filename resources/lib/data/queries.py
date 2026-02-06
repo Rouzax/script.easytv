@@ -133,7 +133,8 @@ def build_random_episodes_query(
         "tvshowid": tvshowid,
         "properties": [
             "season", "episode", "runtime", "resume",
-            "playcount", "tvshowid", "lastplayed", "file"
+            "playcount", "tvshowid", "lastplayed", "file",
+            "specialsortseason", "specialsortepisode"
         ],
         "sort": {"method": "random"}
     }
@@ -535,6 +536,8 @@ def build_all_episodes_no_streamdetails_query() -> dict[str, Any]:
             "properties": [
                 # For next-episode calculation
                 "season", "episode", "playcount", "tvshowid", "file",
+                # For positioned specials support
+                "specialsortseason", "specialsortepisode",
                 # For display caching (art loaded lazily via build_shows_art_query)
                 "title", "showtitle", "plot", "firstaired", "resume"
             ]
@@ -593,7 +596,8 @@ def build_show_episodes_query(tvshowid: int) -> dict[str, Any]:
         "params": {
             "tvshowid": tvshowid,
             "properties": [
-                "season", "episode", "playcount", "tvshowid", "file"
+                "season", "episode", "playcount", "tvshowid", "file",
+                "specialsortseason", "specialsortepisode"
             ]
         }
     }

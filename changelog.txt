@@ -1,6 +1,24 @@
 EasyTV Changelog
 ================
 
+v1.4.0~alpha1 (2026-02-04)
+--------------------------
+New Features:
+  - Positioned specials support: Include TVDB-positioned specials in watch order
+    - Some shows (like SpongeBob) have specials that are plot-relevant and should
+      be watched between specific episodes
+    - Kodi stores TVDB positioning data (e.g., "airs before S10E56") in episode
+      metadata (specialsortseason, specialsortepisode fields)
+    - When enabled, positioned specials appear at their designated position
+    - Non-positioned specials (those without TVDB data) remain excluded
+    - Enable in Settings → Shows → "Include positioned specials in watch order"
+    - Default: OFF (preserves existing behavior for current users)
+
+Multi-Instance Note:
+  - The "Include positioned specials" setting affects episode ordering
+  - For consistent "next episode" across devices, configure this setting
+    identically on all Kodi instances sharing the same database
+
 v1.3.0~beta1 (2026-01-29)
 -------------------------
 New Features:

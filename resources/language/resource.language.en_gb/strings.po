@@ -1121,3 +1121,13 @@ msgstr ""
 msgctxt "#32710"
 msgid "Multi-instance sync requires the PyMySQL addon which is not installed. The setting has been disabled."
 msgstr ""
+
+#. Positioned specials setting label
+msgctxt "#32711"
+msgid "Include positioned specials in watch order"
+msgstr ""
+
+#. Positioned specials setting help text
+msgctxt "#32712"
+msgid "When enabled, specials with TVDB positioning data (e.g., 'airs before S10E56') will be included in the watch order at their designated position. Non-positioned specials are always ignored."
+msgstr ""

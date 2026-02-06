@@ -435,6 +435,9 @@ class ServiceSettings:
     playlist_export_tvshows: bool = False
     smartplaylist_filter_enabled: bool = False
     
+    # Positioned specials - include TVDB-positioned specials in watch order
+    include_positioned_specials: bool = False
+    
     # Show filter playlist path (used for smart playlist filtering)
     user_playlist_path: str = 'none'
     
@@ -623,6 +626,9 @@ def load_settings(
     settings.smartplaylist_filter_enabled = setting('smartplaylist_filter_enabled') == 'true'
     settings.user_playlist_path = setting('user_playlist_path') or 'none'
     
+    # Positioned specials setting
+    settings.include_positioned_specials = setting('include_positioned_specials') == 'true'
+    
     # Parse random_order_shows - handles both old [id] and new {id: title} formats
     show_dict, needs_migration = _parse_show_setting(setting('random_order_shows'))
     if needs_migration:
@@ -731,16 +737,28 @@ def load_settings(
         log.info(
             "Settings loaded",
             event="settings.load",
+            # Playback behavior
             next_prompt=settings.nextprompt,
+            next_prompt_in_playlist=settings.nextprompt_in_playlist,
             prompt_duration=settings.promptduration,
+            prompt_default_action=settings.promptdefaultaction,
             previous_check=settings.previous_episode_check,
-            notifications=settings.playlist_notifications,
             resume_partials_tv=settings.resume_partials_tv,
             resume_partials_movies=settings.resume_partials_movies,
-            maintain_smartplaylist=settings.maintainsmartplaylist,
+            # Playlist continuation
+            playlist_continuation=settings.playlist_continuation,
+            playlist_continuation_duration=settings.playlist_continuation_duration,
+            # Notifications
+            notifications=settings.playlist_notifications,
+            # Smart playlist export
             playlist_export_episodes=settings.playlist_export_episodes,
             playlist_export_tvshows=settings.playlist_export_tvshows,
             smartplaylist_filter=settings.smartplaylist_filter_enabled,
+            # Episode selection
+            include_positioned_specials=settings.include_positioned_specials,
+            # Service behavior
+            startup=settings.startup,
+            keep_logs=settings.keep_logs,
         )
         
         # Initialize display settings with current values

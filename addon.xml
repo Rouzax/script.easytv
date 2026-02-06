@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <addon id="script.easytv"
        name="EasyTV"
-       version="1.3.0~beta1"
+       version="1.4.0~alpha1"
        provider-name="Rouzax, KODeKarnage">
     <requires>
         <import addon="xbmc.python" version="3.0.1"/>
@@ -25,11 +25,11 @@
         <forum>https://forum.kodi.tv/showthread.php?tid=383902</forum>
         <website>https://github.com/Rouzax/script.easytv</website>
         <source>https://github.com/Rouzax/script.easytv</source>
-        <news>v1.3.0~beta1 (2026-01-29)
-- New: Multi-instance sync - share watch progress across Kodi devices
-- Requires shared MySQL/MariaDB video database (same as Kodi library sync)
-- Enable in Settings → Advanced → Multi-instance sync
-- Looking for beta testers with multi-device setups</news>
+        <news>v1.4.0~alpha1 (2026-02-04)
+- New: Positioned specials support - include TVDB-positioned specials in watch order
+- Shows like SpongeBob have plot-relevant specials that belong between specific episodes
+- Enable in Settings → Shows → "Include positioned specials in watch order"
+- Default OFF to preserve existing behavior</news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
