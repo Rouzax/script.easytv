@@ -23,7 +23,7 @@ Key Features:
     - Connection pooling with ping/reconnect
     - Backoff after connection failures (30s)
     - TTL-based migration lock for crash recovery
-    - Batch write mode for reduced log noise during bulk operations
+    - Batch write mode with deferred commit for O(1) fsync overhead
 
 Logging:
     Logger name: 'shareddb'
@@ -38,6 +38,7 @@ Logging:
         - shareddb.write_error: Write operation failed
         - shareddb.reselect_error: Failed to re-select database after reconnect
         - shareddb.batch_complete: Batch write summary with stats
+        - shareddb.batch_finalize_error: Failed to commit batch transaction
         - shareddb.migration_claimed: Migration lock acquired
         - shareddb.migration_stolen: Stale migration lock stolen
         - shareddb.schema_migrate: Schema migration applied
@@ -137,6 +138,8 @@ class SharedDatabase:
         self._batch_stats: Dict[str, Any] = self._reset_batch_stats()
         self._batch_preload: Optional[Dict[int, Dict[str, Any]]] = None
         self._batch_current_rev: int = 0
+        self._batch_write_count: int = 0
+        self._batch_final_rev: Optional[int] = None
     
     def is_available(self) -> bool:
         """
@@ -188,6 +191,17 @@ class SharedDatabase:
             'max_ms': 0.0,
         }
     
+    @property
+    def batch_final_rev(self) -> Optional[int]:
+        """
+        The final global revision after a batch completes.
+        
+        Set by _batch_finalize() when at least one write occurred.
+        None if the batch had zero actual writes (all skipped or empty).
+        Only valid immediately after a batch_write() context exits.
+        """
+        return self._batch_final_rev
+    
     @contextlib.contextmanager
     def batch_write(
         self,
@@ -195,15 +209,22 @@ class SharedDatabase:
         current_rev: int = 0
     ) -> Generator[None, None, None]:
         """
-        Context manager for batch write operations.
+        Context manager for batch write operations with deferred commit.
         
-        Suppresses individual DEBUG logs for writes, only logging:
-        - Slow operations (≥50ms)
-        - Errors (always)
-        - Summary on exit
+        All writes within the batch share a single database transaction.
+        Individual set_show_tracking() calls execute their UPSERT SQL but
+        skip the per-write revision UPDATE and commit. On exit,
+        _batch_finalize() performs a single revision bump and commit for
+        all writes, reducing fsync overhead from O(N) to O(1).
+        
+        Individual DEBUG logs are suppressed unless the operation is slow
+        (≥50ms) or errors.
         
         When preload is provided, writes are skipped if ondeck_episode_id
         matches the existing value (no actual change).
+        
+        After the context exits, batch_final_rev contains the new global
+        revision (or None if no writes occurred).
         
         Args:
             preload: Optional dict of {show_id: existing_data} from bulk read.
@@ -216,6 +237,7 @@ class SharedDatabase:
             with db.batch_write():
                 for show_id, data in shows.items():
                     db.set_show_tracking(show_id, data)
+            final_rev = db.batch_final_rev  # New revision or None
             
             # With preload (startup): unchanged writes skipped
             existing, rev = db.get_show_tracking_bulk_with_rev(show_ids)
@@ -227,28 +249,84 @@ class SharedDatabase:
         self._batch_stats = self._reset_batch_stats()
         self._batch_preload = preload
         self._batch_current_rev = current_rev
+        self._batch_write_count = 0
+        self._batch_final_rev = None
         
         try:
             yield
+        except Exception:
+            # Error during batch — previous writes were rolled back by
+            # set_show_tracking's except handler. Reset write count so
+            # _batch_finalize skips the revision bump (no data to commit).
+            self._batch_write_count = 0
+            raise
         finally:
+            self._batch_finalize()
             self._batch_active = False
             self._batch_preload = None
             self._batch_current_rev = 0
-            stats = self._batch_stats
-            
-            if stats['count'] > 0 or stats['skipped'] > 0:
-                avg_ms = stats['total_ms'] / stats['count'] if stats['count'] > 0 else 0
-                log.debug(
-                    "Batch write complete",
-                    event="shareddb.batch_complete",
-                    writes=stats['count'],
-                    skipped=stats['skipped'],
-                    slow_writes=stats['slow_count'],
-                    threshold_ms=SLOW_WRITE_THRESHOLD_MS,
-                    avg_ms=round(avg_ms, 1),
-                    max_ms=round(stats['max_ms'], 1),
-                    total_ms=round(stats['total_ms'], 1)
+            self._batch_write_count = 0
+    
+    def _batch_finalize(self) -> None:
+        """
+        Finalize a batch by committing all deferred writes in one transaction.
+        
+        If any writes occurred (_batch_write_count > 0), performs a single
+        revision bump by the total write count, commits once, and stores
+        the final revision in _batch_final_rev.
+        
+        If no writes occurred (all skipped or empty batch), no database
+        operations are performed and _batch_final_rev remains None.
+        
+        Also logs the batch summary statistics.
+        """
+        stats = self._batch_stats
+        
+        if self._batch_write_count > 0:
+            try:
+                conn = self._get_connection()
+                cursor = conn.cursor()
+                try:
+                    # Single revision bump for all writes
+                    cursor.execute(f"""
+                        UPDATE {self._table('sync_metadata')}
+                        SET int_value = LAST_INSERT_ID(int_value + %s)
+                        WHERE key_name = 'global_rev'
+                    """, (self._batch_write_count,))
+                    
+                    conn.commit()
+                    
+                    cursor.execute("SELECT LAST_INSERT_ID()")
+                    self._batch_final_rev = cursor.fetchone()[0]
+                finally:
+                    cursor.close()
+            except Exception:
+                log.exception(
+                    "Batch finalize failed",
+                    event="shareddb.batch_finalize_error",
+                    write_count=self._batch_write_count
                 )
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+                raise
+        
+        # Log batch summary
+        if stats['count'] > 0 or stats['skipped'] > 0:
+            avg_ms = stats['total_ms'] / stats['count'] if stats['count'] > 0 else 0
+            log.debug(
+                "Batch write complete",
+                event="shareddb.batch_complete",
+                writes=stats['count'],
+                skipped=stats['skipped'],
+                slow_writes=stats['slow_count'],
+                threshold_ms=SLOW_WRITE_THRESHOLD_MS,
+                avg_ms=round(avg_ms, 1),
+                max_ms=round(stats['max_ms'], 1),
+                total_ms=round(stats['total_ms'], 1),
+                final_rev=self._batch_final_rev
+            )
     
     def _get_connection(self) -> "Connection":
         """
@@ -861,8 +939,15 @@ class SharedDatabase:
         Uses LAST_INSERT_ID(expr) pattern to atomically increment revision
         and capture the new value without an extra query.
         
-        When called within a batch_write() context, individual logs are
-        suppressed unless the operation is slow (≥50ms) or errors.
+        In batch mode (within a batch_write() context):
+        - Executes the UPSERT SQL but defers the revision UPDATE and commit
+          to _batch_finalize(), which performs a single commit for all writes
+        - Returns _batch_current_rev as a sentinel value
+        - Individual DEBUG logs are suppressed unless slow (≥50ms)
+        
+        Outside batch mode:
+        - Executes UPSERT + revision UPDATE + commit immediately
+        - Returns the new global revision
         
         Args:
             show_id: The Kodi TV show ID.
@@ -876,8 +961,8 @@ class SharedDatabase:
                 - unwatched_count: int (optional)
         
         Returns:
-            The new global revision after this write, or current revision
-            if write was skipped (unchanged data in batch mode).
+            The new global revision after this write, or _batch_current_rev
+            in batch mode (sentinel — real revision set by _batch_finalize).
         
         Raises:
             Exception: If write fails (connection rolls back).
@@ -920,26 +1005,13 @@ class SharedDatabase:
                 data.get('unwatched_count', 0)
             ))
             
-            # Increment revision AND capture new value atomically
-            cursor.execute(f"""
-                UPDATE {self._table('sync_metadata')} 
-                SET int_value = LAST_INSERT_ID(int_value + 1) 
-                WHERE key_name = 'global_rev'
-            """)
-            
-            # Commit both together
-            conn.commit()
-            
-            # Retrieve the new revision (connection-scoped, no race possible)
-            cursor.execute("SELECT LAST_INSERT_ID()")
-            new_rev = cursor.fetchone()[0]
-            
             # Calculate elapsed time
             elapsed_ms = (time.time() - start_time) * 1000
             is_slow = elapsed_ms >= SLOW_WRITE_THRESHOLD_MS
             
             if self._batch_active:
-                # Update batch statistics
+                # Batch mode: defer revision bump and commit to _batch_finalize
+                self._batch_write_count += 1
                 self._batch_stats['count'] += 1
                 self._batch_stats['total_ms'] += elapsed_ms
                 self._batch_stats['max_ms'] = max(
@@ -952,13 +1024,25 @@ class SharedDatabase:
                              show_id=show_id,
                              elapsed_ms=round(elapsed_ms, 1),
                              threshold_ms=SLOW_WRITE_THRESHOLD_MS)
-            else:
-                # Non-batch: log as before
-                log.debug("Show tracking saved",
-                         event="shareddb.write",
-                         show_id=show_id,
-                         new_revision=new_rev,
-                         elapsed_ms=round(elapsed_ms, 1))
+                return self._batch_current_rev
+            
+            # Non-batch: immediate revision bump and commit
+            cursor.execute(f"""
+                UPDATE {self._table('sync_metadata')} 
+                SET int_value = LAST_INSERT_ID(int_value + 1) 
+                WHERE key_name = 'global_rev'
+            """)
+            
+            conn.commit()
+            
+            cursor.execute("SELECT LAST_INSERT_ID()")
+            new_rev = cursor.fetchone()[0]
+            
+            log.debug("Show tracking saved",
+                     event="shareddb.write",
+                     show_id=show_id,
+                     new_revision=new_rev,
+                     elapsed_ms=round(elapsed_ms, 1))
             
             return new_rev
                      

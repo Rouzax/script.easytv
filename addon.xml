@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <addon id="script.easytv"
        name="EasyTV"
-       version="1.4.0~alpha2"
+       version="1.4.0~alpha3"
        provider-name="Rouzax, KODeKarnage">
     <requires>
         <import addon="xbmc.python" version="3.0.1"/>
@@ -25,11 +25,10 @@
         <forum>https://forum.kodi.tv/showthread.php?tid=383902</forum>
         <website>https://github.com/Rouzax/script.easytv</website>
         <source>https://github.com/Rouzax/script.easytv</source>
-        <news>v1.4.0~alpha2 (2026-02-10)
-- Fixed: Service crash during overnight library scans with multi-instance sync
-- Fixed: Database reconnect losing session state after idle periods
-- Fixed: Unhandled exception in bulk preload could kill service silently
-- Service now survives transient errors instead of requiring Kodi restart</news>
+        <news>v1.4.0~alpha3 (2026-02-10)
+- Fixed: Toggling "positioned specials" setting now takes effect immediately
+- Performance: Batch writes use single transaction instead of per-show commits
+- Refactor: Batch ownership moved from daemon to StorageBackend interface</news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>

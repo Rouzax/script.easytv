@@ -1,6 +1,36 @@
 EasyTV Changelog
 ================
 
+v1.4.0~alpha3 (2026-02-10)
+--------------------------
+Bug Fixes:
+  - Fixed: Toggling "Include positioned specials in watch order" did not take
+    effect until the next Kodi restart or library scan. The setting change handler
+    (_on_settings_changed) reloaded the value but never triggered a refresh of
+    episode tracking data. Now detects the change and triggers bulk_refresh,
+    following the same pattern as the existing smart playlist toggle.
+
+Performance:
+  - Batch write operations now use a single database transaction with one COMMIT
+    at the end, instead of committing independently per show. For 399 shows, this
+    reduces fsync overhead from ~399 × 50ms ≈ 20s to a single ~50ms commit.
+    Applies to service startup, post-scan refresh, and initial migration.
+
+    Root cause: Each set_show_tracking() call within batch_write() executed its
+    own revision UPDATE + conn.commit(), triggering an InnoDB fsync per write.
+
+    Fix: set_show_tracking() now defers the revision UPDATE and commit when
+    _batch_active is True. A new _batch_finalize() method performs a single
+    bulk revision bump (int_value + N) and one commit when the batch exits.
+
+Refactor:
+  - Batch ownership lifted from daemon.py to StorageBackend interface. daemon.py
+    no longer uses isinstance(storage, SharedDatabaseStorage) or accesses
+    storage.db directly for batch operations. Instead, it calls the abstract
+    storage.batch_write(show_ids) which each backend implements appropriately:
+      - WindowPropertyStorage: no-op (inherited default)
+      - SharedDatabaseStorage: preload + deferred commit + revision management
+
 v1.4.0~alpha2 (2026-02-10)
 --------------------------
 Bug Fixes:

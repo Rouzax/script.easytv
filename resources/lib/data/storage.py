@@ -34,14 +34,16 @@ Logging:
         - storage.init_local: Using window property storage
         - storage.init_shared: Using shared database storage
         - storage.pymysql_missing: pymysql not available, falling back
+        - storage.batch_preload_error: Preload failed, falling back to unbatched
         - storage.clear_stale: Cleared window props for show deleted elsewhere
         - storage.reset: Storage singleton reset (settings changed)
 """
 from __future__ import annotations
 
 import ast
+import contextlib
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 import xbmcaddon
 import xbmcgui
@@ -215,6 +217,29 @@ class StorageBackend(ABC):
             True if backend is available and can handle requests.
         """
         ...
+    
+    @contextlib.contextmanager
+    def batch_write(
+        self, show_ids: List[int]
+    ) -> Generator[None, None, None]:
+        """
+        Context manager for batch write operations.
+        
+        Optimizes bulk writes by deferring commits and revision updates.
+        After the context exits, all writes are committed in a single
+        transaction.
+        
+        The default implementation is a no-op (yields immediately),
+        suitable for WindowPropertyStorage where no batching is needed.
+        SharedDatabaseStorage overrides this to provide preload, deferred
+        commit, and revision management.
+        
+        Args:
+            show_ids: List of show IDs that will be written in this batch.
+                     Used by SharedDatabaseStorage to preload existing data
+                     for skip-if-unchanged optimization.
+        """
+        yield
 
 
 # =============================================================================
@@ -334,6 +359,7 @@ class SharedDatabaseStorage(StorageBackend):
             db: A SharedDatabase instance from shared_db module.
         """
         self._db = db
+        self._batch_active: bool = False
     
     @property
     def db(self) -> Any:
@@ -414,15 +440,20 @@ class SharedDatabaseStorage(StorageBackend):
         
         Writes to database, updates local window property cache, and
         updates local revision to match the new revision from the write.
+        
+        In batch mode, the per-write revision update is skipped — the
+        batch_write() context manager updates the revision once on exit.
         """
         # Atomic: write data + increment rev, returns new revision
+        # (In batch mode: returns sentinel rev, real rev set by batch_write)
         new_rev = self._db.set_show_tracking(show_id, data)
         
         # Update local cache
         self._update_window_properties(show_id, data)
         
-        # Update local revision to match (no extra query needed)
-        WINDOW.setProperty(SYNC_REV_PROPERTY, str(new_rev))
+        # Update local revision (skip in batch mode — handled by batch_write)
+        if not self._batch_active:
+            WINDOW.setProperty(SYNC_REV_PROPERTY, str(new_rev))
     
     def needs_refresh(self) -> bool:
         """
@@ -455,6 +486,47 @@ class SharedDatabaseStorage(StorageBackend):
     def is_available(self) -> bool:
         """Check if database is available."""
         return self._db.is_available()
+    
+    @contextlib.contextmanager
+    def batch_write(
+        self, show_ids: List[int]
+    ) -> Generator[None, None, None]:
+        """
+        Batch write with preload, deferred commit, and revision management.
+        
+        Preloads existing data for skip-if-unchanged optimization, then
+        delegates to SharedDatabase.batch_write() for the deferred commit
+        transaction. On completion, updates the local sync revision from
+        the batch's final revision.
+        
+        If preload fails (e.g., DB temporarily unavailable), falls back to
+        a no-op context — writes proceed individually without batching.
+        
+        Args:
+            show_ids: List of show IDs that will be written in this batch.
+        """
+        try:
+            preload_data, current_rev = self.get_ondeck_bulk(show_ids)
+        except Exception as e:
+            log.warning(
+                "Shared DB preload failed, proceeding without batch optimization",
+                event="storage.batch_preload_error",
+                error=str(e)
+            )
+            yield
+            return
+        
+        self._batch_active = True
+        try:
+            with self._db.batch_write(
+                preload=preload_data, current_rev=current_rev
+            ):
+                yield
+        finally:
+            self._batch_active = False
+            final_rev = self._db.batch_final_rev
+            if final_rev is not None:
+                WINDOW.setProperty(SYNC_REV_PROPERTY, str(final_rev))
     
     def _update_window_properties(self, show_id: int, data: Dict[str, Any]) -> None:
         """

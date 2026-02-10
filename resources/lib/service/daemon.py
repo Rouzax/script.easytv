@@ -1114,24 +1114,8 @@ class ServiceDaemon:
             _proc_logic_time_ms = 0
             
             # Batch database writes during bulk refresh
-            # Preload existing data to skip unchanged writes
             storage = get_storage()
-            if bulk and isinstance(storage, SharedDatabaseStorage):
-                try:
-                    preload_data, current_rev = storage.get_ondeck_bulk(show_lw)
-                    batch_ctx = storage.db.batch_write(
-                        preload=preload_data,
-                        current_rev=current_rev
-                    )
-                except Exception as e:
-                    self._log.warning(
-                        "Shared DB preload failed, proceeding without batch optimization",
-                        event="shareddb.preload_error",
-                        error=str(e)
-                    )
-                    batch_ctx = contextlib.nullcontext()
-            else:
-                batch_ctx = contextlib.nullcontext()
+            batch_ctx = storage.batch_write(show_lw) if bulk else contextlib.nullcontext()
             
             with batch_ctx:
                 for my_showid in show_lw:
@@ -1537,8 +1521,9 @@ class ServiceDaemon:
         
         Reloads all settings and updates component configurations.
         """
-        # Store old maintainsmartplaylist value before reload
+        # Store old values before reload for change detection
         old_maintainsmartplaylist = self._settings.maintainsmartplaylist
+        old_include_positioned_specials = self._settings.include_positioned_specials
         
         # Check if multi_instance_sync setting changed
         new_sync_enabled = get_bool_setting('multi_instance_sync')
@@ -1580,6 +1565,15 @@ class ServiceDaemon:
             )
             for show_id in self._state.shows_with_next_episodes:
                 self._update_smartplaylist(show_id, quiet=True)
+        
+        # Check if positioned specials setting changed
+        if old_include_positioned_specials != self._settings.include_positioned_specials:
+            self._log.info(
+                "Positioned specials setting changed, refreshing all shows",
+                event="settings.specials_toggle",
+                enabled=self._settings.include_positioned_specials
+            )
+            self.refresh_show_episodes(showids=self._all_shows_list, bulk=True)
     
     def load_initial_settings(self) -> None:
         """
@@ -1658,7 +1652,9 @@ class ServiceDaemon:
                 )
                 
                 migrated_count = 0
-                with storage.db.batch_write():
+                with storage.batch_write(
+                    list(self._state.shows_with_next_episodes)
+                ):
                     for show_id in self._state.shows_with_next_episodes:
                         # Get data from window properties
                         episode_id_str = self._window.getProperty(f"EasyTV.{show_id}.EpisodeID")
