@@ -30,9 +30,11 @@ Logging:
         - service.library_empty (INFO): No shows found after retries
         - service.loop_start (INFO): Main loop started
         - service.loop_stop (INFO): Main loop ended
+        - service.event_error (ERROR): Unhandled error in event processing
         - settings.threshold (INFO): Watched threshold configured
         - settings.load (INFO): Settings loaded
         - playback.fallback (WARNING): Episode not found in expected list
+        - shareddb.preload_error (WARNING): Shared DB preload failed during bulk refresh
         - next.pick (DEBUG): Next episode selected
         - library.refresh (DEBUG): Show episodes refreshed
     
@@ -344,7 +346,13 @@ class ServiceDaemon:
         while (not self._monitor.abortRequested() and 
                self._window.getProperty('EasyTV_service_running')):
             xbmc.sleep(DAEMON_LOOP_SLEEP_MS)
-            self._process_events()
+            try:
+                self._process_events()
+            except Exception:
+                self._log.exception(
+                    "Unhandled error in event processing",
+                    event="service.event_error"
+                )
         
         self._log.info("Daemon loop ended", event="service.loop_stop")
     
@@ -1109,11 +1117,19 @@ class ServiceDaemon:
             # Preload existing data to skip unchanged writes
             storage = get_storage()
             if bulk and isinstance(storage, SharedDatabaseStorage):
-                preload_data, current_rev = storage.get_ondeck_bulk(show_lw)
-                batch_ctx = storage.db.batch_write(
-                    preload=preload_data,
-                    current_rev=current_rev
-                )
+                try:
+                    preload_data, current_rev = storage.get_ondeck_bulk(show_lw)
+                    batch_ctx = storage.db.batch_write(
+                        preload=preload_data,
+                        current_rev=current_rev
+                    )
+                except Exception as e:
+                    self._log.warning(
+                        "Shared DB preload failed, proceeding without batch optimization",
+                        event="shareddb.preload_error",
+                        error=str(e)
+                    )
+                    batch_ctx = contextlib.nullcontext()
             else:
                 batch_ctx = contextlib.nullcontext()
             

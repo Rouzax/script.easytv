@@ -1,6 +1,35 @@
 EasyTV Changelog
 ================
 
+v1.4.0~alpha2 (2026-02-10)
+--------------------------
+Bug Fixes:
+  - Fixed silent service crash during overnight library scans with multi-instance
+    sync enabled. Three layered failures combined to kill the service without any
+    error log, requiring a Kodi restart to recover.
+
+    Root cause: When the MariaDB connection goes idle overnight and is transparently
+    re-established, the new session has no database selected. Queries using
+    unqualified table names fail with error 1046 ("No database selected"). This
+    exception propagated unhandled through the entire call stack, terminating the
+    background service silently.
+
+    Fix 1 — Re-select database after reconnect (shared_db.py):
+      _get_connection() now calls _ensure_db_selected() after ping(reconnect=True)
+      or fallback _connect() to restore the session-level database selection.
+
+    Fix 2 — Graceful degradation for bulk preload (daemon.py):
+      The shareddb preload in refresh_show_episodes() is now wrapped in try/except.
+      On failure, the refresh proceeds without batch optimization rather than
+      crashing. Per-show writes in cache_next_episode() already had their own
+      try/except, so individual writes also degrade gracefully.
+
+    Fix 3 — Top-level exception handler in daemon loop (daemon.py):
+      _process_events() is now wrapped in try/except within the run() loop. Any
+      unhandled exception is logged with full stack trace via log.exception() and
+      the service continues. This prevents any single-cycle failure from killing
+      the service permanently.
+
 v1.4.0~alpha1 (2026-02-04)
 --------------------------
 New Features:

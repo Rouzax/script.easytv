@@ -36,6 +36,7 @@ Logging:
         - shareddb.write: Show tracking data saved (non-batch mode)
         - shareddb.write_slow: Slow write detected during batch (≥50ms)
         - shareddb.write_error: Write operation failed
+        - shareddb.reselect_error: Failed to re-select database after reconnect
         - shareddb.batch_complete: Batch write summary with stats
         - shareddb.migration_claimed: Migration lock acquired
         - shareddb.migration_stolen: Stale migration lock stolen
@@ -253,6 +254,10 @@ class SharedDatabase:
         """
         Get or create database connection with reconnect support.
         
+        After a reconnect (either via ping or fresh _connect), the
+        database session state is lost. Re-selects the EasyTV database
+        when schema was previously initialized.
+        
         Returns:
             Active database connection.
         
@@ -267,7 +272,34 @@ class SharedDatabase:
             except Exception:
                 log.info("Reconnecting to database", event="shareddb.reconnect")
                 self._connect()
+            # After ping(reconnect=True) or _connect() on an already-initialized
+            # instance, the new TCP session has no database selected. Re-select it.
+            self._ensure_db_selected()
         return self._conn
+    
+    def _ensure_db_selected(self) -> None:
+        """
+        Re-select the EasyTV database after a connection reconnect.
+        
+        ping(reconnect=True) silently re-establishes the TCP connection
+        and re-authenticates, but the new session has no database selected.
+        Similarly, _connect() skips _initialize_schema() when
+        _schema_initialized is already True. In both cases, queries using
+        unqualified table names fail with error 1046 ("No database selected").
+        
+        This method restores the session-level database selection. It is a
+        no-op before initial schema setup (when _easytv_db_name is empty).
+        """
+        if self._schema_initialized and self._easytv_db_name:
+            try:
+                self._conn.select_db(self._easytv_db_name)
+            except Exception as e:
+                log.warning(
+                    "Failed to re-select database after reconnect",
+                    event="shareddb.reselect_error",
+                    database=self._easytv_db_name,
+                    error=str(e)
+                )
     
     def _connect(self) -> None:
         """
