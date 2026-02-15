@@ -32,6 +32,7 @@ Logging:
         - service.loop_stop (INFO): Main loop ended
         - service.event_error (ERROR): Unhandled error in event processing
         - settings.threshold (INFO): Watched threshold configured
+        - settings.database (DEBUG): Kodi video database backend (shared/local)
         - settings.load (INFO): Settings loaded
         - playback.fallback (WARNING): Episode not found in expected list
         - shareddb.preload_error (WARNING): Shared DB preload failed during bulk refresh
@@ -92,6 +93,7 @@ from resources.lib.utils import (
     get_ignore_seconds_at_start,
     get_ignore_percent_at_end,
     get_bool_setting,
+    is_shared_video_database,
     json_query,
     lang,
     log_timing,
@@ -238,6 +240,13 @@ class ServiceDaemon:
             event="settings.resume_threshold",
             ignore_seconds_at_start=get_ignore_seconds_at_start(),
             ignore_percent_at_end=get_ignore_percent_at_end()
+        )
+        
+        # Log Kodi's video database backend
+        self._log.debug(
+            "Kodi video database backend",
+            event="settings.database",
+            shared=is_shared_video_database()
         )
         
         # Set initial window properties

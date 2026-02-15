@@ -227,13 +227,19 @@ def _validate_and_migrate_shows(
                         old_id=int_id
                     )
         else:
-            # ID doesn't exist - search by title
+            # ID doesn't exist in current_show_ids (e.g. fully watched
+            # shows filtered out by unwatched query) - search by title
             if stored_title:
                 new_id = title_to_id.get(stored_title)
                 if new_id is not None:
-                    # Found with new ID - migrate
                     new_str_id = str(new_id)
-                    if new_str_id not in valid_dict:  # Avoid duplicates
+                    if new_id == int_id:
+                        # Same ID - show exists but wasn't in current_show_ids
+                        # (e.g. fully watched). Not a shift, keep as-is.
+                        valid_dict[str_id] = stored_title
+                        unchanged_count += 1
+                    elif new_str_id not in valid_dict:  # Avoid duplicates
+                        # Different ID - actual shift, migrate
                         valid_dict[new_str_id] = stored_title
                         migrated_count += 1
                         logger.info(

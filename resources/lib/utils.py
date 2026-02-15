@@ -837,6 +837,44 @@ def get_ignore_percent_at_end() -> int:
     return DEFAULT_PERCENT
 
 
+def is_shared_video_database() -> bool:
+    """
+    Check if Kodi's video library uses a shared MySQL/MariaDB database.
+    
+    Reads from advancedsettings.xml:
+        <advancedsettings>
+            <videodatabase>
+                <type>mysql</type>
+            </videodatabase>
+        </advancedsettings>
+    
+    Returns:
+        True if videodatabase type is 'mysql', False otherwise
+        (including when advancedsettings.xml doesn't exist or has no
+        videodatabase section).
+    """
+    from xml.etree import ElementTree as ET
+    
+    try:
+        advanced_settings_path = xbmcvfs.translatePath(
+            'special://masterprofile/advancedsettings.xml'
+        )
+        tree = ET.parse(advanced_settings_path)
+        root = tree.getroot()
+        
+        element = root.find('videodatabase/type')
+        if element is not None and element.text:
+            return element.text.strip().lower() == 'mysql'
+    except FileNotFoundError:
+        pass  # File doesn't exist - local DB
+    except ET.ParseError:
+        pass  # Malformed XML - assume local
+    except (ValueError, AttributeError):
+        pass  # Invalid value - assume local
+    
+    return False
+
+
 def sanitize_filename(dirty_string: str) -> str:
     """
     Sanitize a string for use as a filename or addon ID.

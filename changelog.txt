@@ -1,6 +1,30 @@
 EasyTV Changelog
 ================
 
+v1.4.0~alpha4 (2026-02-15)
+--------------------------
+Bug Fixes:
+  - Fixed: Clone creation fails on SteamOS and other Arch-based Linux systems
+    where the system locale defaults to ASCII (POSIX/C locale). The clone script
+    used Python's fileinput module which inherits the locale encoding, failing on
+    UTF-8 characters (bullet character '•') in skin XML files. Replaced all
+    fileinput.input(inplace=True) calls with explicit open(..., encoding='utf-8')
+    read/write pattern. Affects clone.py at 4 call sites: settings.xml, strings.po,
+    Python scripts, and skin XML files.
+
+  - Fixed: Spurious "Show ID shifted, migrated to new ID" log messages on every
+    startup and library scan when all show IDs were unchanged. The validation
+    logic compared stored show IDs against the unwatched-only show list
+    (current_show_ids), so fully-watched shows in random_order_shows were not
+    found in the set. The title lookup then found the same ID back, logging a
+    false migration with old_id == new_id. Now correctly treats same-ID lookups
+    as unchanged rather than migrated.
+
+Diagnostics:
+  - Added: Kodi video database backend (shared MariaDB vs local SQLite) is now
+    logged at service startup via advancedsettings.xml detection. Helps quickly
+    identify multi-device setups during troubleshooting.
+
 v1.4.0~alpha3 (2026-02-10)
 --------------------------
 Bug Fixes:
