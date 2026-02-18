@@ -24,3 +24,10 @@ desktop.ini
 
 # Implementation plans (development only)
 IMPLEMENTATION.md
+
+# Claude Code
+CLAUDE.md
+.claude/
+.claudeignore
+.mcp.json
+pyrightconfig.json
