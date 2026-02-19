@@ -69,6 +69,23 @@ def _get_log() -> StructuredLogger:
 WINDOW = xbmcgui.Window(KODI_HOME_WINDOW_ID)
 
 
+def calculate_movie_target(movie_chance: int, length: int) -> int:
+    """Calculate target number of movies for a playlist.
+
+    Args:
+        movie_chance: Percentage of playlist that should be movies (0-100).
+        length: Total playlist length.
+
+    Returns:
+        Target number of movies. 0 if movie_chance is 0.
+    """
+    if movie_chance <= 0:
+        return 0
+    if movie_chance >= 100:
+        return length
+    return max(int(round(length * movie_chance / 100.0)), 1)
+
+
 class PlaylistSession:
     """
     Manages lazy queue state for Both mode playlists.
@@ -381,10 +398,17 @@ class PlaylistSession:
                       target=self.target_length)
             return None
         
+        # Budget tracking for mixed mode
+        movie_chance = self.config.get('movie_chance', 25)
+        movie_target = calculate_movie_target(movie_chance, self.target_length)
+        movies_added_count = len(self.movies_used)
+        shows_added_count = self.items_added - movies_added_count
+        show_target = self.target_length - movie_target
+
         # Try to find a valid item from candidates
         while self.candidate_list:
             candidate = self.candidate_list[0]
-            
+
             # Parse candidate - handle malformed data gracefully
             try:
                 candidate_type = candidate[0]
@@ -396,7 +420,20 @@ class PlaylistSession:
                             candidate=str(candidate)[:50])
                 self.candidate_list.remove(candidate)
                 continue
-            
+
+            # Budget enforcement: defer over-budget type when other type available
+            if candidate_type == MOVIE_CANDIDATE_PREFIX and movies_added_count >= movie_target:
+                if any(c[0] == TV_CANDIDATE_PREFIX for c in self.candidate_list):
+                    self.candidate_list.remove(candidate)
+                    self.candidate_list.append(candidate)
+                    continue
+
+            if candidate_type == TV_CANDIDATE_PREFIX and shows_added_count >= show_target:
+                if any(c[0] == MOVIE_CANDIDATE_PREFIX for c in self.candidate_list):
+                    self.candidate_list.remove(candidate)
+                    self.candidate_list.append(candidate)
+                    continue
+
             if candidate_type == TV_CANDIDATE_PREFIX:
                 result = self._select_tv_episode(candidate_id)
                 if result is not None:

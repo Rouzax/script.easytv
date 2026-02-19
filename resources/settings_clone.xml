@@ -402,18 +402,18 @@
 					<control type="edit" format="string" />
 				</setting>
 
-				<setting id="movieweight" type="number" label="32525" help="32422">
+				<setting id="movie_chance" type="integer" label="32525" help="32422">
 					<level>2</level>
-					<default>1.0</default>
+					<default>25</default>
 					<dependencies>
 						<dependency type="visible" setting="playlist_content">1</dependency>
 					</dependencies>
 					<constraints>
 						<minimum>0</minimum>
-						<maximum>1</maximum>
-						<step>0.1</step>
+						<step>5</step>
+						<maximum>100</maximum>
 					</constraints>
-					<control type="slider" format="number" />
+					<control type="slider" format="percentage" />
 				</setting>
 			</group>
 

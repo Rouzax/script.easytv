@@ -38,7 +38,7 @@ from resources.lib.constants import (
     SERVICE_POLL_SLEEP_MS, SERVICE_POLL_TIMEOUT_TICKS,
 )
 from resources.lib.utils import (
-    lang, get_logger, get_bool_setting, get_int_setting, get_float_setting,
+    lang, get_logger, get_bool_setting, get_int_setting,
     parse_version, compare_versions
 )
 from resources.lib.ui.dialogs import show_playlist_selection
@@ -155,7 +155,7 @@ def main_entry(addon, log):
                 playlist_content=playlist_content,
                 episode_selection=get_int_setting('episode_selection'),
                 movie_selection=get_int_setting('movie_selection'),
-                movieweight=get_float_setting('movieweight'),
+                movie_chance=get_int_setting('movie_chance'),
                 start_partials_tv=get_bool_setting('start_partials_tv'),
                 start_partials_movies=get_bool_setting('start_partials_movies'),
                 premieres=get_bool_setting('premieres'),
