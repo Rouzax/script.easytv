@@ -1,6 +1,19 @@
 EasyTV Changelog
 ================
 
+v1.4.0~alpha5 (2026-02-19)
+--------------------------
+Bug Fixes:
+  - Fixed: Partial prioritization in random playlists — stale resume points on
+    watched episodes (playcount > 0) no longer cause deterministic show ordering
+    in WATCHED and BOTH modes. Only genuinely in-progress episodes (playcount=0
+    with resume point) are now treated as partials.
+
+  - Fixed: When a partial episode is detected and prioritized, the specific
+    episode is now served on first encounter in both batch and lazy queue
+    playlist paths. Previously, the system detected the partial but discarded
+    the episode ID, picking a different episode instead.
+
 v1.4.0~alpha4 (2026-02-15)
 --------------------------
 Bug Fixes:

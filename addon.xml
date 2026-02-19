@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <addon id="script.easytv"
        name="EasyTV"
-       version="1.4.0~alpha4"
+       version="1.4.0~alpha5"
        provider-name="Rouzax, KODeKarnage">
     <requires>
         <import addon="xbmc.python" version="3.0.1"/>
@@ -25,10 +25,9 @@
         <forum>https://forum.kodi.tv/showthread.php?tid=383902</forum>
         <website>https://github.com/Rouzax/script.easytv</website>
         <source>https://github.com/Rouzax/script.easytv</source>
-        <news>v1.4.0~alpha4 (2026-02-15)
-- Fixed: Clone creation fails on SteamOS/Arch due to ASCII locale encoding
-- Fixed: Spurious "Show ID shifted" log spam when old_id equals new_id
-- Added: Log Kodi video database backend (shared/local) at startup</news>
+        <news>v1.4.0~alpha5 (2026-02-19)
+- Fixed: Stale resume points on watched episodes no longer affect partial prioritization
+- Fixed: Detected partial episodes are now actually served on first encounter</news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>

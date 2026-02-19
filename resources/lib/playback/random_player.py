@@ -361,24 +361,26 @@ def _fetch_random_episode_for_show(
 
 def _find_all_partial_episodes(
     show_ids: List[int],
-    episode_selection: int,
     logger: StructuredLogger
 ) -> List[Tuple[str, int, int, int, str]]:
     """
-    Find all TV episodes with resume points from the given shows.
-    
-    Uses Kodi's efficient 'inprogress' filter to find all partially watched
-    episodes in a single query (~94ms), then filters client-side by show
-    and watch status. This is 99%+ faster than querying each show individually.
-    
+    Find all genuinely in-progress TV episodes from the given shows.
+
+    Uses Kodi's efficient 'inprogress' filter to find all episodes with
+    resume points in a single query (~94ms), then filters client-side to
+    only include genuinely in-progress episodes (playcount == 0).
+
+    Episodes with playcount > 0 and a resume point are stale artifacts
+    (Kodi marked them watched but didn't clear the resume point) and are
+    excluded regardless of the episode_selection mode.
+
     Args:
         show_ids: List of TV show IDs to check
-        episode_selection: Watch status filter (0=unwatched, 1=watched, 2=both)
         logger: Logger instance
-    
+
     Returns:
         List of tuples: (lastplayed, tvshowid, season, episode, episodeid)
-        for episodes with resume.position > 0.
+        for genuinely in-progress episodes (playcount == 0, resume > 0).
     """
     if not show_ids:
         return []
@@ -406,13 +408,11 @@ def _find_all_partial_episodes(
         if tvshowid not in show_id_set:
             continue
         
-        # Apply watch status filter
+        # Only genuinely in-progress episodes qualify (playcount == 0).
+        # Episodes with playcount > 0 have stale resume points.
         playcount = ep.get('playcount', 0)
-        if episode_selection == EPISODE_SELECTION_UNWATCHED and playcount > 0:
+        if playcount > 0:
             continue
-        if episode_selection == EPISODE_SELECTION_WATCHED and playcount == 0:
-            continue
-        # EPISODE_SELECTION_BOTH passes through regardless of playcount
         
         partial_episodes.append((
             ep.get('lastplayed', ''),
@@ -431,25 +431,26 @@ def _find_all_partial_episodes(
 
 def _find_all_partial_movies(
     movie_ids: Optional[List[int]],
-    movie_selection: int,
     logger: StructuredLogger
 ) -> List[Tuple[str, int]]:
     """
-    Find all movies with resume points.
-    
-    Uses Kodi's efficient 'inprogress' filter to find all partially watched
-    movies in a single query (~109ms), then filters client-side by playlist
-    and watch status. This is 74% faster than fetching all movies.
-    
+    Find all genuinely in-progress movies.
+
+    Uses Kodi's efficient 'inprogress' filter to find all movies with
+    resume points in a single query (~109ms), then filters client-side to
+    only include genuinely in-progress movies (playcount == 0).
+
+    Movies with playcount > 0 and a resume point are stale artifacts
+    and are excluded regardless of the movie_selection mode.
+
     Args:
         movie_ids: Optional list of movie IDs to filter by (from playlist).
-                   If None, checks all movies matching watch status.
-        movie_selection: Watch status filter (0=unwatched, 1=watched, 2=both)
+                   If None, checks all movies.
         logger: Logger instance
-    
+
     Returns:
         List of tuples: (lastplayed, movieid)
-        for movies with resume.position > 0.
+        for genuinely in-progress movies (playcount == 0, resume > 0).
     """
     # Single bulk query for all in-progress movies
     query = build_inprogress_movies_query()
@@ -472,13 +473,11 @@ def _find_all_partial_movies(
         if movie_id_set is not None and movie_id not in movie_id_set:
             continue
         
-        # Apply watch status filter
+        # Only genuinely in-progress movies qualify (playcount == 0).
+        # Movies with playcount > 0 have stale resume points.
         playcount = movie.get('playcount', 0)
-        if movie_selection == EPISODE_SELECTION_UNWATCHED and playcount > 0:
+        if playcount > 0:
             continue
-        if movie_selection == EPISODE_SELECTION_WATCHED and playcount == 0:
-            continue
-        # EPISODE_SELECTION_BOTH passes through regardless of playcount
         
         partial_movies.append((
             movie.get('lastplayed', ''),
@@ -496,23 +495,29 @@ def _sort_partials_for_priority(
     partial_episodes: List[Tuple[str, int, int, int, str]],
     partial_movies: List[Tuple[str, int]],
     logger: StructuredLogger
-) -> List[str]:
+) -> Tuple[List[str], Dict[int, int]]:
     """
     Sort partial items for playlist prioritization.
-    
+
     Combines TV episodes and movies, sorts by recency (lastplayed descending).
     For episodes from the same show, maintains episode order (season, episode).
-    
+
+    Also builds a partial_episode_map that maps show_id to the specific
+    episode_id that should be served on first encounter. For shows with
+    multiple partial episodes, the earliest by (season, episode) is used.
+
     Args:
         partial_episodes: List of (lastplayed, tvshowid, season, episode, episodeid)
         partial_movies: List of (lastplayed, movieid)
         logger: Logger instance
-    
+
     Returns:
-        List of candidate tags in priority order: 't{showid}' or 'm{movieid}'
+        Tuple of:
+        - List of candidate tags in priority order: 't{showid}' or 'm{movieid}'
+        - Dict mapping show_id (int) to episode_id (int) for partial TV episodes
     """
     if not partial_episodes and not partial_movies:
-        return []
+        return [], {}
     
     # Group episodes by show and find most recent per show
     show_episodes: Dict[int, List[Tuple[str, int, int, str]]] = {}
@@ -546,20 +551,25 @@ def _sort_partials_for_priority(
     # Sort by recency (descending)
     combined.sort(key=lambda x: x[0], reverse=True)
     
-    # Build final candidate list
+    # Build final candidate list and partial episode map
     result: List[str] = []
+    partial_episode_map: Dict[int, int] = {}
     for _, item_type, item_id, sub_items in combined:
         if item_type == 't':
             # For TV shows with multiple partial episodes, add show once
             # (the playlist building logic handles multiple episodes)
             result.append(f't{item_id}')
+            # Use the earliest episode (already sorted by season, episode)
+            if sub_items:
+                partial_episode_map[item_id] = int(sub_items[0][3])
         else:
             result.append(f'm{item_id}')
-    
-    logger.debug("Sorted partials for priority", 
+
+    logger.debug("Sorted partials for priority",
                  tv_shows=len([x for x in result if x.startswith('t')]),
-                 movies=len([x for x in result if x.startswith('m')]))
-    return result
+                 movies=len([x for x in result if x.startswith('m')]),
+                 episode_map_size=len(partial_episode_map))
+    return result, partial_episode_map
 
 
 def _process_tv_candidate(
@@ -568,11 +578,12 @@ def _process_tv_candidate(
     candidate_list: list[str],
     random_order_shows: list[int],
     config: RandomPlaylistConfig,
-    logger: StructuredLogger
+    logger: StructuredLogger,
+    partial_episode_map: Optional[Dict[int, int]] = None
 ) -> tuple[Optional[int], bool]:
     """
     Process a TV show candidate for playlist addition.
-    
+
     Args:
         show_id: The TV show ID
         added_ep_dict: Dict tracking added episodes per show
@@ -580,7 +591,10 @@ def _process_tv_candidate(
         random_order_shows: List of show IDs with random episode order
         config: Playlist configuration (includes episode_selection)
         logger: Logger instance
-    
+        partial_episode_map: Optional map of show_id → episode_id for shows
+            with genuinely in-progress episodes. On first encounter, the
+            specific partial episode is served directly.
+
     Returns:
         Tuple of (episode_id, is_multi_episode) or (None, False) if skipped.
     """
@@ -675,7 +689,19 @@ def _process_tv_candidate(
             return None, False
     else:
         # First episode from this show
-        
+
+        # Check if this show has a specific partial episode to serve
+        if partial_episode_map and show_id in partial_episode_map:
+            tmp_episode_id = partial_episode_map[show_id]
+            logger.debug("Serving partial episode directly",
+                         show_id=show_id, episode_id=tmp_episode_id)
+
+            if not config.multiple_shows:
+                if candidate_tag in candidate_list:
+                    candidate_list.remove(candidate_tag)
+
+            return tmp_episode_id, False
+
         # Get episode based on selection mode
         if config.episode_selection == EPISODE_SELECTION_UNWATCHED:
             # Use cached next unwatched episode from service
@@ -898,27 +924,31 @@ def _build_lazy_queue_playlist(
     random_order_shows: list,
     config: RandomPlaylistConfig,
     candidate_list: list,
-    logger: StructuredLogger
+    logger: StructuredLogger,
+    partial_episode_map: Optional[Dict[int, int]] = None
 ) -> None:
     """
     Build a lazy queue playlist for Both mode.
-    
+
     Instead of building the full playlist upfront, creates a small initial
     buffer (LAZY_QUEUE_BUFFER_SIZE items) and relies on the playback monitor
     to replenish as episodes are watched. This allows on-deck episodes to
     progress naturally as content is consumed.
-    
+
     The key difference from batch mode is that on-deck episodes can appear
     multiple times for the same show, advancing as each episode is watched
     (e.g., S02E05 → S02E06 → S02E07).
-    
+
     Args:
         population: Show population filter dict
         random_order_shows: List of show IDs with random episode order
         config: Playlist configuration
         candidate_list: Shuffled list of candidates like ['t123', 'm456']
         logger: Logger instance
-    
+        partial_episode_map: Optional map of show_id → episode_id for shows
+            with genuinely in-progress episodes. Passed through to the
+            PlaylistSession for first-encounter serving.
+
     Side Effects:
         - Creates PlaylistSession and saves to window property
         - Adds initial buffer items to video playlist
@@ -943,7 +973,8 @@ def _build_lazy_queue_playlist(
             population=population,
             random_order_shows=random_order_shows,
             candidate_list=candidate_list.copy(),  # Copy to avoid mutation
-            target_length=config.length
+            target_length=config.length,
+            partial_episode_map=partial_episode_map
         )
         timer.mark("session_create")
         
@@ -1033,10 +1064,13 @@ def build_random_playlist(
         2. Retrieves movies based on movie_selection (unwatched/watched/both)
         3. Creates candidate list with prefixed IDs: 't123' for TV, 'm456' for movie
         4. Shuffles combined list for random order
-        5. Optionally prioritizes items with partial progress (start_partials_tv/movies)
-           - Finds all TV episodes and movies with resume points
+        5. Optionally prioritizes genuinely in-progress items (start_partials_tv/movies)
+           - Only playcount == 0 with resume point qualifies (stale resume on
+             watched episodes is ignored)
            - Sorts by recency (lastplayed), same-show episodes in episode order
            - Moves all partials to front of candidate list
+           - Builds partial_episode_map (show_id → episode_id) so the specific
+             partial episode is served on first encounter
     
     Playlist Building:
         - Loops until 'length' items added or all candidates exhausted
@@ -1175,6 +1209,7 @@ def build_random_playlist(
             random.shuffle(candidate_list)
             
             # Handle partial prioritization - find all partial items and move to front
+            partial_episode_map: Dict[int, int] = {}
             if config.start_partials_tv or config.start_partials_movies:
                 with log_timing(log, "partial_prioritization", 
                                tv_enabled=config.start_partials_tv,
@@ -1186,7 +1221,7 @@ def build_random_playlist(
                     partial_episodes: List[Tuple[str, int, int, int, str]] = []
                     if config.start_partials_tv and tv_show_ids:
                         partial_episodes = _find_all_partial_episodes(
-                            tv_show_ids, config.episode_selection, log
+                            tv_show_ids, log
                         )
                         timer.mark("tv_episodes_query")
                     
@@ -1198,13 +1233,13 @@ def build_random_playlist(
                         if config.movie_playlist:
                             playlist_movie_ids = extract_movieids_from_playlist(config.movie_playlist)
                         partial_movies = _find_all_partial_movies(
-                            playlist_movie_ids, config.movie_selection, log
+                            playlist_movie_ids, log
                         )
                         timer.mark("movies_query")
                     
                     # Sort partials by recency and rebuild candidate list
                     if partial_episodes or partial_movies:
-                        sorted_partials = _sort_partials_for_priority(
+                        sorted_partials, partial_episode_map = _sort_partials_for_priority(
                             partial_episodes, partial_movies, log
                         )
                         timer.mark("sort")
@@ -1232,7 +1267,8 @@ def build_random_playlist(
                       event="playlist.lazy_queue_mode",
                       candidates=len(candidate_list))
             _build_lazy_queue_playlist(
-                population, random_order_shows, config, candidate_list, log
+                population, random_order_shows, config, candidate_list, log,
+                partial_episode_map=partial_episode_map
             )
             return
         
@@ -1251,7 +1287,8 @@ def build_random_playlist(
                 # TV episode candidate
                 episode_id, is_multi = _process_tv_candidate(
                     candidate_id, added_ep_dict, candidate_list,
-                    random_order_shows, config, log
+                    random_order_shows, config, log,
+                    partial_episode_map=partial_episode_map
                 )
                 
                 if episode_id is None:
