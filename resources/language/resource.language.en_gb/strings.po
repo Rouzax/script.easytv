@@ -474,7 +474,7 @@ msgid "Start watched movies at a random point, like catching a movie on TV."
 msgstr ""
 
 msgctxt "#32422"
-msgid "Balance between movies and TV episodes. 0 = no movies, 1.0 = equal mix of movies and shows."
+msgid "How much of the playlist should be movies. 0% = no movies, 50% = equal mix, 100% = all movies."
 msgstr ""
 
 msgctxt "#32424"
@@ -640,7 +640,7 @@ msgid "Start watched movies at random point"
 msgstr ""
 
 msgctxt "#32525"
-msgid "Movie ratio"
+msgid "Movie chance"
 msgstr ""
 
 #. Playback settings

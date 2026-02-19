@@ -873,7 +873,7 @@ class ServiceDaemon:
             playlist_content=config_dict.get('playlist_content', 1),
             episode_selection=config_dict.get('episode_selection', 0),
             movie_selection=config_dict.get('movie_selection', 0),
-            movieweight=config_dict.get('movieweight', 0.5),
+            movie_chance=config_dict.get('movie_chance', 25),
             start_partials_tv=config_dict.get('start_partials_tv', True),
             start_partials_movies=config_dict.get('start_partials_movies', True),
             premieres=config_dict.get('premieres', True),

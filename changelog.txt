@@ -1,6 +1,29 @@
 EasyTV Changelog
 ================
 
+v1.4.0~alpha6 (2026-02-19)
+-------------------
+New Features:
+  - Replaced "Movie ratio" setting (0.0-1.0 slider) with "Movie chance" percentage
+    slider (0-100% in steps of 5). The new setting directly controls what fraction
+    of the playlist should be movies: 0% = no movies, 25% = default, 50% = equal
+    mix, 100% = all movies. New setting ID: movie_chance (old: movieweight).
+
+  - Added budget enforcement to playlist building. Both batch mode and lazy queue
+    now track movies vs. shows added and defer over-budget items, ensuring the
+    final playlist closely matches the configured movie chance percentage.
+
+Bug Fixes:
+  - Fixed: Movie playlist filter bypassed the movie weight limit entirely. When a
+    playlist filter was configured, the limit was ignored during the query phase
+    and never re-applied after intersection, resulting in all matching movies being
+    included regardless of the weight setting. The limit is now applied after
+    playlist filter intersection.
+
+Internal:
+  - Added calculate_movie_target() function for percentage-to-count conversion
+  - Movie target count now logged in playlist.create event for debugging
+
 v1.4.0~alpha5 (2026-02-19)
 --------------------------
 Bug Fixes:

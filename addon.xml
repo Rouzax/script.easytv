@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <addon id="script.easytv"
        name="EasyTV"
-       version="1.4.0~alpha5"
+       version="1.4.0~alpha6"
        provider-name="Rouzax, KODeKarnage">
     <requires>
         <import addon="xbmc.python" version="3.0.1"/>
@@ -25,9 +25,10 @@
         <forum>https://forum.kodi.tv/showthread.php?tid=383902</forum>
         <website>https://github.com/Rouzax/script.easytv</website>
         <source>https://github.com/Rouzax/script.easytv</source>
-        <news>v1.4.0~alpha5 (2026-02-19)
-- Fixed: Stale resume points on watched episodes no longer affect partial prioritization
-- Fixed: Detected partial episodes are now actually served on first encounter</news>
+        <news>v1.4.0~alpha6 (2026-02-19)
+- New "Movie chance" percentage slider replaces unintuitive "Movie ratio" setting
+- Fixed movie playlist filter bypassing the weight limit entirely
+- Budget enforcement ensures playlists match the configured movie percentage</news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>

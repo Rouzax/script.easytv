@@ -64,7 +64,7 @@ from resources.lib.data.shows import (
     filter_shows_by_duration,
     validate_duration_settings,
 )
-from resources.lib.playback.playlist_session import PlaylistSession
+from resources.lib.playback.playlist_session import PlaylistSession, calculate_movie_target
 from resources.lib.data.storage import get_storage
 from resources.lib.utils import get_logger, json_query, log_timing, busy_progress
 
@@ -103,7 +103,7 @@ class RandomPlaylistConfig:
         playlist_content: Content type (CONTENT_TV_ONLY=0, CONTENT_MIXED=1, CONTENT_MOVIES_ONLY=2)
         episode_selection: Which episodes to include (0=unwatched, 1=watched, 2=both)
         movie_selection: Which movies to include (0=unwatched, 1=watched, 2=both)
-        movieweight: Ratio of movies to shows (0.0-1.0), only applies to CONTENT_MIXED
+        movie_chance: Percentage of playlist that should be movies (0-100), only applies to CONTENT_MIXED
         start_partials_tv: Whether to prioritize partially watched TV episodes
         start_partials_movies: Whether to prioritize partially watched movies
         premieres: Whether to include series premiere episodes (S01E01)
@@ -122,7 +122,7 @@ class RandomPlaylistConfig:
     playlist_content: int = CONTENT_MIXED
     episode_selection: int = 0  # 0=unwatched, 1=watched, 2=both
     movie_selection: int = 0  # 0=unwatched, 1=watched, 2=both
-    movieweight: float = 0.5
+    movie_chance: int = 25
     start_partials_tv: bool = True
     start_partials_movies: bool = True
     premieres: bool = True
@@ -155,7 +155,7 @@ def _serialize_playlist_config(config: RandomPlaylistConfig) -> Dict[str, Any]:
         'playlist_content': config.playlist_content,
         'episode_selection': config.episode_selection,
         'movie_selection': config.movie_selection,
-        'movieweight': config.movieweight,
+        'movie_chance': config.movie_chance,
         'start_partials_tv': config.start_partials_tv,
         'start_partials_movies': config.start_partials_movies,
         'premieres': config.premieres,
@@ -263,13 +263,13 @@ def _fetch_movies(
 ) -> list[int]:
     """
     Fetch movie IDs based on watch status settings.
-    
+
     Uses server-side random sorting for better performance when a limit
     is specified, avoiding the need to fetch and shuffle all movies.
-    
+
     When movie_ids is provided (from a playlist filter), fetches all movies
     matching watch status (ignoring limit), then intersects with the playlist.
-    This ensures the limit doesn't exclude valid playlist matches.
+    The limit is applied after intersection to respect the movie chance setting.
     
     Args:
         movie_selection: Which movies to include (0=unwatched, 1=watched, 2=both)
@@ -302,8 +302,11 @@ def _fetch_movies(
         if movie_ids is not None:
             movie_id_set = set(movie_ids)
             movie_list = [m for m in movie_list if m in movie_id_set]
-            log.debug("Movies filtered by playlist", 
-                     total_fetched=len(mov['movies']), 
+            # Apply limit after intersection to respect movie chance
+            if limit is not None and len(movie_list) > limit:
+                movie_list = movie_list[:limit]
+            log.debug("Movies filtered by playlist",
+                     total_fetched=len(mov['movies']),
                      after_filter=len(movie_list))
         else:
             log.debug("Movies found", count=len(movie_list), limit=limit)
@@ -1050,14 +1053,16 @@ def build_random_playlist(
         For watched/both modes, queries the library directly with server-side
         random sorting for optimal performance.
     
-    Weighting Algorithm:
-        The movieweight setting (0.0-1.0) controls the movie-to-TV-show ratio:
-        - movieweight = 0.0: No movies, only TV episodes
-        - movieweight = 0.5: Half as many movies as TV shows
-        - movieweight = 1.0: Equal number of movies as TV shows
-        
-        Formula: movie_limit = max(show_count * movieweight, 1)
-        This ensures at least 1 movie (if available) when movies are enabled.
+    Movie Chance:
+        The movie_chance setting (0-100%) controls what fraction of the playlist
+        should be movies:
+        - 0%: No movies, only TV episodes
+        - 25%: 5 movies in a 20-item playlist (default)
+        - 50%: Equal mix of movies and TV episodes
+        - 100%: All movies
+
+        Formula: movie_target = round(length * movie_chance / 100)
+        Budget enforcement ensures the final playlist respects this target.
     
     Candidate Selection:
         1. Filters shows based on population parameter (playlist/user selection)
@@ -1154,17 +1159,13 @@ def build_random_playlist(
             # Fetch movies if enabled, with appropriate limit
             movie_list: list[int] = []
             if include_movies:
-                # Calculate movie limit based on content type and weight
+                # Calculate movie limit based on content type and chance
                 if config.playlist_content == CONTENT_MOVIES_ONLY:
                     # Movies only: fetch up to playlist length
                     movie_limit = config.length
                 else:
-                    # Mixed mode: calculate based on show count and weight
-                    if config.movieweight == 0.0:
-                        movie_limit = 0
-                    else:
-                        # movies = shows * weight, but at least 1
-                        movie_limit = max(int(round(stored_show_count * config.movieweight, 0)), 1)
+                    # Mixed mode: percentage-based target
+                    movie_limit = calculate_movie_target(config.movie_chance, config.length)
                 
                 if movie_limit > 0:
                     # Extract movie IDs from playlist if filter is set
@@ -1194,10 +1195,12 @@ def build_random_playlist(
             
             # Log with content type name for clarity
             content_names = ["TV only", "TV and movies", "Movies only"]
+            movie_target = calculate_movie_target(config.movie_chance, config.length) if config.playlist_content == CONTENT_MIXED else len(movie_list)
             log.info("Random playlist starting", event="playlist.create",
                      content=content_names[config.playlist_content],
                      target_length=config.length,
-                     shows=stored_show_count, movies=len(movie_list))
+                     shows=stored_show_count, movies=len(movie_list),
+                     movie_target=movie_target)
             
             outer_timer.mark("movie_fetch")
             
@@ -1272,6 +1275,11 @@ def build_random_playlist(
             )
             return
         
+        # Budget tracking for mixed mode (movie_target computed above with log)
+        show_target = config.length - movie_target
+        movies_added = 0
+        shows_added = 0
+
         # Main playlist building loop (batch mode for Unwatched/Watched/Both without multiple_shows)
         # Candidates are ordered: partials first (priority sorted), then shuffled non-partials
         # Always pick from front (index 0) to respect this ordering
@@ -1282,7 +1290,20 @@ def build_random_playlist(
             candidate = candidate_list[0]
             candidate_type = candidate[0]
             candidate_id = int(candidate[1:])
-            
+
+            # Budget enforcement: defer over-budget type when other type available
+            if candidate_type == 'm' and movies_added >= movie_target:
+                if any(c[0] == 't' for c in candidate_list):
+                    candidate_list.remove(candidate)
+                    candidate_list.append(candidate)
+                    continue
+
+            if candidate_type == 't' and shows_added >= show_target:
+                if any(c[0] == 'm' for c in candidate_list):
+                    candidate_list.remove(candidate)
+                    candidate_list.append(candidate)
+                    continue
+
             if candidate_type == 't':
                 # TV episode candidate
                 episode_id, is_multi = _process_tv_candidate(
@@ -1323,11 +1344,14 @@ def build_random_playlist(
                     if candidate_tag in candidate_list:
                         candidate_list.remove(candidate_tag)
                         candidate_list.append(candidate_tag)
-                
+
+                shows_added += 1
+
             elif candidate_type == 'm':
                 # Movie candidate
                 json_query(build_add_movie_query(candidate_id), False)
                 candidate_list.remove(f'm{candidate_id}')
+                movies_added += 1
                 
             else:
                 # Unknown type - break out
