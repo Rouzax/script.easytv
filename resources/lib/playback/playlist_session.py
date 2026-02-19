@@ -92,6 +92,8 @@ class PlaylistSession:
         candidate_list: List of candidates like ['t123', 'm456']
         shows_state: Per-show state with on-deck and watched tracking
         movies_used: List of movie IDs already used
+        partial_episode_map: Map of show_id → episode_id for shows with
+            genuinely in-progress episodes. Used for first-encounter serving.
     """
     
     def __init__(
@@ -103,11 +105,12 @@ class PlaylistSession:
         target_length: int,
         items_added: int = 0,
         shows_state: Optional[Dict[int, Dict[str, Any]]] = None,
-        movies_used: Optional[List[int]] = None
+        movies_used: Optional[List[int]] = None,
+        partial_episode_map: Optional[Dict[int, int]] = None
     ) -> None:
         """
         Initialize a PlaylistSession.
-        
+
         Args:
             config: RandomPlaylistConfig as a dict (serialized)
             population: Show population filter dict
@@ -117,6 +120,8 @@ class PlaylistSession:
             items_added: Items already added to playlist
             shows_state: Per-show tracking state
             movies_used: Movie IDs already used
+            partial_episode_map: Optional map of show_id → episode_id for
+                shows with genuinely in-progress episodes
         """
         self.active = True
         self.config = config
@@ -127,6 +132,7 @@ class PlaylistSession:
         self.candidate_list = candidate_list
         self.shows_state = shows_state if shows_state is not None else {}
         self.movies_used = movies_used if movies_used is not None else []
+        self.partial_episode_map = partial_episode_map or {}
     
     @classmethod
     def create(
@@ -135,27 +141,30 @@ class PlaylistSession:
         population: Dict[str, Any],
         random_order_shows: List[int],
         candidate_list: List[str],
-        target_length: int
+        target_length: int,
+        partial_episode_map: Optional[Dict[int, int]] = None
     ) -> 'PlaylistSession':
         """
         Create a new playlist session.
-        
+
         This is the primary factory method for starting a new Both mode
         lazy queue session. It initializes all state and saves to the
         window property.
-        
+
         Args:
             config: RandomPlaylistConfig as a dict (serialized)
             population: Show population filter dict
             random_order_shows: List of show IDs with random episode order
             candidate_list: List of candidates like ['t123', 'm456']
             target_length: Target number of items to add
-        
+            partial_episode_map: Optional map of show_id → episode_id for
+                shows with genuinely in-progress episodes
+
         Returns:
             A new PlaylistSession instance
         """
         log = _get_log()
-        
+
         session = cls(
             config=config,
             population=population,
@@ -164,7 +173,8 @@ class PlaylistSession:
             target_length=target_length,
             items_added=0,
             shows_state={},
-            movies_used=[]
+            movies_used=[],
+            partial_episode_map=partial_episode_map
         )
         
         session.save()
@@ -211,7 +221,10 @@ class PlaylistSession:
             target_length=data.get('target_length', 10),
             items_added=data.get('items_added', 0),
             shows_state=cls._deserialize_shows_state(data.get('shows_state', {})),
-            movies_used=data.get('movies_used', [])
+            movies_used=data.get('movies_used', []),
+            partial_episode_map=cls._deserialize_partial_map(
+                data.get('partial_episode_map', {})
+            )
         )
         
         log.debug("Lazy queue session loaded",
@@ -226,13 +239,13 @@ class PlaylistSession:
     def _deserialize_shows_state(state: Dict[str, Any]) -> Dict[int, Dict[str, Any]]:
         """
         Deserialize shows_state from JSON (string keys to int keys).
-        
+
         JSON serialization converts int keys to strings, so we need to
         convert them back when loading.
-        
+
         Args:
             state: The shows_state dict with string keys
-        
+
         Returns:
             Shows state dict with integer show_id keys, empty dict on error.
         """
@@ -240,6 +253,27 @@ class PlaylistSession:
             return {int(k): v for k, v in state.items()}
         except (ValueError, TypeError, AttributeError):
             # Malformed data - return empty state
+            return {}
+
+    @staticmethod
+    def _deserialize_partial_map(data: Any) -> Dict[int, int]:
+        """
+        Deserialize partial_episode_map from JSON (string keys/values to int).
+
+        JSON serialization converts int keys to strings, so we need to
+        convert them back when loading.
+
+        Args:
+            data: The partial_episode_map dict with string keys from JSON
+
+        Returns:
+            Dict mapping show_id (int) to episode_id (int), empty dict on error.
+        """
+        if not data or not isinstance(data, dict):
+            return {}
+        try:
+            return {int(k): int(v) for k, v in data.items()}
+        except (ValueError, TypeError, AttributeError):
             return {}
     
     def save(self) -> None:
@@ -261,6 +295,7 @@ class PlaylistSession:
             'candidate_list': self.candidate_list,
             'shows_state': self.shows_state,
             'movies_used': self.movies_used,
+            'partial_episode_map': self.partial_episode_map,
         }
         
         WINDOW.setProperty(PROP_LAZY_QUEUE_SESSION, json.dumps(data))
@@ -425,29 +460,43 @@ class PlaylistSession:
     def _select_tv_episode(self, show_id: int) -> Optional[Tuple[int, bool]]:
         """
         Select a TV episode for Both mode.
-        
+
         Uses ratio-based selection between on-deck (unwatched) and random
         watched episodes. The key feature is that on-deck is read FRESH
         each time - as episodes are watched, the service updates the
         window property, so on-deck naturally progresses.
-        
+
+        On first encounter, if the show has a genuinely in-progress episode
+        in the partial_episode_map, that specific episode is served directly
+        (bypassing the ratio roll). Subsequent encounters use normal logic.
+
         Args:
             show_id: The TV show ID
-        
+
         Returns:
             Tuple of (episode_id, used_ondeck) or None if show exhausted.
             used_ondeck is True if we picked the on-deck episode.
         """
         log = _get_log()
-        
+
         # Initialize show state if needed
-        if show_id not in self.shows_state:
+        first_encounter = show_id not in self.shows_state
+        if first_encounter:
             self.shows_state[show_id] = {
                 'watched_used': [],  # Watched episode IDs already used
                 'last_ondeck_id': None,  # Track last on-deck to detect progression
             }
-        
+
         state = self.shows_state[show_id]
+
+        # On first encounter, serve specific partial episode if available
+        if first_encounter and show_id in self.partial_episode_map:
+            episode_id = self.partial_episode_map[show_id]
+            state['partial_served'] = True
+            log.debug("Serving partial episode directly (lazy queue)",
+                      show_id=show_id, episode_id=episode_id)
+            return (episode_id, True)
+
         watched_used = state.get('watched_used', [])
         
         # Get CURRENT on-deck from window property (may have progressed!)
