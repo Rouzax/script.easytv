@@ -55,6 +55,7 @@ import xbmcgui
 import xbmcvfs
 import sys
 import shutil
+from typing import Optional
 from xml.etree import ElementTree as et
 
 # Import shared utilities
@@ -91,7 +92,7 @@ addon_path       = xbmcvfs.translatePath('special://home/addons')
 log              = get_logger('clone')
 
 
-def errorHandle(exception, trace, new_path=False):
+def errorHandle(exception: Exception, trace: object, new_path: Optional[str] = None) -> None:
 
     log.error("Clone creation failed", event="clone.fail", error=str(exception), trace=str(trace))
 
@@ -212,7 +213,9 @@ def Main():
         root.set('id', san_name)
         root.set('name', clone_name)
         root.set('version', parent_version)  # Clone inherits parent version
-        tree.find('.//summary').text = clone_name
+        summary_elem = tree.find('.//summary')
+        if summary_elem is not None:
+            summary_elem.text = clone_name
         tree.write(addon_file)
 
         progress.update(65, "Updating scripts...")

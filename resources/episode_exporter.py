@@ -29,6 +29,7 @@ import sys
 import shutil
 import ast
 import json
+from typing import cast
 
 # Import shared utilities
 from resources.lib.utils import lang, json_query, get_logger, get_bool_setting
@@ -200,7 +201,7 @@ def get_TVshows():
 def Main():
 
 	# open location selection window
-	location = dialog.browse(3,lang(32180),'files')
+	location = cast(str, dialog.browse(3,lang(32180),'files'))
 
 	log.info("Export started", event="export.start", location=location)
 
@@ -235,7 +236,7 @@ def Main():
 
 		fn = os.path.basename(video_file)
 
-		progress_dialog.update(int(prog * 100.0), lang(32184),str(fn))
+		progress_dialog.update(int(prog * 100.0), '{} {}'.format(lang(32184), fn))
 
 		try:
 			if not os.path.isfile(os.path.join(location, fn)):

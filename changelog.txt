@@ -1,8 +1,49 @@
 EasyTV Changelog
 ================
 
+v1.4.0~alpha7 (2026-02-20)
+--------------------------
+New Features:
+  - Playlist continuation: Added "If countdown expires" setting to choose the default
+    action (Stop or Generate new playlist). When set to "Generate", the button layout
+    swaps so the timeout triggers playlist generation instead of stopping.
+
+  - Playlist continuation prompt now only appears when the playlist finishes naturally.
+    Manually stopping a playlist no longer triggers the continuation dialog.
+
+  - Playlist continuation heading now shows the countdown timer
+    (e.g., "Playlist Finished   (auto-closing in 20 seconds)"), matching the next
+    episode prompt style.
+
+  - Countdown timer sliders now use 1-second steps (was 5) for both next episode prompt
+    and playlist continuation duration.
+
+Bug Fixes:
+  - Fixed: DialogProgress.update() called with 3 positional args (broke on
+    Kodi 19+ which only accepts percent and message).
+
+  - Fixed: clone.py and update_clone.py errorHandle() used False as default
+    for path parameter — now correctly uses None with Optional[str] type.
+
+  - Fixed: XML tree.find('.//summary') result used without None check in
+    both clone.py and update_clone.py.
+
+  - Fixed: Clone addon repeatedly prompting to update on every other launch after main
+    addon update. The clone update script now calls UpdateLocalAddons to refresh Kodi's
+    in-memory addon metadata cache before re-registering (matching what clone creation
+    already did). The update-complete flag also persists for the full Kodi session as a
+    safety net, clearing naturally on restart.
+
+Internal:
+  - Resolved all 115 pyright type-checking errors across 12 files (now 0).
+    Includes proper typing.cast() for Kodi getControl() stubs, assert guards
+    for Optional fields in daemon/service layer, and interface signature fixes
+    for abstract storage methods.
+
+  - Updated json_query() signature to accept batch queries (list of dicts).
+
 v1.4.0~alpha6 (2026-02-19)
--------------------
+--------------------------
 New Features:
   - Replaced "Movie ratio" setting (0.0-1.0 slider) with "Movie chance" percentage
     slider (0-100% in steps of 5). The new setting directly controls what fraction

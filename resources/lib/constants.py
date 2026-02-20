@@ -28,6 +28,15 @@ EPISODE_SELECTION_WATCHED = 1
 EPISODE_SELECTION_BOTH = 2
 
 # =============================================================================
+# Countdown Dialog Control IDs
+# =============================================================================
+COUNTDOWN_HEADING = 1
+COUNTDOWN_MESSAGE = 2
+COUNTDOWN_YES_BUTTON = 10
+COUNTDOWN_NO_BUTTON = 11
+COUNTDOWN_POSTER = 20
+
+# =============================================================================
 # Kodi Window IDs
 # =============================================================================
 KODI_HOME_WINDOW_ID = 10000

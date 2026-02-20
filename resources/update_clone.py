@@ -64,6 +64,7 @@ import xbmcgui
 import xbmcaddon
 import sys
 import os
+from typing import Optional
 from xml.etree import ElementTree as et
 import fileinput
 
@@ -91,10 +92,10 @@ def _lang(string_id):
     return __addon__.getLocalizedString(string_id)
 
 
-def errorHandle(exception, trace, path_to_clean=False):
+def errorHandle(exception: Exception, trace: object, path_to_clean: Optional[str] = None) -> None:
     """Handle errors during update."""
     _log(f"Clone update failed: {exception}", xbmc.LOGERROR)
-    
+
     # 32148 = "Clone update failed"
     # 32141 = "Please check the log for details"
     dialog.ok('EasyTV', _lang(32148) + '\n' + _lang(32141))
@@ -169,7 +170,9 @@ def Main():
     root.set('id', san_name)
     root.set('name', clone_name)
     root.set('version', parent_version)
-    tree.find('.//summary').text = clone_name
+    summary_elem = tree.find('.//summary')
+    if summary_elem is not None:
+        summary_elem.text = clone_name
     tree.write(addon_file)
 
     progress.update(75, "Updating scripts...")
@@ -202,9 +205,14 @@ def Main():
                 print(line.replace('$ADDON[script.easytv ', f'$ADDON[{san_name} '), end='')
             fileinput.close()
 
-    # Disable and re-enable the addon to register the updated files
+    # Force Kodi to re-scan the addons directory and re-read addon.xml from disk,
+    # refreshing the in-memory metadata cache before the disable/enable cycle
     try:
-        progress.update(90, "Registering with Kodi...")
+        progress.update(85, "Scanning for changes...")
+        xbmc.executebuiltin('UpdateLocalAddons')
+        xbmc.sleep(3000)
+
+        progress.update(92, "Registering with Kodi...")
         _log(f"Toggling addon registration: {san_name}")
         xbmc.executeJSONRPC(
             '{"jsonrpc":"2.0","method":"Addons.SetAddonEnabled",'

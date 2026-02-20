@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <addon id="script.easytv"
        name="EasyTV"
-       version="1.4.0~alpha6"
+       version="1.4.0~alpha7"
        provider-name="Rouzax, KODeKarnage">
     <requires>
         <import addon="xbmc.python" version="3.0.1"/>
@@ -25,10 +25,11 @@
         <forum>https://forum.kodi.tv/showthread.php?tid=383902</forum>
         <website>https://github.com/Rouzax/script.easytv</website>
         <source>https://github.com/Rouzax/script.easytv</source>
-        <news>v1.4.0~alpha6 (2026-02-19)
-- New "Movie chance" percentage slider replaces unintuitive "Movie ratio" setting
-- Fixed movie playlist filter bypassing the weight limit entirely
-- Budget enforcement ensures playlists match the configured movie percentage</news>
+        <news>v1.4.0~alpha7 (2026-02-20)
+- Playlist continuation: configurable default action (Stop or Generate) on timeout
+- Live countdown timer in both playlist continuation and next episode prompts
+- Continuation prompt only appears on natural playlist end, not manual stop
+- Clone update no longer repeatedly prompts after main addon update</news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>

@@ -36,7 +36,7 @@ from __future__ import annotations
 import os
 import time
 from dataclasses import dataclass
-from typing import Optional, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union, cast
 
 import xbmc
 import xbmcgui
@@ -179,7 +179,7 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
             self._setup_dialog_select_skin()
         else:
             # Custom skins (BigScreenList, main)
-            self.name_list = self.getControl(655)
+            self.name_list = cast(xbmcgui.ControlList, self.getControl(655))
         
         if self._ctrl6failed:
             return
@@ -200,22 +200,23 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
                                      event="ui.refresh_error", error=str(e))
         
         self._populate_list()
+        assert self.name_list is not None
         self.setFocus(self.name_list)
         self._log.debug("Window initialization complete")
     
     def _setup_dialog_select_skin(self) -> None:
         """Set up controls for the DialogSelect skin style."""
         try:
-            ok_button = self.getControl(CONTROL_OK_BUTTON)
+            ok_button = cast(xbmcgui.ControlButton, self.getControl(CONTROL_OK_BUTTON))
             ok_button.setLabel(lang(32105))
-            
-            heading = self.getControl(CONTROL_HEADING)
+
+            heading = cast(xbmcgui.ControlButton, self.getControl(CONTROL_HEADING))
             # Get addon name dynamically (supports clones with custom names)
             addon_name = xbmcaddon.Addon().getAddonInfo('name')
             heading.setLabel(addon_name)
             heading.setVisible(True)
-            
-            self.name_list = self.getControl(CONTROL_LIST)
+
+            self.name_list = cast(xbmcgui.ControlList, self.getControl(CONTROL_LIST))
             control_3 = self.getControl(3)
             control_3.setVisible(False)
             ok_button.controlRight(self.name_list)
@@ -247,6 +248,7 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
     
     def _populate_list(self) -> None:
         """Populate the list with show data."""
+        assert self.name_list is not None
         self.name_list.reset()  # Clear existing items before repopulating
         now = time.time()
         count = 0
@@ -422,10 +424,11 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
     def onClick(self, controlID: int) -> None:
         """
         Handle control clicks.
-        
+
         Args:
             controlID: The ID of the clicked control
         """
+        assert self.name_list is not None
         self._log.debug("Control clicked", control_id=controlID)
         
         # Handle Close/Cancel/Extra buttons - all should close without playback
@@ -461,6 +464,7 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
     
     def _toggle_multiselect(self) -> None:
         """Toggle multiselect mode on/off."""
+        assert self.name_list is not None
         if BrowseWindow._multiselect:
             BrowseWindow._multiselect = False
             # Deselect all items
@@ -473,6 +477,7 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
     
     def _play_selection(self) -> None:
         """Play selected episodes (in multiselect) or current episode."""
+        assert self.name_list is not None
         selected_episodes = []
         pos = self.name_list.getSelectedPosition()
         
@@ -491,6 +496,7 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
     
     def _play_from_here(self) -> None:
         """Play all episodes from current position to end of list."""
+        assert self.name_list is not None
         pos = self.name_list.getSelectedPosition()
         selected_episodes = []
         
@@ -508,6 +514,7 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
     
     def _toggle_watched(self) -> None:
         """Mark selected episodes as watched."""
+        assert self.name_list is not None
         self._log.debug("Toggling watched status")
         pos = self.name_list.getSelectedPosition()
         query_batch = []
@@ -539,6 +546,7 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
     
     def _export_selection(self) -> None:
         """Export selected episodes via episode_exporter."""
+        assert self.name_list is not None
         pos = self.name_list.getSelectedPosition()
         self._log.debug("Export starting", position=pos)
         

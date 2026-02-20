@@ -145,13 +145,15 @@ class StorageBackend(ABC):
         ...
     
     @abstractmethod
-    def get_ondeck_bulk(self, show_ids: List[int]) -> Tuple[Dict[int, Dict[str, Any]], int]:
+    def get_ondeck_bulk(self, show_ids: List[int], refresh_display: bool = False) -> Tuple[Dict[int, Dict[str, Any]], int]:
         """
         Get ondeck data for multiple shows.
-        
+
         Args:
             show_ids: List of Kodi TV show IDs.
-        
+            refresh_display: If True, fetch display properties from Kodi for
+                shows where the ondeck episode has changed (SharedDatabaseStorage only).
+
         Returns:
             Tuple of (data_dict, current_revision) where:
                 - data_dict: {show_id: {ondeck data}}
@@ -280,7 +282,7 @@ class WindowPropertyStorage(StorageBackend):
             'show_year': None,  # Not stored in window properties
         }
     
-    def get_ondeck_bulk(self, show_ids: List[int]) -> Tuple[Dict[int, Dict[str, Any]], int]:
+    def get_ondeck_bulk(self, show_ids: List[int], refresh_display: bool = False) -> Tuple[Dict[int, Dict[str, Any]], int]:
         """Get ondeck data for multiple shows."""
         data = {}
         for show_id in show_ids:

@@ -348,12 +348,10 @@ def build_episode_list(
             json_query(get_clear_video_playlist_query(), False)
             
             # Add selected episode(s) to playlist
-            try:
-                # Multiple episodes selected
+            if isinstance(selected, list):
                 for ep in selected:
                     json_query(build_add_episode_query(int(ep)), False)
-            except TypeError:
-                # Single episode selected
+            else:
                 json_query(build_add_episode_query(int(selected)), False)
             
             # Start playback

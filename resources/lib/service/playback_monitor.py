@@ -39,7 +39,6 @@ from resources.lib.constants import (
     PERCENT_MULTIPLIER,
     RANDOM_PERCENT_MAX,
     RESUME_REWIND_SECONDS,
-    SECONDS_TO_MS_MULTIPLIER,
     PROP_PLAYLIST_CONFIG,
     PROP_PLAYLIST_REGENERATE,
 )
@@ -86,6 +85,7 @@ class PlaybackSettings:
     promptduration: int = 0
     playlist_continuation: bool = False
     playlist_continuation_duration: int = 20
+    playlist_continuation_default_action: int = 0
 
 
 # Type aliases for callbacks
@@ -151,6 +151,7 @@ class PlaybackMonitor(xbmc.Player):
         self._pl_running: str = ''
         self._playing_showid: Union[int, bool] = False
         self._playing_epid: Union[int, bool] = False
+        self._last_playing_showid: Union[int, bool] = False
         self._nextprompt_trigger: bool = False
         self._nextprompt_trigger_override: bool = True
         
@@ -159,6 +160,7 @@ class PlaybackMonitor(xbmc.Player):
         self._pl_running_local: str = ''
         self._pending_movie_random_start: bool = False
         self._pending_resume_seek: Optional[int] = None
+        self._on_last_playlist_item: bool = False
     
     def onPlayBackStarted(self) -> None:
         """
@@ -209,7 +211,12 @@ class PlaybackMonitor(xbmc.Player):
         # This handles rapid skipping (Page Up) which doesn't fire onPlayBackEnded
         if self._pl_running_local == 'true':
             self._replenish_lazy_queue()
-        
+            # Track whether this is the last item (for continuation logic)
+            playlist = xbmc.PlayList(1)
+            pos = playlist.getposition()
+            size = playlist.size()
+            self._on_last_playlist_item = (pos >= 0 and pos + 1 >= size)
+
         self._log.debug("Playback started handler complete")
     
     def onAVStarted(self) -> None:
@@ -319,6 +326,7 @@ class PlaybackMonitor(xbmc.Player):
         # Set up episode tracking
         self._playing_epid = now_playing_episode_id
         self._playing_showid = now_playing_show_id
+        self._last_playing_showid = now_playing_show_id
         self._log.debug(
             "PlaybackMonitor detected episode",
             show_id=self._playing_showid,
@@ -441,56 +449,79 @@ class PlaybackMonitor(xbmc.Player):
             self._log.debug("Movie random start pending (will seek on AV start)")
     
     def onPlayBackStopped(self) -> None:
-        """Handle playback stopped events."""
+        """Handle playback stopped events (user-initiated stop)."""
         self._pending_movie_random_start = False  # Reset any pending random start
         self._pending_resume_seek = None  # Reset any pending resume seek
-        self.onPlayBackEnded()
-    
+        self._handle_playback_end(user_stopped=True)
+
     def onPlayBackEnded(self) -> None:
+        """Handle playback ended events (natural end of item)."""
+        self._handle_playback_end(user_stopped=False)
+
+    def _handle_playback_end(self, user_stopped: bool) -> None:
         """
-        Handle playback ended events.
-        
+        Handle playback end events.
+
         Shows next episode prompt if configured and conditions are met.
-        Also handles playlist continuation prompt when a playlist ends.
+        Also handles playlist continuation prompt when a playlist ends naturally.
+
+        Captures all ended-episode state before sleeping, because
+        onPlayBackStarted for the next playlist item may fire during the
+        sleep and overwrite _playing_showid, _nextprompt_trigger_override,
+        and nextprompt_info.
+
+        Args:
+            user_stopped: True if the user explicitly stopped playback,
+                False if playback ended naturally.
         """
-        self._log.debug("Playback ended")
-        
+        self._log.debug("Playback ended", user_stopped=user_stopped)
+
+        # Capture ended-episode state BEFORE sleep — onPlayBackStarted for
+        # the next playlist item may fire during the delay and overwrite these
+        ended_showid = self._last_playing_showid
+        ended_trigger = self._nextprompt_trigger
+        ended_override = self._nextprompt_trigger_override
+        ended_prompt_info = self._get_nextprompt_info()
+
         # Give the playlist a chance to start the next item
         xbmc.sleep(PLAYLIST_START_DELAY_MS)
-        
+
         # Check if something new is playing
         now_name = xbmc.getInfoLabel('VideoPlayer.TVShowTitle')
         now_title = xbmc.getInfoLabel('VideoPlayer.Title')
         is_something_playing = now_name != '' or now_title != ''
-        
+
         # Get current settings
         settings = self._get_settings()
-        
+
         # Check if playlist truly ended (nothing playing + was EasyTV playlist)
         if not is_something_playing and self._pl_running_local == 'true':
             self._window.setProperty("EasyTV.playlist_running", 'false')
-            
+
             # Clear any active lazy queue session
             PlaylistSession.clear()
-            
-            # Show playlist continuation prompt if enabled and config is stored
-            if settings.playlist_continuation:
+
+            if not self._on_last_playlist_item:
+                # Stopped mid-playlist — clear config
+                self._window.clearProperty(PROP_PLAYLIST_CONFIG)
+                self._log.debug("Playlist ended mid-playlist, clearing config")
+            elif settings.playlist_continuation:
+                # Show playlist continuation prompt if enabled and config is stored
                 stored_config = self._window.getProperty(PROP_PLAYLIST_CONFIG)
                 if stored_config:
                     self._show_playlist_continuation_prompt(settings)
-        
+
         # If no episode was being tracked (e.g., movie playback), we're done
-        if self._playing_showid is False:
+        if ended_showid is False:
             self._set_nextprompt_info({})
             return
-        
-        # Get info for previously played episode while still available
-        nextprompt_info = self._get_nextprompt_info()
-        pre_seas = nextprompt_info.get('season', None)
-        pre_ep = nextprompt_info.get('episode', None)
-        pre_title = nextprompt_info.get('showtitle', None)
-        pre_epid = nextprompt_info.get('episodeid', None)
-        
+
+        # Get info for previously played episode (captured before sleep)
+        pre_seas = ended_prompt_info.get('season', None)
+        pre_ep = ended_prompt_info.get('episode', None)
+        pre_title = ended_prompt_info.get('showtitle', None)
+        pre_epid = ended_prompt_info.get('episodeid', None)
+
         if any([pre_seas is None, pre_ep is None, pre_title is None, pre_epid is None]):
             self._log.warning(
                 "Next prompt info incomplete",
@@ -499,22 +530,27 @@ class PlaybackMonitor(xbmc.Player):
             )
             self._set_nextprompt_info({})
             return
-        
-        self._playing_epid = False
-        
+
+        # Type narrowing: all values are guaranteed non-None after the guard above
+        assert pre_seas is not None
+        assert pre_ep is not None
+        assert pre_title is not None
+        assert pre_epid is not None
+
         # If nothing playing, or playlist mode with next prompt enabled
         if not is_something_playing or all([
-            self._pl_running_local == 'true', 
+            self._pl_running_local == 'true',
             settings.nextprompt_in_playlist
         ]):
-            # Show next episode prompt if conditions are met
-            if self._nextprompt_trigger and self._nextprompt_trigger_override:
+            # Show next episode prompt if conditions are met (using captured state)
+            if ended_trigger and ended_override:
                 self._show_next_episode_prompt(
-                    now_name, pre_seas, pre_ep, pre_title, pre_epid, settings
+                    now_name, pre_seas, pre_ep, pre_title, pre_epid, settings,
+                    ended_showid
                 )
-            
+
             self._set_nextprompt_info({})
-        
+
         self._log.debug("Playback ended handler complete")
     
     def _show_next_episode_prompt(
@@ -525,10 +561,11 @@ class PlaybackMonitor(xbmc.Player):
         pre_title: str,
         pre_epid: int,
         settings: PlaybackSettings,
+        ended_showid: Union[int, bool] = False,
     ) -> None:
         """
         Show the next episode prompt dialog.
-        
+
         Args:
             now_name: Currently playing show name (empty if nothing playing).
             pre_seas: Season number of next episode.
@@ -536,9 +573,12 @@ class PlaybackMonitor(xbmc.Player):
             pre_title: Show title.
             pre_epid: Episode ID of next episode.
             settings: Current playback settings.
+            ended_showid: Show ID of the ended episode (for poster lookup).
         """
+        from resources.lib.ui.dialogs import CountdownDialog
+
         paused = False
-        
+
         if now_name != '':
             # Something is playing (EasyTV playlist with prompts enabled)
             # Pause it to show the prompt
@@ -547,54 +587,52 @@ class PlaybackMonitor(xbmc.Player):
                 '"params":{"playerid":1,"play":false},"id":1}'
             )
             paused = True
-        
+
         self._nextprompt_trigger = False
-        
+
         SE = str(int(pre_seas)) + 'x' + str(int(pre_ep))
-        
+
         self._log.debug("Prompt default action", action=settings.promptdefaultaction)
-        
-        # Set up button labels based on default action
-        if settings.promptdefaultaction == 0:
-            ylabel = lang(32092)  # "Play"
-            nlabel = lang(32091)  # "Don't Play"
-            prompt = -1
-        elif settings.promptdefaultaction == 1:
-            ylabel = lang(32091)
-            nlabel = lang(32092)
-            prompt = -1
-        else:
-            ylabel = lang(32092)
-            nlabel = lang(32091)
-            prompt = -1
-        
-        # Show dialog
+
+        # Always: Yes="Play", No="Don't Play"
+        # default_yes determines what happens on timeout
+        default_yes = (settings.promptdefaultaction != 1)
+
         msg = (lang(32168) % (pre_title, SE)) + '\n' + lang(32162)
-        heading = lang(32167) % settings.promptduration if settings.promptduration > 0 else lang(32167) % 0
-        
-        if settings.promptduration > 0:
-            prompt = self._dialog.yesno(
-                heading, msg, nolabel=nlabel, yeslabel=ylabel,
-                autoclose=int(settings.promptduration * SECONDS_TO_MS_MULTIPLIER)
+        addon_path = self._window.getProperty("EasyTV.ServicePath")
+
+        # Get show poster from cached window property
+        # Use ended_showid (captured before sleep) to avoid reading the NEW episode's show
+        poster = ''
+        if ended_showid:
+            poster = self._window.getProperty(
+                "EasyTV.%s.Art(tvshow.poster)" % ended_showid
             )
-        else:
-            prompt = self._dialog.yesno(heading, msg, nolabel=nlabel, yeslabel=ylabel)
-        
-        self._log.debug("Prompt dialog shown", initial_result=prompt)
-        
-        # Interpret result based on default action setting
-        if prompt == -1:
-            prompt = 0
-        elif prompt == 0:
-            if settings.promptdefaultaction == 1:
-                prompt = 1
-        elif prompt == 1:
-            if settings.promptdefaultaction == 1:
-                prompt = 0
-        
-        self._log.debug("Prompt final result", result=prompt)
-        
-        if prompt:
+
+        dlg = CountdownDialog(
+            'script-easytv-nextepisode.xml', addon_path, 'Default',
+            message=msg,
+            yes_label=lang(32092),   # "Play"
+            no_label=lang(32091),    # "Don't Play"
+            duration=settings.promptduration,
+            heading_template=lang(32167),     # "EasyTV   (auto-closing in %s seconds)"
+            heading_no_timer=lang(32167) % 0,
+            default_yes=default_yes,
+            poster=poster,
+            logger=self._log,
+        )
+        dlg.doModal()
+        play = dlg.result
+        del dlg
+
+        self._log.debug("Next episode prompt result", play=play)
+
+        if play:
+            # Clear playlist config — this replacement episode is not a
+            # continuation-eligible playlist, so prevent the continuation
+            # prompt from showing when it ends.
+            self._window.clearProperty(PROP_PLAYLIST_CONFIG)
+            self._window.setProperty("EasyTV.playlist_running", 'false')
             # User chose to play next episode
             xbmc.executeJSONRPC(
                 '{"jsonrpc": "2.0","id": 1, "method": "Playlist.Clear",'
@@ -692,46 +730,50 @@ class PlaybackMonitor(xbmc.Player):
     def _show_playlist_continuation_prompt(self, settings: PlaybackSettings) -> None:
         """
         Show the playlist continuation prompt dialog.
-        
+
         Asks the user whether to generate another playlist with the same settings.
         If accepted, sets the PROP_PLAYLIST_REGENERATE window property for the
         daemon to pick up and regenerate the playlist.
-        
+
+        Button layout depends on default_action setting:
+        - default_action == 0 (Stop): Yes="Generate", No="Stop" (normal)
+        - default_action == 1 (Generate): Yes="Stop", No="Generate" (swapped)
+        Timeout always triggers the default action.
+
         Args:
             settings: Current playback settings.
         """
-        self._log.debug("Showing playlist continuation prompt")
-        
-        # String IDs: 32617=heading, 32618=message, 32619=Generate, 32620=Stop
-        heading = lang(32617)  # "Playlist Finished"
-        message = lang(32618)  # "Generate another playlist with the same settings?"
-        yes_label = lang(32619)  # "Generate"
-        no_label = lang(32620)  # "Stop"
-        
+        from resources.lib.ui.dialogs import CountdownDialog
+
+        self._log.debug("Showing playlist continuation prompt",
+                        default_action=settings.playlist_continuation_default_action)
+
+        default_action = settings.playlist_continuation_default_action
         duration = settings.playlist_continuation_duration
-        
-        if duration > 0:
-            # Show with autoclose
-            result = self._dialog.yesno(
-                heading, message,
-                nolabel=no_label, yeslabel=yes_label,
-                autoclose=int(duration * SECONDS_TO_MS_MULTIPLIER)
-            )
-        else:
-            # Show without autoclose
-            result = self._dialog.yesno(
-                heading, message,
-                nolabel=no_label, yeslabel=yes_label
-            )
-        
-        self._log.debug("Continuation prompt result", result=result)
-        
-        if result:
-            # User chose to generate another playlist
-            # Set the trigger property for daemon to regenerate
+        addon_path = self._window.getProperty("EasyTV.ServicePath")
+
+        # Always: Yes="Generate", No="Stop"
+        # default_yes = True when Generate is the default on timeout
+        dlg = CountdownDialog(
+            'script-easytv-countdown.xml', addon_path, 'Default',
+            message=lang(32618),              # "Generate another playlist with the same settings?"
+            yes_label=lang(32619),            # "Generate"
+            no_label=lang(32620),             # "Stop"
+            duration=duration,
+            heading_template=lang(32648),     # "Playlist Finished   (auto-closing in %s seconds)"
+            heading_no_timer=lang(32617),     # "Playlist Finished"
+            default_yes=(default_action == 1),
+            logger=self._log,
+        )
+        dlg.doModal()
+        generate = dlg.result
+        del dlg
+
+        self._log.debug("Continuation prompt decision", generate=generate)
+
+        if generate:
             self._window.setProperty(PROP_PLAYLIST_REGENERATE, 'true')
             self._log.info("Playlist continuation requested", event="playlist.continuation")
         else:
-            # User declined or timeout - clear the stored config
             self._window.clearProperty(PROP_PLAYLIST_CONFIG)
             self._log.debug("Playlist continuation declined, config cleared")

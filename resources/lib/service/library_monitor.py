@@ -56,6 +56,9 @@ class LibraryMonitor(xbmc.Monitor):
         on_library_updated: Callback to set library update flag.
         get_random_order_shows: Callback to get current random order shows list.
         on_refresh_show: Callback to refresh a specific show's episodes.
+        on_playing_episode_watched: Callback(show_id, episode_id) when a tracked
+            episode is marked watched. Called before on_refresh_show to allow the
+            daemon to complete tracking before the refresh blocks the loop.
         logger: Optional logger instance.
     """
     
@@ -66,16 +69,18 @@ class LibraryMonitor(xbmc.Monitor):
         on_library_updated: Callable[[], None],
         get_random_order_shows: GetRandomShowsCallback,
         on_refresh_show: GetEpisodesCallback,
+        on_playing_episode_watched: Callable[[int, int], None],
         logger: Optional[StructuredLogger] = None,
     ):
         """Initialize the library monitor with callbacks."""
         super().__init__()
-        
+
         self._window = window
         self._on_settings_changed = on_settings_changed
         self._on_library_updated = on_library_updated
         self._get_random_order_shows = get_random_order_shows
         self._on_refresh_show = on_refresh_show
+        self._on_playing_episode_watched = on_playing_episode_watched
         self._log = logger or get_logger('library_monitor')
         
         # Notification data storage
@@ -188,6 +193,10 @@ class LibraryMonitor(xbmc.Monitor):
                 proceed = True
         
         if proceed:
+            # Notify daemon before refresh — the refresh blocks the daemon loop
+            # for 1-2 seconds, which can cause the position check to miss the
+            # threshold. This callback lets the daemon complete tracking first.
+            self._on_playing_episode_watched(show_id, episode_id)
             self._log.info(
                 "Refreshing show after watched",
                 event="library.refresh_watched",

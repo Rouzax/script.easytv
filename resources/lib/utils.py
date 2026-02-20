@@ -32,7 +32,7 @@ import traceback
 from contextlib import contextmanager
 from datetime import datetime as dt
 import re
-from typing import Any, Dict, Generator, Optional, TextIO, Tuple
+from typing import Any, Dict, Generator, List, Optional, TextIO, Tuple, Union
 
 import xbmc
 import xbmcaddon
@@ -648,7 +648,7 @@ def log_timing(
         )
 
 
-def json_query(query: dict[str, Any], return_result: bool = True) -> dict[str, Any]:
+def json_query(query: Union[Dict[str, Any], List[Dict[str, Any]]], return_result: bool = True) -> Dict[str, Any]:
     """
     Execute a JSON-RPC query against Kodi.
     

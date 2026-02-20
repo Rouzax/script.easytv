@@ -1061,6 +1061,28 @@ msgctxt "#32643"
 msgid "Using playlist:"
 msgstr ""
 
+#. Playlist continuation default action
+msgctxt "#32644"
+msgid "If countdown expires"
+msgstr ""
+
+msgctxt "#32645"
+msgid "What happens when the countdown timer reaches zero without user input."
+msgstr ""
+
+msgctxt "#32646"
+msgid "Stop"
+msgstr ""
+
+msgctxt "#32647"
+msgid "Generate new playlist"
+msgstr ""
+
+#. Playlist continuation heading with countdown
+msgctxt "#32648"
+msgid "Playlist Finished   (auto-closing in %s seconds)"
+msgstr ""
+
 
 # =============================================================================
 # MULTI-INSTANCE SYNC STRINGS (32700-32799)

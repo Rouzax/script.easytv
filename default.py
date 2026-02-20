@@ -285,15 +285,17 @@ def _handle_version_mismatch(addon_version, addon_version_str, addon_id, script_
         update_flag = f'EasyTV.UpdateComplete.{addon_id}'
         update_flag_version = window.getProperty(update_flag)
         if update_flag_version:
-            window.clearProperty(update_flag)
             if update_flag_version == service_version_str:
-                # We just updated to this exact version - skip check
-                log.info("Clone update flag detected, skipping version check", 
+                # Don't clear the flag — Kodi's addon cache may still be stale.
+                # Window properties clear naturally on Kodi restart, at which
+                # point the cache is also refreshed.
+                log.info("Clone update flag detected, skipping version check",
                          event="clone.update_flag_cleared", addon_id=addon_id,
                          flag_version=update_flag_version)
                 return True
             else:
-                # Flag exists but for old version - another update happened since
+                # Flag is for an older version — another update happened.
+                window.clearProperty(update_flag)
                 log.info("Clone update flag outdated, proceeding with version check",
                          event="clone.update_flag_stale", addon_id=addon_id,
                          flag_version=update_flag_version, service_version=service_version_str)

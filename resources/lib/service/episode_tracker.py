@@ -118,7 +118,8 @@ PROPERTY_PREFIX = "EasyTV"
 
 # Callback to update smart playlists when episode data changes
 # Note: Use Union instead of | for Python 3.8 compatibility (Kodi uses 3.8)
-SmartPlaylistUpdateCallback = Callable[[Union[int, str]], None]
+# The callback accepts (show_id, **kwargs) where kwargs may include quiet=bool, remove=bool
+SmartPlaylistUpdateCallback = Callable[..., None]
 
 
 # =============================================================================
@@ -315,7 +316,7 @@ class EpisodeTracker:
         
         # Write-through to shared storage (multi-instance sync)
         # Only for non-temp show IDs - temp is staging data that doesn't need persistence
-        if normalized_show_id != TEMP_SHOW_ID:
+        if normalized_show_id != TEMP_SHOW_ID and isinstance(normalized_show_id, int):
             try:
                 storage = get_storage()
                 # Get show_year from window property (set during bulk refresh)
@@ -323,7 +324,7 @@ class EpisodeTracker:
                 show_year = int(show_year_str) if show_year_str else None
                 # Get show title from window property (just set above)
                 show_title = self._get_property(normalized_show_id, PROP_TVSHOW_TITLE)
-                
+
                 storage.set_ondeck(normalized_show_id, {
                     'show_title': show_title,
                     'show_year': show_year,
