@@ -297,7 +297,9 @@ class SharedDatabase:
                     conn.commit()
                     
                     cursor.execute("SELECT LAST_INSERT_ID()")
-                    self._batch_final_rev = cursor.fetchone()[0]
+                    row = cursor.fetchone()
+                    assert row is not None
+                    self._batch_final_rev = row[0]
                 finally:
                     cursor.close()
             except Exception:
@@ -353,6 +355,7 @@ class SharedDatabase:
             # After ping(reconnect=True) or _connect() on an already-initialized
             # instance, the new TCP session has no database selected. Re-select it.
             self._ensure_db_selected()
+        assert self._conn is not None
         return self._conn
     
     def _ensure_db_selected(self) -> None:
@@ -368,7 +371,7 @@ class SharedDatabase:
         This method restores the session-level database selection. It is a
         no-op before initial schema setup (when _easytv_db_name is empty).
         """
-        if self._schema_initialized and self._easytv_db_name:
+        if self._schema_initialized and self._easytv_db_name and self._conn:
             try:
                 self._conn.select_db(self._easytv_db_name)
             except Exception as e:
@@ -539,6 +542,7 @@ class SharedDatabase:
             cursor = conn.cursor()
             
             # Get Kodi DB base name for namespacing
+            assert self._config is not None
             kodi_base_name = self._config.get('name', KODI_DEFAULT_VIDEO_DB_NAME).lower()
             easytv_db_name = f"{EASYTV_DB_PREFIX}{kodi_base_name}"
             
@@ -606,6 +610,7 @@ class SharedDatabase:
                 self._table_prefix = EASYTV_TABLE_PREFIX
                 
                 # Find the actual Kodi video database using the base name
+                assert self._config is not None
                 kodi_video_db = self._find_kodi_video_database(self._config.get('name'))
                 if not kodi_video_db:
                     cursor.close()
@@ -924,7 +929,9 @@ class SharedDatabase:
         cursor = conn.cursor()
         try:
             cursor.execute(f"SELECT COUNT(*) FROM {self._table('show_tracking')}")
-            return cursor.fetchone()[0] == 0
+            row = cursor.fetchone()
+            assert row is not None
+            return row[0] == 0
         finally:
             cursor.close()
     
@@ -1036,7 +1043,9 @@ class SharedDatabase:
             conn.commit()
             
             cursor.execute("SELECT LAST_INSERT_ID()")
-            new_rev = cursor.fetchone()[0]
+            row = cursor.fetchone()
+            assert row is not None
+            new_rev = row[0]
             
             log.debug("Show tracking saved",
                      event="shareddb.write",

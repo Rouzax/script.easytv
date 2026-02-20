@@ -429,6 +429,7 @@ class ServiceSettings:
     # Playlist continuation
     playlist_continuation: bool = False
     playlist_continuation_duration: int = 20
+    playlist_continuation_default_action: int = 0
     
     # Feature flags
     startup: bool = False
@@ -575,6 +576,7 @@ def load_settings(
         promptdefaultaction=int(float(setting('promptdefaultaction'))),
         playlist_continuation=setting('playlist_continuation') == 'true',
         playlist_continuation_duration=int(float(setting('playlist_continuation_duration'))),
+        playlist_continuation_default_action=int(float(setting('playlist_continuation_default_action'))),
     )
     
     # Handle maintainsmartplaylist setting (legacy)
@@ -754,6 +756,7 @@ def load_settings(
             # Playlist continuation
             playlist_continuation=settings.playlist_continuation,
             playlist_continuation_duration=settings.playlist_continuation_duration,
+            playlist_continuation_default_action=settings.playlist_continuation_default_action,
             # Notifications
             notifications=settings.playlist_notifications,
             # Smart playlist export

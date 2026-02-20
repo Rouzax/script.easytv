@@ -35,6 +35,8 @@ Logging:
         - settings.database (DEBUG): Kodi video database backend (shared/local)
         - settings.load (INFO): Settings loaded
         - playback.fallback (WARNING): Episode not found in expected list
+        - playback.watched_fallback (DEBUG): Watched notification completed tracking
+            before position check could catch the threshold
         - shareddb.preload_error (WARNING): Shared DB preload failed during bulk refresh
         - next.pick (DEBUG): Next episode selected
         - library.refresh (DEBUG): Show episodes refreshed
@@ -62,7 +64,7 @@ import json
 import random
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Union, cast
 
 import xbmc
 import xbmcaddon
@@ -292,6 +294,7 @@ class ServiceDaemon:
             on_library_updated=lambda: setattr(self._state, 'on_lib_update', True),
             get_random_order_shows=lambda: self._settings.random_order_shows,
             on_refresh_show=self.refresh_show_episodes,
+            on_playing_episode_watched=self._on_playing_episode_watched,
             logger=self._log,
         )
         
@@ -341,8 +344,12 @@ class ServiceDaemon:
             - Kodi abort requested (shutdown/restart)
             - 'EasyTV_service_running' property cleared
         """
+        assert self._monitor is not None
+        assert self._player is not None
+        assert self._episode_tracker is not None
+
         self._window.setProperty('EasyTV_service_running', 'true')
-        
+
         # Show startup notification if enabled
         if self._settings.startup:
             xbmc.executebuiltin(
@@ -390,6 +397,8 @@ class ServiceDaemon:
            - Sets nextprompt_trigger for end-of-episode prompt
            - Removes show from list if no more episodes
         """
+        assert self._player is not None
+        assert self._episode_tracker is not None
         service_heartbeat()
         
         self._pending_next_episode = False
@@ -433,13 +442,14 @@ class ServiceDaemon:
     def _process_episode_playback(self) -> None:
         """
         Process episode playback detection.
-        
+
         When PlaybackMonitor detects an episode is playing, this method:
         - Retrieves the current ondeck/offdeck lists
         - Determines the next episode (random or sequential)
         - Caches the next episode data in 'temp' properties
         - Sets up the target time for swap over
         """
+        assert self._player is not None
         self._log.debug(
             "Episode playback detected",
             show_id=self._player._playing_showid
@@ -517,13 +527,13 @@ class ServiceDaemon:
             watched_count: Updated watched episode count.
             unwatched_count: Updated unwatched episode count.
         """
+        assert self._player is not None
+        assert self._episode_tracker is not None
         combined_episode_list = offdeck_list + ondeck_list
-        
+
         if not combined_episode_list:
-            self._player._playing_epid = False
-            self._player._playing_showid = False
             return
-        
+
         if self._player._playing_epid not in combined_episode_list:
             self._log.warning(
                 "Playing episode not in tracked list (random show)",
@@ -532,8 +542,6 @@ class ServiceDaemon:
                 episode_id=self._player._playing_epid
             )
             self._pending_next_episode = False
-            self._player._playing_epid = False
-            self._player._playing_showid = False
             return
         
         self._log.debug("Random show episode found in ondeck")
@@ -558,10 +566,7 @@ class ServiceDaemon:
             unwatched_count, watched_count,
             is_skipped=False
         )
-        
-        self._player._playing_epid = False
-        self._player._playing_showid = False
-    
+
     def _process_sequential_show_episode(
         self,
         ondeck_list: list[int],
@@ -582,8 +587,10 @@ class ServiceDaemon:
             watched_count: Updated watched episode count.
             unwatched_count: Updated unwatched episode count.
         """
+        assert self._player is not None
+        assert self._episode_tracker is not None
         combined_episode_list = ondeck_list
-        
+
         if not combined_episode_list:
             return
         
@@ -594,9 +601,22 @@ class ServiceDaemon:
                 show_id=self._current_show_id,
                 episode_id=self._player._playing_epid
             )
-            self._pending_next_episode = False
-            self._player._playing_showid = False
-            self._player._playing_epid = False
+            if not combined_episode_list:
+                self._pending_next_episode = False
+                return
+            # Still prepare the next episode from ondeck head
+            self._pending_next_episode = combined_episode_list[0]
+            new_ondeck = [int(x) for x in combined_episode_list]
+            self._episode_tracker.cache_next_episode(
+                self._pending_next_episode, 'temp',
+                new_ondeck, offdeck_list,
+                unwatched_count, watched_count,
+                is_skipped=False
+            )
+            self._log.debug(
+                "Fallback: next episode from ondeck head",
+                episode_id=self._pending_next_episode, ondeck=new_ondeck
+            )
             return
         
         episode_index = combined_episode_list.index(self._player._playing_epid)
@@ -675,11 +695,13 @@ class ServiceDaemon:
     def _check_playback_position(self) -> None:
         """
         Check playback position for swap over.
-        
+
         Called every cycle when a target is set. Only actually checks
         position every POSITION_CHECK_INTERVAL_TICKS cycles to avoid
         excessive polling.
         """
+        assert self._player is not None
+        assert self._episode_tracker is not None
         self._position_check_count = (
             (self._position_check_count + 1) % POSITION_CHECK_INTERVAL_TICKS
         )
@@ -697,27 +719,62 @@ class ServiceDaemon:
             prompt_info=self._state.nextprompt_info
         )
         
+        self._complete_episode_tracking()
+
+    def _complete_episode_tracking(self) -> None:
+        """Complete episode tracking: swap data, set prompt trigger, reset state.
+
+        Called either by _check_playback_position (normal polling path) or by
+        _on_playing_episode_watched (fallback when watched notification fires
+        before the position check catches the threshold).
+        """
+        assert self._player is not None
+        assert self._episode_tracker is not None
+
+        # Trigger next episode prompt if configured.
+        # Must be set BEFORE transition_to_next_episode, which can take
+        # hundreds of ms for smart playlist I/O.  During that window
+        # onPlayBackEnded may fire on the player thread and capture
+        # _nextprompt_trigger — if we haven't set it yet the prompt is lost.
+        if self._settings.nextprompt and self._state.nextprompt_info:
+            self._log.debug("Next prompt trigger set")
+            self._player._nextprompt_trigger = True
+
         # Handle show completion (no more episodes)
         if self._eject:
             self._remove_from_shows_with_next_episodes(self._current_show_id)
             self._current_show_id = False
             self._eject = False
-        
+
         # Perform swap over
         if self._current_show_id:
             self._episode_tracker.transition_to_next_episode(self._current_show_id)
             self._log.debug("Episode data swapped")
-        
-        # Trigger next episode prompt if configured
-        if self._settings.nextprompt and self._state.nextprompt_info:
-            self._log.debug("Next prompt trigger set")
-            self._player._nextprompt_trigger = True
-        
+
         # Reset state
         self._current_show_id = False
         self._pending_next_episode = False
         self._state.target = False
-    
+
+    def _on_playing_episode_watched(self, show_id: int, episode_id: int) -> None:
+        """Fallback threshold handler — Kodi marked a tracked episode as watched.
+
+        The daemon's position check polls every 5 seconds. If the library refresh
+        (triggered by this same watched notification) blocks the daemon loop, the
+        position check misses the threshold. This callback provides a parallel
+        signal: Kodi's watched detection guarantees the threshold was met.
+        """
+        assert self._player is not None
+        if (self._current_show_id == show_id and
+                self._state.target and
+                self._player._playing_epid == episode_id):
+            self._log.debug(
+                "Watched notification completing tracking (position check fallback)",
+                event="playback.watched_fallback",
+                show_id=show_id, episode_id=episode_id
+            )
+            self._complete_episode_tracking()
+
     # =========================================================================
     # Show Management Methods
     # =========================================================================
@@ -778,6 +835,7 @@ class ServiceDaemon:
         Args:
             supplied_random_shows: Specific shows to shuffle, or None for all.
         """
+        assert self._episode_tracker is not None
         self._log.debug("Shuffle started")
         
         if supplied_random_shows is None:
@@ -960,6 +1018,7 @@ class ServiceDaemon:
         - Maximum retries exhausted (user may have no unwatched episodes)
         - Kodi abort requested
         """
+        assert self._monitor is not None
         self._log.debug("Starting initial library scan")
         
         # Check playlist format version before bulk refresh
@@ -1052,6 +1111,7 @@ class ServiceDaemon:
             showids: List of show IDs to process, single ID, or None.
             bulk: If True, suppress per-show debug logging (for startup/library scans).
         """
+        assert self._episode_tracker is not None
         # Normalize showids to a list
         if showids is None:
             showids = []
@@ -1255,7 +1315,7 @@ class ServiceDaemon:
                     # Cache episode data in window properties
                     _cache_start = time.perf_counter()
                     self._episode_tracker.cache_next_episode(
-                        on_deck_epid, my_showid,
+                        cast(int, on_deck_epid), my_showid,
                         on_deck_list, off_deck_list,
                         count_uweps, count_weps,
                         is_skipped=is_skipped_episode,
@@ -1522,14 +1582,16 @@ class ServiceDaemon:
             promptduration=self._settings.promptduration,
             playlist_continuation=self._settings.playlist_continuation,
             playlist_continuation_duration=self._settings.playlist_continuation_duration,
+            playlist_continuation_default_action=self._settings.playlist_continuation_default_action,
         )
     
     def _on_settings_changed(self) -> None:
         """
         Handle settings changes from LibraryMonitor.
-        
+
         Reloads all settings and updates component configurations.
         """
+        assert self._episode_tracker is not None
         # Store old values before reload for change detection
         old_maintainsmartplaylist = self._settings.maintainsmartplaylist
         old_include_positioned_specials = self._settings.include_positioned_specials

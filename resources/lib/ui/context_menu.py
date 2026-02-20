@@ -30,7 +30,7 @@ Logging:
 """
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union, cast
 
 import xbmc
 import xbmcgui
@@ -115,20 +115,20 @@ class ContextMenuWindow(xbmcgui.WindowXMLDialog):
         
         if self._multiselect:
             # Multiselect mode - show options for selection
-            self.getControl(CONTEXT_TOGGLE_MULTISELECT).setLabel(lang(32200))
-            self.getControl(CONTEXT_PLAY_SELECTION).setLabel(lang(32202))
-            self.getControl(CONTEXT_EXPORT_SELECTION).setLabel(lang(32203))
+            cast(xbmcgui.ControlButton, self.getControl(CONTEXT_TOGGLE_MULTISELECT)).setLabel(lang(32200))
+            cast(xbmcgui.ControlButton, self.getControl(CONTEXT_PLAY_SELECTION)).setLabel(lang(32202))
+            cast(xbmcgui.ControlButton, self.getControl(CONTEXT_EXPORT_SELECTION)).setLabel(lang(32203))
         else:
             # Single select mode
-            self.getControl(CONTEXT_TOGGLE_MULTISELECT).setLabel(lang(32201))
-            self.getControl(CONTEXT_PLAY_SELECTION).setLabel(lang(32204))
-            self.getControl(CONTEXT_EXPORT_SELECTION).setLabel(lang(32205))
-        
-        self.getControl(CONTEXT_PLAY_FROM_HERE).setLabel(lang(32206))
-        self.getControl(CONTEXT_TOGGLE_WATCHED).setLabel(lang(32207))
-        self.getControl(CONTEXT_UPDATE_LIBRARY).setLabel(lang(32208))
-        self.getControl(CONTEXT_REFRESH).setLabel(lang(32209))
-        
+            cast(xbmcgui.ControlButton, self.getControl(CONTEXT_TOGGLE_MULTISELECT)).setLabel(lang(32201))
+            cast(xbmcgui.ControlButton, self.getControl(CONTEXT_PLAY_SELECTION)).setLabel(lang(32204))
+            cast(xbmcgui.ControlButton, self.getControl(CONTEXT_EXPORT_SELECTION)).setLabel(lang(32205))
+
+        cast(xbmcgui.ControlButton, self.getControl(CONTEXT_PLAY_FROM_HERE)).setLabel(lang(32206))
+        cast(xbmcgui.ControlButton, self.getControl(CONTEXT_TOGGLE_WATCHED)).setLabel(lang(32207))
+        cast(xbmcgui.ControlButton, self.getControl(CONTEXT_UPDATE_LIBRARY)).setLabel(lang(32208))
+        cast(xbmcgui.ControlButton, self.getControl(CONTEXT_REFRESH)).setLabel(lang(32209))
+
         self.setFocus(self.getControl(CONTEXT_TOGGLE_MULTISELECT))
     
     def onClick(self, controlID: int) -> None:
@@ -145,11 +145,12 @@ class ContextMenuWindow(xbmcgui.WindowXMLDialog):
         
         if controlID == CONTEXT_TOGGLE_MULTISELECT:
             # Toggle the multiselect label
-            if self.getControl(CONTEXT_TOGGLE_MULTISELECT).getLabel() == lang(32200):
-                self.getControl(CONTEXT_TOGGLE_MULTISELECT).setLabel(lang(32201))
+            btn = cast(xbmcgui.ControlButton, self.getControl(CONTEXT_TOGGLE_MULTISELECT))
+            if btn.getLabel() == lang(32200):
+                btn.setLabel(lang(32201))
                 xbmc.sleep(CONTEXT_TOGGLE_DELAY_MS)
             else:
-                self.getControl(CONTEXT_TOGGLE_MULTISELECT).setLabel(lang(32200))
+                btn.setLabel(lang(32200))
                 xbmc.sleep(CONTEXT_TOGGLE_DELAY_MS)
         
         self.close()

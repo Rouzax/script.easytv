@@ -46,6 +46,7 @@ import xbmcgui
 import xbmcaddon
 import ast
 import sys
+from typing import cast
 
 # Import shared utilities
 from resources.lib.utils import lang, json_query, get_logger
@@ -105,11 +106,11 @@ class xGUI(xbmcgui.WindowXMLDialog):
     def onInit(self):
 
         # Save button
-        self.ok = self.getControl(CONTROL_OK_BUTTON)
+        self.ok = cast(xbmcgui.ControlButton, self.getControl(CONTROL_OK_BUTTON))
         self.ok.setLabel(lang(32170))
 
         # Heading
-        self.hdg = self.getControl(CONTROL_HEADING)
+        self.hdg = cast(xbmcgui.ControlButton, self.getControl(CONTROL_HEADING))
         self.hdg.setLabel('EasyTV')
         self.hdg.setVisible(True)
 
@@ -118,7 +119,7 @@ class xGUI(xbmcgui.WindowXMLDialog):
         self.x.setVisible(False)
 
         # Populate the list frame
-        self.name_list = self.getControl(CONTROL_LIST)
+        self.name_list = cast(xbmcgui.ControlList, self.getControl(CONTROL_LIST))
         self.new_list = []
 
         self.ea = xbmcgui.ListItem(lang(32171))

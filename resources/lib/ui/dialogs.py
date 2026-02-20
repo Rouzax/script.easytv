@@ -11,8 +11,9 @@
 """
 EasyTV Dialog Helpers.
 
-Provides common dialog functions used throughout the addon:
+Provides common dialog functions and custom dialog classes:
 - show_playlist_selection: Present smart playlist chooser
+- CountdownDialog: Reusable countdown dialog with live timer
 
 Extracted from default.py as part of modularization.
 
@@ -22,17 +23,30 @@ Logging:
         - ui.dialog_open (DEBUG): Dialog opened
         - ui.dialog_select (DEBUG): User made selection
         - ui.dialog_cancel (DEBUG): User cancelled dialog
+        - ui.countdown_timeout (DEBUG): Countdown timer expired
     See LOGGING.md for full guidelines.
 """
 from __future__ import annotations
 
 import os
+import threading
 import xml.etree.ElementTree as ET
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, cast
 
+import xbmc
 import xbmcgui
 import xbmcvfs
 
+from resources.lib.constants import (
+    ACTION_NAV_BACK,
+    ACTION_PREVIOUS_MENU,
+    COUNTDOWN_HEADING,
+    COUNTDOWN_MESSAGE,
+    COUNTDOWN_NO_BUTTON,
+    COUNTDOWN_POSTER,
+    COUNTDOWN_YES_BUTTON,
+    SECONDS_TO_MS_MULTIPLIER,
+)
 from resources.lib.utils import get_logger, json_query, lang
 from resources.lib.data.queries import get_playlist_files_query
 
@@ -194,5 +208,152 @@ def show_playlist_selection(
     
     selected_playlist = playlist_file_dict[playlist_list[input_choice]]
     log.debug("Playlist selection made", playlist=selected_playlist)
-    
+
     return selected_playlist
+
+
+class CountdownDialog(xbmcgui.WindowXMLDialog):
+    """
+    Reusable countdown dialog with live timer updates.
+
+    A WindowXMLDialog subclass that provides:
+    - A daemon timer thread that updates the heading label every second
+    - Two-button layout with configurable labels and default action
+    - A result property indicating whether the affirmative action was chosen
+
+    Control IDs (must match skin XML):
+        1  - Heading label (updated by timer)
+        2  - Message label
+        10 - "Yes" button (left)
+        11 - "No" button (right)
+        20 - Poster image (optional, used by next episode dialog)
+
+    Args:
+        *args: Positional args passed to WindowXMLDialog.
+        **kwargs: Keyword args. Custom kwargs:
+            - message: str - Dialog message text
+            - yes_label: str - Label for the Yes button (left)
+            - no_label: str - Label for the No button (right)
+            - duration: int - Countdown seconds (0 = no timer)
+            - heading_template: str - Heading with %s for seconds remaining
+            - heading_no_timer: str - Heading when duration is 0
+            - default_yes: bool - True if Yes is the default on timeout
+            - poster: str - Optional poster image path
+            - logger: StructuredLogger - Optional logger instance
+    """
+
+    def __new__(cls, *args, **kwargs):
+        """Create instance, filtering out custom kwargs for parent class."""
+        for key in ('message', 'yes_label', 'no_label', 'duration',
+                    'heading_template', 'heading_no_timer', 'default_yes',
+                    'poster', 'logger'):
+            kwargs.pop(key, None)
+        return super().__new__(cls, *args, **kwargs)
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the countdown dialog."""
+        self._message = kwargs.pop('message', '')
+        self._yes_label = kwargs.pop('yes_label', '')
+        self._no_label = kwargs.pop('no_label', '')
+        self._duration = kwargs.pop('duration', 0)
+        self._heading_template = kwargs.pop('heading_template', '%s')
+        self._heading_no_timer = kwargs.pop('heading_no_timer', '')
+        self._default_yes = kwargs.pop('default_yes', True)
+        self._poster = kwargs.pop('poster', '')
+        self._log = kwargs.pop('logger', None) or _get_log()
+
+        super().__init__(*args, **kwargs)
+
+        # State tracking
+        self._closed = False
+        self._button_clicked: Optional[int] = None
+        self._timer_thread: Optional[threading.Thread] = None
+
+    def onInit(self) -> None:
+        """Initialize dialog controls, set labels, and start countdown."""
+        # Set message label
+        cast(xbmcgui.ControlLabel, self.getControl(COUNTDOWN_MESSAGE)).setLabel(self._message)
+
+        # Set button labels
+        cast(xbmcgui.ControlButton, self.getControl(COUNTDOWN_YES_BUTTON)).setLabel(self._yes_label)
+        cast(xbmcgui.ControlButton, self.getControl(COUNTDOWN_NO_BUTTON)).setLabel(self._no_label)
+
+        # Set poster image if available and control exists
+        if self._poster:
+            try:
+                cast(xbmcgui.ControlImage, self.getControl(COUNTDOWN_POSTER)).setImage(self._poster)
+            except RuntimeError:
+                pass  # Control not in this skin XML
+
+        # Set initial heading and focus
+        if self._duration > 0:
+            cast(xbmcgui.ControlLabel, self.getControl(COUNTDOWN_HEADING)).setLabel(
+                self._heading_template % self._duration
+            )
+            # Focus the non-default button (user must act to override default)
+            if self._default_yes:
+                self.setFocus(self.getControl(COUNTDOWN_NO_BUTTON))
+            else:
+                self.setFocus(self.getControl(COUNTDOWN_YES_BUTTON))
+
+            # Start countdown thread
+            self._timer_thread = threading.Thread(target=self._countdown_loop, daemon=True)
+            self._timer_thread.start()
+        else:
+            cast(xbmcgui.ControlLabel, self.getControl(COUNTDOWN_HEADING)).setLabel(
+                self._heading_no_timer
+            )
+            # No timer — focus Yes button as natural default
+            self.setFocus(self.getControl(COUNTDOWN_YES_BUTTON))
+
+    def _countdown_loop(self) -> None:
+        """Daemon thread: count down, update heading, close on expiry."""
+        remaining = self._duration
+        while remaining > 0 and not self._closed:
+            xbmc.sleep(SECONDS_TO_MS_MULTIPLIER)
+            if self._closed:
+                return
+            remaining -= 1
+            try:
+                cast(xbmcgui.ControlLabel, self.getControl(COUNTDOWN_HEADING)).setLabel(
+                    self._heading_template % remaining
+                )
+            except RuntimeError:
+                return  # Dialog already destroyed
+
+        if not self._closed:
+            self._log.debug("Countdown expired", event="ui.countdown_timeout")
+            self.close()
+
+    def onClick(self, controlID: int) -> None:
+        """Handle button clicks."""
+        if controlID in (COUNTDOWN_YES_BUTTON, COUNTDOWN_NO_BUTTON):
+            self._button_clicked = controlID
+            self._closed = True
+            self.close()
+
+    def onAction(self, action: xbmcgui.Action) -> None:
+        """Handle ESC/back as decline."""
+        if action.getId() in (ACTION_PREVIOUS_MENU, ACTION_NAV_BACK):
+            self._button_clicked = COUNTDOWN_NO_BUTTON
+            self._closed = True
+            self.close()
+
+    @property
+    def result(self) -> bool:
+        """
+        Whether the affirmative action was chosen.
+
+        Returns True if:
+        - User clicked Yes button, OR
+        - Timer expired and default_yes is True
+
+        Returns False otherwise (No button, ESC, or timer expired with
+        default_yes False).
+        """
+        if self._button_clicked == COUNTDOWN_YES_BUTTON:
+            return True
+        if self._button_clicked == COUNTDOWN_NO_BUTTON:
+            return False
+        # Timeout — use default
+        return self._default_yes
