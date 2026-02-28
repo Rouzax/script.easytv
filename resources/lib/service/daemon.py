@@ -924,6 +924,7 @@ class ServiceDaemon:
         population = playlist_state.get('population', {'none': ''})
         random_order_shows = playlist_state.get('random_order_shows', [])
         config_dict = playlist_state.get('config', {})
+        addon_id = playlist_state.get('addon_id')
         
         # Build config from stored dict
         config = RandomPlaylistConfig(
@@ -952,7 +953,8 @@ class ServiceDaemon:
             population=population,
             random_order_shows=random_order_shows,
             config=config,
-            logger=self._log
+            logger=self._log,
+            addon_id=addon_id
         )
         
         self._log.info("Playlist regenerated", event="playlist.regenerated")

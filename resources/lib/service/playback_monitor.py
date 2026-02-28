@@ -22,6 +22,7 @@ Logging:
 from __future__ import annotations
 
 import ast
+import json
 import random
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, TYPE_CHECKING, Union
@@ -43,6 +44,8 @@ from resources.lib.constants import (
     PROP_PLAYLIST_REGENERATE,
 )
 from resources.lib.utils import (
+    get_bool_setting,
+    get_int_setting,
     get_logger,
     json_query,
     lang,
@@ -505,11 +508,29 @@ class PlaybackMonitor(xbmc.Player):
                 # Stopped mid-playlist — clear config
                 self._window.clearProperty(PROP_PLAYLIST_CONFIG)
                 self._log.debug("Playlist ended mid-playlist, clearing config")
-            elif settings.playlist_continuation:
-                # Show playlist continuation prompt if enabled and config is stored
+            else:
+                # Check continuation settings from the addon that created the playlist
                 stored_config = self._window.getProperty(PROP_PLAYLIST_CONFIG)
                 if stored_config:
-                    self._show_playlist_continuation_prompt(settings)
+                    try:
+                        state = json.loads(stored_config)
+                        source_addon_id = state.get('addon_id')
+                    except (json.JSONDecodeError, ValueError):
+                        source_addon_id = None
+
+                    if get_bool_setting('playlist_continuation', source_addon_id):
+                        continuation_duration = get_int_setting(
+                            'playlist_continuation_duration', source_addon_id,
+                            default=20
+                        )
+                        continuation_default_action = get_int_setting(
+                            'playlist_continuation_default_action',
+                            source_addon_id, default=0
+                        )
+                        self._show_playlist_continuation_prompt(
+                            settings, continuation_duration,
+                            continuation_default_action
+                        )
 
         # If no episode was being tracked (e.g., movie playback), we're done
         if ended_showid is False:
@@ -727,7 +748,12 @@ class PlaybackMonitor(xbmc.Player):
                                 event="lazy_queue.replenish_error",
                                 error=str(e))
     
-    def _show_playlist_continuation_prompt(self, settings: PlaybackSettings) -> None:
+    def _show_playlist_continuation_prompt(
+        self,
+        settings: PlaybackSettings,
+        duration_override: Optional[int] = None,
+        default_action_override: Optional[int] = None,
+    ) -> None:
         """
         Show the playlist continuation prompt dialog.
 
@@ -742,14 +768,16 @@ class PlaybackMonitor(xbmc.Player):
 
         Args:
             settings: Current playback settings.
+            duration_override: Optional duration from source addon settings.
+            default_action_override: Optional default action from source addon settings.
         """
         from resources.lib.ui.dialogs import CountdownDialog
 
-        self._log.debug("Showing playlist continuation prompt",
-                        default_action=settings.playlist_continuation_default_action)
+        default_action = default_action_override if default_action_override is not None else settings.playlist_continuation_default_action
+        duration = duration_override if duration_override is not None else settings.playlist_continuation_duration
 
-        default_action = settings.playlist_continuation_default_action
-        duration = settings.playlist_continuation_duration
+        self._log.debug("Showing playlist continuation prompt",
+                        default_action=default_action)
         addon_path = self._window.getProperty("EasyTV.ServicePath")
 
         # Always: Yes="Generate", No="Stop"

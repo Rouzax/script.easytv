@@ -928,7 +928,8 @@ def _build_lazy_queue_playlist(
     config: RandomPlaylistConfig,
     candidate_list: list,
     logger: StructuredLogger,
-    partial_episode_map: Optional[Dict[int, int]] = None
+    partial_episode_map: Optional[Dict[int, int]] = None,
+    addon_id: Optional[str] = None
 ) -> None:
     """
     Build a lazy queue playlist for Both mode.
@@ -1015,6 +1016,7 @@ def _build_lazy_queue_playlist(
         
         # Also store config for playlist continuation (same as batch mode)
         playlist_state = {
+            'addon_id': addon_id,
             'population': population,
             'random_order_shows': random_order_shows,
             'config': config_dict
@@ -1035,7 +1037,8 @@ def build_random_playlist(
     population: dict,
     random_order_shows: list[int],
     config: RandomPlaylistConfig,
-    logger: Optional[StructuredLogger] = None
+    logger: Optional[StructuredLogger] = None,
+    addon_id: Optional[str] = None
 ) -> None:
     """
     Build and play a randomized playlist of TV episodes and optionally movies.
@@ -1271,7 +1274,8 @@ def build_random_playlist(
                       candidates=len(candidate_list))
             _build_lazy_queue_playlist(
                 population, random_order_shows, config, candidate_list, log,
-                partial_episode_map=partial_episode_map
+                partial_episode_map=partial_episode_map,
+                addon_id=addon_id
             )
             return
         
@@ -1368,6 +1372,7 @@ def build_random_playlist(
         # Store config for potential playlist continuation
         # Serialize config and population for regeneration
         playlist_state = {
+            'addon_id': addon_id,
             'population': population,
             'random_order_shows': random_order_shows,
             'config': _serialize_playlist_config(config)

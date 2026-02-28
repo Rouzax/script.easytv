@@ -1,6 +1,13 @@
 EasyTV Changelog
 ================
 
+v1.4.0~alpha8 (2026-02-28)
+--------------------------
+Bug Fixes:
+  - Fix playlist continuation settings ignored in clones — the per-addon setting
+    for generating a new playlist now works correctly. Previously only the master
+    addon's setting was used.
+
 v1.4.0~alpha7 (2026-02-20)
 --------------------------
 New Features:
