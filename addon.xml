@@ -25,11 +25,8 @@
         <forum>https://forum.kodi.tv/showthread.php?tid=383902</forum>
         <website>https://github.com/Rouzax/script.easytv</website>
         <source>https://github.com/Rouzax/script.easytv</source>
-        <news>v1.4.0~alpha7 (2026-02-20)
-- Playlist continuation: configurable default action (Stop or Generate) on timeout
-- Live countdown timer in both playlist continuation and next episode prompts
-- Continuation prompt only appears on natural playlist end, not manual stop
-- Clone update no longer repeatedly prompts after main addon update</news>
+        <news>v1.4.0~alpha8 (2026-02-28)
+- Fixed playlist continuation settings not working in clones</news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
