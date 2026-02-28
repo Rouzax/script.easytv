@@ -168,7 +168,8 @@ def main_entry(addon, log):
                 duration_min=get_int_setting('duration_min'),
                 duration_max=get_int_setting('duration_max')
             ),
-            logger=log
+            logger=log,
+            addon_id=addon.getAddonInfo('id')
         )
     else:
         # Browse mode - data fetching and filtering handled internally by build_episode_list
