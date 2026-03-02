@@ -21,6 +21,7 @@ desktop.ini
 # Kodi addon development
 *.zip
 *.log
+_temp/
 
 # Implementation plans (development only)
 IMPLEMENTATION.md
