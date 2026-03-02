@@ -1,6 +1,78 @@
 EasyTV Changelog
 ================
 
+v1.4.0 (2026-03-02)
+--------------------------
+New Features:
+  - Multi-instance sync: Share watch progress across multiple Kodi devices via
+    shared MariaDB database. Auto-detects configuration from advancedsettings.xml.
+    Includes automatic recovery after library rebuilds via title+year matching,
+    automatic cleanup of orphaned database entries on startup, and graceful
+    fallback to Kodi video DB if dedicated easytv database is unavailable.
+    Enable in Settings → Advanced → "Multi-instance sync".
+
+  - Positioned specials support: TVDB-positioned specials can now be included in
+    the watch order. Some shows (like SpongeBob) have specials that are
+    plot-relevant and should be watched between specific episodes. Non-positioned
+    specials remain excluded. Enable in Settings → Shows → "Include positioned
+    specials in watch order". Default: OFF.
+
+  - Replaced "Movie ratio" setting (0.0-1.0 slider) with "Movie chance" percentage
+    slider (0-100% in steps of 5). Added budget enforcement to playlist building —
+    both batch mode and lazy queue now track movies vs. shows and defer over-budget
+    items, ensuring the final playlist closely matches the configured percentage.
+
+  - Playlist continuation is now fully configurable. Added "If countdown expires"
+    setting to choose the default action (Stop or Generate new playlist). Countdown
+    timer displayed in prompt heading. Prompt only appears when the playlist finishes
+    naturally — manually stopping no longer triggers it. Countdown sliders now use
+    1-second steps. Works correctly in clones.
+
+Bug Fixes:
+  - Fixed: Clone creation fails on SteamOS and other Arch-based Linux systems where
+    the system locale defaults to ASCII (POSIX/C locale). Replaced all
+    fileinput.input(inplace=True) calls with explicit open(..., encoding='utf-8')
+    read/write pattern.
+
+  - Fixed: Spurious "Show ID shifted, migrated to new ID" log messages on every
+    startup when all show IDs were unchanged. Validation logic now correctly treats
+    same-ID lookups as unchanged rather than migrated.
+
+  - Fixed: Partial prioritization in random playlists — stale resume points on
+    watched episodes (playcount > 0) no longer cause deterministic show ordering.
+    Only genuinely in-progress episodes are now treated as partials.
+
+  - Fixed: When a partial episode is detected and prioritized, the specific episode
+    is now served on first encounter in both batch and lazy queue playlist paths.
+    Previously the system detected the partial but discarded the episode ID.
+
+  - Fixed: Movie playlist filter bypassed the movie weight limit entirely. The limit
+    is now applied after playlist filter intersection.
+
+  - Fixed: Clone addon repeatedly prompting to update on every other launch after
+    main addon update. Clone update script now refreshes Kodi's in-memory addon
+    metadata cache before re-registering.
+
+  - Fixed: DialogProgress.update() called with 3 positional args (broke on Kodi 19+
+    which only accepts percent and message).
+
+Performance:
+  - Batch write operations now use a single database transaction with one COMMIT at
+    the end, instead of committing independently per show. For 399 shows, reduces
+    fsync overhead from ~20s to ~50ms.
+
+Diagnostics:
+  - Kodi video database backend (shared MariaDB vs local SQLite) is now logged at
+    service startup via advancedsettings.xml detection.
+
+Internal:
+  - Resolved all 115 pyright type-checking errors across 12 files (now 0).
+  - Updated json_query() signature to accept batch queries (list of dicts).
+  - Code quality fixes in clone.py and update_clone.py (errorHandle defaults, XML
+    tree.find None checks).
+  - Batch ownership lifted from daemon.py to StorageBackend interface.
+  - Removed non-functional "Watch Order" settings from clone settings template.
+
 v1.4.0~alpha8 (2026-02-28)
 --------------------------
 Bug Fixes:
