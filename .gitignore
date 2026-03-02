@@ -32,3 +32,6 @@ CLAUDE.md
 .claudeignore
 .mcp.json
 pyrightconfig.json
+
+# Worktrees
+.worktrees/
