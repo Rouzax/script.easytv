@@ -162,16 +162,20 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
     def onInit(self) -> None:
         """
         Initialize window controls and populate the list.
-        
+
         Called by Kodi when the window is shown. Sets up the list control
         and populates it with show data.
         """
+        # Set theme color properties for skin XML
+        from resources.lib.ui import apply_theme
+        apply_theme(self)
+
         if not self._load_items:
             return
-            
+
         self._load_items = False
         self._log.debug("Window initializing")
-        
+
         skin = self._config.skin
         
         if skin == 0:

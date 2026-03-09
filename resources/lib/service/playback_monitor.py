@@ -28,6 +28,7 @@ from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, TYPE_CHECKING, Union
 
 import xbmc
+import xbmcaddon
 import xbmcgui
 
 from resources.lib.constants import (
@@ -542,6 +543,7 @@ class PlaybackMonitor(xbmc.Player):
         pre_ep = ended_prompt_info.get('episode', None)
         pre_title = ended_prompt_info.get('showtitle', None)
         pre_epid = ended_prompt_info.get('episodeid', None)
+        pre_ep_title = ended_prompt_info.get('title', '')
 
         if any([pre_seas is None, pre_ep is None, pre_title is None, pre_epid is None]):
             self._log.warning(
@@ -567,7 +569,7 @@ class PlaybackMonitor(xbmc.Player):
             if ended_trigger and ended_override:
                 self._show_next_episode_prompt(
                     now_name, pre_seas, pre_ep, pre_title, pre_epid, settings,
-                    ended_showid
+                    ended_showid, pre_ep_title
                 )
 
             self._set_nextprompt_info({})
@@ -583,6 +585,7 @@ class PlaybackMonitor(xbmc.Player):
         pre_epid: int,
         settings: PlaybackSettings,
         ended_showid: Union[int, bool] = False,
+        pre_ep_title: str = '',
     ) -> None:
         """
         Show the next episode prompt dialog.
@@ -595,6 +598,7 @@ class PlaybackMonitor(xbmc.Player):
             pre_epid: Episode ID of next episode.
             settings: Current playback settings.
             ended_showid: Show ID of the ended episode (for poster lookup).
+            pre_ep_title: Episode title (e.g., "I See You").
         """
         from resources.lib.ui.dialogs import CountdownDialog
 
@@ -611,7 +615,7 @@ class PlaybackMonitor(xbmc.Player):
 
         self._nextprompt_trigger = False
 
-        SE = str(int(pre_seas)) + 'x' + str(int(pre_ep))
+        SE = 'S%02dE%02d' % (int(pre_seas), int(pre_ep))
 
         self._log.debug("Prompt default action", action=settings.promptdefaultaction)
 
@@ -619,7 +623,12 @@ class PlaybackMonitor(xbmc.Player):
         # default_yes determines what happens on timeout
         default_yes = (settings.promptdefaultaction != 1)
 
-        msg = (lang(32168) % (pre_title, SE)) + '\n' + lang(32162)
+        # Primary message: just the show title
+        msg = pre_title
+        # Subtitle: SE code + episode title (shown in smaller, dimmer font)
+        subtitle = SE
+        if pre_ep_title:
+            subtitle += ' \u2014 ' + pre_ep_title
         addon_path = self._window.getProperty("EasyTV.ServicePath")
 
         # Get show poster from cached window property
@@ -633,11 +642,12 @@ class PlaybackMonitor(xbmc.Player):
         dlg = CountdownDialog(
             'script-easytv-nextepisode.xml', addon_path, 'Default',
             message=msg,
+            subtitle=subtitle,
             yes_label=lang(32092),   # "Play"
             no_label=lang(32091),    # "Don't Play"
             duration=settings.promptduration,
-            heading_template=lang(32167),     # "EasyTV   (auto-closing in %s seconds)"
-            heading_no_timer=lang(32167) % 0,
+            heading=xbmcaddon.Addon().getAddonInfo('name'),
+            timer_template=lang(32167),  # "(auto-closing in %s seconds)"
             default_yes=default_yes,
             poster=poster,
             logger=self._log,
@@ -784,12 +794,12 @@ class PlaybackMonitor(xbmc.Player):
         # default_yes = True when Generate is the default on timeout
         dlg = CountdownDialog(
             'script-easytv-countdown.xml', addon_path, 'Default',
-            message=lang(32618),              # "Generate another playlist with the same settings?"
+            message=lang(32618),              # "Playlist finished.\nGenerate another playlist..."
             yes_label=lang(32619),            # "Generate"
             no_label=lang(32620),             # "Stop"
             duration=duration,
-            heading_template=lang(32648),     # "Playlist Finished   (auto-closing in %s seconds)"
-            heading_no_timer=lang(32617),     # "Playlist Finished"
+            heading=xbmcaddon.Addon().getAddonInfo('name'),
+            timer_template=lang(32167),       # "(auto-closing in %s seconds)"
             default_yes=(default_action == 1),
             logger=self._log,
         )

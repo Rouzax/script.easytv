@@ -35,6 +35,8 @@ COUNTDOWN_MESSAGE = 2
 COUNTDOWN_YES_BUTTON = 10
 COUNTDOWN_NO_BUTTON = 11
 COUNTDOWN_POSTER = 20
+COUNTDOWN_TIMER_LABEL = 3
+COUNTDOWN_SUBTITLE = 4
 
 # =============================================================================
 # Kodi Window IDs
@@ -447,3 +449,38 @@ EASYTV_DB_BACKOFF_SECONDS = 30
 EASYTV_MIGRATION_LOCK_TTL_MINUTES = 5
 # Default Kodi video database base name
 KODI_DEFAULT_VIDEO_DB_NAME = "MyVideos"
+
+# =============================================================================
+# Theme Colors (set as window properties for skin XML $INFO references)
+# =============================================================================
+# Theme ID → property name → AARRGGBB color value
+THEME_COLORS = {
+    '0': {  # Golden Hour
+        'EasyTV.Accent': 'FFF5A623',
+        'EasyTV.AccentGlow': 'FFF5C564',
+        'EasyTV.AccentBG': '59B4781E',
+        'EasyTV.ButtonTextFocused': 'FF0D1117',
+        'EasyTV.ButtonFocus': 'FFD4912A',
+    },
+    '1': {  # Ultraviolet
+        'EasyTV.Accent': 'FFA78BFA',
+        'EasyTV.AccentGlow': 'FFC4B5FD',
+        'EasyTV.AccentBG': '596432B4',
+        'EasyTV.ButtonTextFocused': 'FFFFFFFF',
+        'EasyTV.ButtonFocus': 'FF7C3AED',
+    },
+    '2': {  # Ember
+        'EasyTV.Accent': 'FFF87171',
+        'EasyTV.AccentGlow': 'FFFCA5A5',
+        'EasyTV.AccentBG': '59B43232',
+        'EasyTV.ButtonTextFocused': 'FFFFFFFF',
+        'EasyTV.ButtonFocus': 'FFEF4444',
+    },
+    '3': {  # Nightfall
+        'EasyTV.Accent': 'FF60A5FA',
+        'EasyTV.AccentGlow': 'FF93C5FD',
+        'EasyTV.AccentBG': '59286AB4',
+        'EasyTV.ButtonTextFocused': 'FFFFFFFF',
+        'EasyTV.ButtonFocus': 'FF3B82F6',
+    },
+}
