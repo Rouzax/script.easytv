@@ -43,6 +43,7 @@ from resources.lib.constants import (
     RESUME_REWIND_SECONDS,
     PROP_PLAYLIST_CONFIG,
     PROP_PLAYLIST_REGENERATE,
+    PROP_SOURCE_ADDON_ID,
 )
 from resources.lib.utils import (
     get_bool_setting,
@@ -575,7 +576,57 @@ class PlaybackMonitor(xbmc.Player):
             self._set_nextprompt_info({})
 
         self._log.debug("Playback ended handler complete")
-    
+
+    def _get_source_addon_info(self):
+        # type: () -> tuple
+        """Get (path, name, addon_id) of the addon that started playback.
+
+        Checks multiple sources in priority order:
+        1. PROP_PLAYLIST_CONFIG — has addon_id for playlist mode (set by
+           random_player.py in the clone's process, works without clone update)
+        2. PROP_SOURCE_ADDON_ID — window property set by default.py entry point
+           (for browse mode, requires clone to have updated code)
+        3. Fallback to main addon
+
+        Returns:
+            Tuple of (addon_path, addon_name, addon_id_or_none).
+        """
+        # Try playlist config first (set by random_player.py in clone's process)
+        stored_config = self._window.getProperty(PROP_PLAYLIST_CONFIG)
+        if stored_config:
+            try:
+                state = json.loads(stored_config)
+                source_id = state.get('addon_id')
+                if source_id:
+                    source_addon = xbmcaddon.Addon(source_id)
+                    return (
+                        str(source_addon.getAddonInfo('path')),
+                        source_addon.getAddonInfo('name'),
+                        source_id
+                    )
+            except Exception:
+                pass
+
+        # Try window property (set by default.py entry point)
+        source_id = self._window.getProperty(PROP_SOURCE_ADDON_ID)
+        if source_id:
+            try:
+                source_addon = xbmcaddon.Addon(source_id)
+                return (
+                    str(source_addon.getAddonInfo('path')),
+                    source_addon.getAddonInfo('name'),
+                    source_id
+                )
+            except Exception:
+                pass
+
+        # Fallback to main addon
+        return (
+            self._window.getProperty("EasyTV.ServicePath"),
+            xbmcaddon.Addon().getAddonInfo('name'),
+            None
+        )
+
     def _show_next_episode_prompt(
         self,
         now_name: str,
@@ -629,7 +680,7 @@ class PlaybackMonitor(xbmc.Player):
         subtitle = SE
         if pre_ep_title:
             subtitle += ' \u2014 ' + pre_ep_title
-        addon_path = self._window.getProperty("EasyTV.ServicePath")
+        addon_path, addon_name, addon_id = self._get_source_addon_info()
 
         # Get show poster from cached window property
         # Use ended_showid (captured before sleep) to avoid reading the NEW episode's show
@@ -646,10 +697,11 @@ class PlaybackMonitor(xbmc.Player):
             yes_label=lang(32092),   # "Play"
             no_label=lang(32091),    # "Don't Play"
             duration=settings.promptduration,
-            heading=xbmcaddon.Addon().getAddonInfo('name'),
+            heading=addon_name,
             timer_template=lang(32167),  # "(auto-closing in %s seconds)"
             default_yes=default_yes,
             poster=poster,
+            addon_id=addon_id,
             logger=self._log,
         )
         dlg.doModal()
@@ -788,7 +840,7 @@ class PlaybackMonitor(xbmc.Player):
 
         self._log.debug("Showing playlist continuation prompt",
                         default_action=default_action)
-        addon_path = self._window.getProperty("EasyTV.ServicePath")
+        addon_path, addon_name, addon_id = self._get_source_addon_info()
 
         # Always: Yes="Generate", No="Stop"
         # default_yes = True when Generate is the default on timeout
@@ -798,9 +850,10 @@ class PlaybackMonitor(xbmc.Player):
             yes_label=lang(32619),            # "Generate"
             no_label=lang(32620),             # "Stop"
             duration=duration,
-            heading=xbmcaddon.Addon().getAddonInfo('name'),
+            heading=addon_name,
             timer_template=lang(32167),       # "(auto-closing in %s seconds)"
             default_yes=(default_action == 1),
+            addon_id=addon_id,
             logger=self._log,
         )
         dlg.doModal()

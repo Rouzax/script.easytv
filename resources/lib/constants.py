@@ -395,6 +395,8 @@ DEFAULT_ADDON_ID = "script.easytv"
 PROP_PLAYLIST_CONFIG = "EasyTV.playlist_config"
 # Flag to trigger playlist regeneration from daemon
 PROP_PLAYLIST_REGENERATE = "EasyTV.playlist_regenerate"
+# Addon ID of the instance (main or clone) that started current playback
+PROP_SOURCE_ADDON_ID = "EasyTV.SourceAddonId"
 
 # =============================================================================
 # Browse Mode Window Properties

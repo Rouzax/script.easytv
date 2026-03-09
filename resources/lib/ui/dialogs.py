@@ -250,7 +250,7 @@ class CountdownDialog(xbmcgui.WindowXMLDialog):
         """Create instance, filtering out custom kwargs for parent class."""
         for key in ('message', 'subtitle', 'yes_label', 'no_label', 'duration',
                     'heading', 'timer_template', 'default_yes',
-                    'poster', 'logger'):
+                    'poster', 'addon_id', 'logger'):
             kwargs.pop(key, None)
         return super().__new__(cls, *args, **kwargs)
 
@@ -265,6 +265,7 @@ class CountdownDialog(xbmcgui.WindowXMLDialog):
         self._timer_template = kwargs.pop('timer_template', '')
         self._default_yes = kwargs.pop('default_yes', True)
         self._poster = kwargs.pop('poster', '')
+        self._addon_id: Optional[str] = kwargs.pop('addon_id', None)
         self._log = kwargs.pop('logger', None) or _get_log()
 
         super().__init__(*args, **kwargs)
@@ -276,14 +277,15 @@ class CountdownDialog(xbmcgui.WindowXMLDialog):
 
     def onInit(self) -> None:
         """Initialize dialog controls, set labels, and start countdown."""
-        # Set theme color properties for skin XML
+        # Set theme color properties for skin XML (uses source addon for clones)
         from resources.lib.ui import apply_theme
-        apply_theme(self)
+        apply_theme(self, addon_id=self._addon_id)
 
         # Get theme colors for button styling ($INFO doesn't resolve in
         # WindowXMLDialog focusedcolor, so we set it via Python)
         import xbmcaddon
-        theme = xbmcaddon.Addon().getSetting('theme') or '0'
+        addon = xbmcaddon.Addon(self._addon_id) if self._addon_id else xbmcaddon.Addon()
+        theme = addon.getSetting('theme') or '0'
         colors = THEME_COLORS.get(theme, THEME_COLORS['0'])
         focused_color = colors['EasyTV.ButtonTextFocused']
 
@@ -291,12 +293,12 @@ class CountdownDialog(xbmcgui.WindowXMLDialog):
         cast(xbmcgui.ControlLabel, self.getControl(COUNTDOWN_MESSAGE)).setLabel(self._message)
 
         # Set subtitle label (secondary text, smaller + dimmer)
-        if self._subtitle:
-            try:
-                cast(xbmcgui.ControlLabel, self.getControl(COUNTDOWN_SUBTITLE)).setLabel(
-                    self._subtitle)
-            except RuntimeError:
-                pass  # Control not in this skin XML
+        # Always set to clear the default "-" placeholder from the XML
+        try:
+            cast(xbmcgui.ControlLabel, self.getControl(COUNTDOWN_SUBTITLE)).setLabel(
+                self._subtitle)
+        except RuntimeError:
+            pass  # Control not in this skin XML
 
         # Set button labels with focusedColor
         cast(xbmcgui.ControlButton, self.getControl(COUNTDOWN_YES_BUTTON)).setLabel(
