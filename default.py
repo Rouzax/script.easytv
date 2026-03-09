@@ -95,6 +95,9 @@ def main_entry(addon, log):
     window = xbmcgui.Window(KODI_HOME_WINDOW_ID)
     script_path = addon.getAddonInfo('path')
 
+    # Track which addon (main or clone) started playback for service dialogs
+    window.setProperty('EasyTV.SourceAddonId', addon.getAddonInfo('id'))
+
     # Load settings
     primary_function = addon.getSetting('primary_function')
     filter_enabled = get_bool_setting('filter_enabled')
