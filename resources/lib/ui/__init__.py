@@ -16,3 +16,15 @@ This package provides UI functionality:
 - context_menu.py: ContextMenuWindow class (right-click menu)
 - dialogs.py: Dialog helper functions (error dialogs, playlist selection)
 """
+from __future__ import annotations
+
+import xbmcgui
+
+
+def apply_theme(window: xbmcgui.WindowXMLDialog) -> None:
+    """Set theme color properties on a window for skin XML $INFO references."""
+    import xbmcaddon
+    from resources.lib.constants import THEME_COLORS
+    theme = xbmcaddon.Addon().getSetting('theme') or '0'
+    for prop, value in THEME_COLORS.get(theme, THEME_COLORS['0']).items():
+        window.setProperty(prop, value)

@@ -249,13 +249,9 @@ msgctxt "#32163"
 msgid "Now Playing"
 msgstr ""
 
-#. Auto-closing dialog
+#. Auto-closing dialog countdown (used below buttons)
 msgctxt "#32167"
-msgid "EasyTV   (auto-closing in %s seconds)"
-msgstr ""
-
-msgctxt "#32168"
-msgid "%s (%s) is in your library."
+msgid "(auto-closing in %s seconds)"
 msgstr ""
 
 #. Selector buttons
@@ -951,12 +947,8 @@ msgctxt "#32616"
 msgid "Seconds before the continuation prompt auto-dismisses. Set to 0 for no automatic dismissal."
 msgstr ""
 
-msgctxt "#32617"
-msgid "Playlist Finished"
-msgstr ""
-
 msgctxt "#32618"
-msgid "Generate another playlist with the same settings?"
+msgid "Playlist finished.\nGenerate another playlist with the same settings?"
 msgstr ""
 
 msgctxt "#32619"
@@ -1078,10 +1070,6 @@ msgctxt "#32647"
 msgid "Generate new playlist"
 msgstr ""
 
-#. Playlist continuation heading with countdown
-msgctxt "#32648"
-msgid "Playlist Finished   (auto-closing in %s seconds)"
-msgstr ""
 
 
 # =============================================================================
@@ -1152,4 +1140,38 @@ msgstr ""
 #. Positioned specials setting help text
 msgctxt "#32712"
 msgid "When enabled, specials with TVDB positioning data (e.g., 'airs before S10E56') will be included in the watch order at their designated position. Non-positioned specials are always ignored."
+msgstr ""
+
+# =============================================================================
+# 32720-32729: Theme settings
+# =============================================================================
+
+#. Theme setting label
+msgctxt "#32720"
+msgid "Theme"
+msgstr ""
+
+#. Theme setting help text
+msgctxt "#32721"
+msgid "Choose the accent color theme for EasyTV windows and dialogs."
+msgstr ""
+
+#. Theme option: Golden Hour (default)
+msgctxt "#32722"
+msgid "Golden Hour"
+msgstr ""
+
+#. Theme option: Ultraviolet
+msgctxt "#32723"
+msgid "Ultraviolet"
+msgstr ""
+
+#. Theme option: Ember
+msgctxt "#32724"
+msgid "Ember"
+msgstr ""
+
+#. Theme option: Nightfall
+msgctxt "#32725"
+msgid "Nightfall"
 msgstr ""

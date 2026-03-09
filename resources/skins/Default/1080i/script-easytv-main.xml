@@ -2,16 +2,16 @@
 <!--
     EasyTV Posters View (Main)
     Resolution: 1080i (1920x1080)
-    
+
     Layout: Left info panel + Right poster grid
-    
+
     Control IDs:
         655 - Main poster panel container
 -->
 <window>
     <defaultcontrol>655</defaultcontrol>
     <visible>!System.ScreenSaverActive</visible>
-    
+
     <controls>
         <!-- Full screen background -->
         <control type="image">
@@ -19,22 +19,22 @@
             <top>0</top>
             <width>1920</width>
             <height>1080</height>
-            <texture colordiffuse="FF000000">OneBlackPixel.png</texture>
+            <texture colordiffuse="ff000000">common/white.png</texture>
         </control>
-        
+
         <!-- Main content group -->
         <control type="group">
             <visible>Control.IsVisible(655)</visible>
-            <animation effect="fade" start="0" end="100" time="400">WindowOpen</animation>
-            <animation effect="fade" start="100" end="0" time="200">WindowClose</animation>
-            
+            <include>EasyTV_ZoomIn</include>
+            <include>EasyTV_ZoomOut</include>
+
             <!-- ==================== LEFT SIDE: INFO PANEL ==================== -->
             <control type="group">
                 <left>40</left>
                 <top>60</top>
                 <width>660</width>
                 <height>960</height>
-                
+
                 <!-- Fanart preview -->
                 <control type="multiimage">
                     <left>0</left>
@@ -45,16 +45,13 @@
                     <imagepath background="true">$INFO[Container(655).ListItem.Property(Fanart_Image)]</imagepath>
                     <aspectratio aligny="top">scale</aspectratio>
                 </control>
-                
+
                 <!-- Separator line -->
-                <control type="image">
-                    <left>0</left>
-                    <top>365</top>
-                    <width>620</width>
-                    <height>1</height>
-                    <texture>thinline.png</texture>
-                </control>
-                
+                <include content="EasyTV_Separator">
+                    <param name="top">365</param>
+                    <param name="width">620</param>
+                </include>
+
                 <!-- Show Title -->
                 <control type="label">
                     <left>0</left>
@@ -62,10 +59,10 @@
                     <width>620</width>
                     <height>45</height>
                     <font>font13</font>
-                    <textcolor>FF50e0c7</textcolor>
+                    <textcolor>$INFO[Window.Property(EasyTV.Accent)]</textcolor>
                     <label>$INFO[Container(655).ListItem.Label]</label>
                 </control>
-                
+
                 <!-- Episode Title -->
                 <control type="label">
                     <left>0</left>
@@ -73,19 +70,16 @@
                     <width>620</width>
                     <height>30</height>
                     <font>font12</font>
-                    <textcolor>FFFFFFFF</textcolor>
+                    <textcolor>ffFFFFFF</textcolor>
                     <label>$INFO[Container(655).ListItem.Label2]</label>
                 </control>
-                
+
                 <!-- Separator line -->
-                <control type="image">
-                    <left>0</left>
-                    <top>480</top>
-                    <width>620</width>
-                    <height>1</height>
-                    <texture>thinline.png</texture>
-                </control>
-                
+                <include content="EasyTV_Separator">
+                    <param name="top">480</param>
+                    <param name="width">620</param>
+                </include>
+
                 <!-- Season / Episode / Progress info -->
                 <control type="label">
                     <left>0</left>
@@ -93,10 +87,10 @@
                     <width>620</width>
                     <height>30</height>
                     <font>font10</font>
-                    <textcolor>FFFFFFFF</textcolor>
-                    <label>$ADDON[script.easytv 32220]  [COLOR FF50e0c7]$INFO[Container(655).ListItem.Season][/COLOR]  •  $ADDON[script.easytv 32221]  [COLOR FF50e0c7]$INFO[Container(655).ListItem.Episode][/COLOR]  •  $ADDON[script.easytv 32222]  [COLOR FF50e0c7]$INFO[Container(655).ListItem.Property(percentplayed)][/COLOR]</label>
+                    <textcolor>FFAAAAAA</textcolor>
+                    <label>$ADDON[script.easytv 32220]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Season][/COLOR]  •  $ADDON[script.easytv 32221]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Episode][/COLOR]  •  $ADDON[script.easytv 32222]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(percentplayed)][/COLOR]</label>
                 </control>
-                
+
                 <!-- On Deck / Watched / Skipped counts -->
                 <control type="label">
                     <left>0</left>
@@ -104,19 +98,16 @@
                     <width>620</width>
                     <height>30</height>
                     <font>font10</font>
-                    <textcolor>FFFFFFFF</textcolor>
-                    <label>$ADDON[script.easytv 32223] [COLOR FF50e0c7]$INFO[Container(655).ListItem.Property(numondeck)][/COLOR]  •  $ADDON[script.easytv 32224] [COLOR FF50e0c7]$INFO[Container(655).ListItem.Property(numwatched)][/COLOR]  •  $ADDON[script.easytv 32225] [COLOR FF50e0c7]$INFO[Container(655).ListItem.Property(numskipped)][/COLOR]</label>
+                    <textcolor>FFAAAAAA</textcolor>
+                    <label>$ADDON[script.easytv 32223] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numondeck)][/COLOR]  •  $ADDON[script.easytv 32224] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numwatched)][/COLOR]  •  $ADDON[script.easytv 32225] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numskipped)][/COLOR]</label>
                 </control>
-                
+
                 <!-- Separator line -->
-                <control type="image">
-                    <left>0</left>
-                    <top>585</top>
-                    <width>620</width>
-                    <height>1</height>
-                    <texture>thinline.png</texture>
-                </control>
-                
+                <include content="EasyTV_Separator">
+                    <param name="top">585</param>
+                    <param name="width">620</param>
+                </include>
+
                 <!-- Plot -->
                 <control type="textbox">
                     <left>0</left>
@@ -125,10 +116,10 @@
                     <height>320</height>
                     <font>font12</font>
                     <textcolor>FFCCCCCC</textcolor>
-                    <label>[COLOR FF50e0c7]$ADDON[script.easytv 32226]... [/COLOR]$INFO[Container(655).ListItem.Plot]</label>
+                    <label>[COLOR $INFO[Window.Property(EasyTV.Accent)]]$ADDON[script.easytv 32226]... [/COLOR]$INFO[Container(655).ListItem.Plot]</label>
                 </control>
             </control>
-            
+
             <!-- ==================== RIGHT SIDE: POSTER GRID ==================== -->
             <control type="panel" id="655">
                 <left>720</left>
@@ -142,7 +133,7 @@
                 <ondown>655</ondown>
                 <preloaditems>6</preloaditems>
                 <scrolltime tween="sine" easing="out">200</scrolltime>
-                
+
                 <!-- Unfocused poster item -->
                 <itemlayout width="220" height="360">
                     <!-- Poster image -->
@@ -154,7 +145,7 @@
                         <texture background="true">$INFO[ListItem.Art(thumb)]</texture>
                         <aspectratio aligny="top">stretch</aspectratio>
                     </control>
-                    
+
                     <!-- Multiselect checkmark overlay -->
                     <control type="image">
                         <left>15</left>
@@ -164,7 +155,7 @@
                         <texture>IconWatchedNF.png</texture>
                         <visible>ListItem.IsSelected</visible>
                     </control>
-                    
+
                     <!-- Watched indicator -->
                     <control type="image">
                         <left>15</left>
@@ -175,18 +166,20 @@
                         <visible>ListItem.Property(watched)</visible>
                     </control>
                 </itemlayout>
-                
+
                 <!-- Focused poster item -->
                 <focusedlayout width="220" height="360">
+                    <include>EasyTV_FocusBounce</include>
+
                     <!-- Border line -->
                     <control type="image">
                         <left>12</left>
                         <top>17</top>
                         <width>196</width>
                         <height>291</height>
-                        <texture border="3" colordiffuse="FF50e0c7">OneWhitePixel.png</texture>
+                        <texture border="3" colordiffuse="$INFO[Window.Property(EasyTV.Accent)]">common/white.png</texture>
                     </control>
-                    
+
                     <!-- Poster image -->
                     <control type="image">
                         <left>15</left>
@@ -196,7 +189,7 @@
                         <texture background="true">$INFO[ListItem.Art(thumb)]</texture>
                         <aspectratio aligny="top">stretch</aspectratio>
                     </control>
-                    
+
                     <!-- Multiselect checkmark overlay -->
                     <control type="image">
                         <left>15</left>
@@ -206,7 +199,7 @@
                         <texture>IconWatchedFO.png</texture>
                         <visible>ListItem.IsSelected</visible>
                     </control>
-                    
+
                     <!-- Watched indicator -->
                     <control type="image">
                         <left>15</left>

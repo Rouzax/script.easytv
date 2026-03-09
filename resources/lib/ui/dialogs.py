@@ -44,8 +44,11 @@ from resources.lib.constants import (
     COUNTDOWN_MESSAGE,
     COUNTDOWN_NO_BUTTON,
     COUNTDOWN_POSTER,
+    COUNTDOWN_SUBTITLE,
+    COUNTDOWN_TIMER_LABEL,
     COUNTDOWN_YES_BUTTON,
     SECONDS_TO_MS_MULTIPLIER,
+    THEME_COLORS,
 )
 from resources.lib.utils import get_logger, json_query, lang
 from resources.lib.data.queries import get_playlist_files_query
@@ -222,8 +225,9 @@ class CountdownDialog(xbmcgui.WindowXMLDialog):
     - A result property indicating whether the affirmative action was chosen
 
     Control IDs (must match skin XML):
-        1  - Heading label (updated by timer)
+        1  - Heading label (static, e.g. addon name)
         2  - Message label
+        3  - Timer label (auto-close countdown, below buttons)
         10 - "Yes" button (left)
         11 - "No" button (right)
         20 - Poster image (optional, used by next episode dialog)
@@ -235,8 +239,8 @@ class CountdownDialog(xbmcgui.WindowXMLDialog):
             - yes_label: str - Label for the Yes button (left)
             - no_label: str - Label for the No button (right)
             - duration: int - Countdown seconds (0 = no timer)
-            - heading_template: str - Heading with %s for seconds remaining
-            - heading_no_timer: str - Heading when duration is 0
+            - heading: str - Static heading text (e.g. addon/clone name)
+            - timer_template: str - Timer format with %s for seconds
             - default_yes: bool - True if Yes is the default on timeout
             - poster: str - Optional poster image path
             - logger: StructuredLogger - Optional logger instance
@@ -244,8 +248,8 @@ class CountdownDialog(xbmcgui.WindowXMLDialog):
 
     def __new__(cls, *args, **kwargs):
         """Create instance, filtering out custom kwargs for parent class."""
-        for key in ('message', 'yes_label', 'no_label', 'duration',
-                    'heading_template', 'heading_no_timer', 'default_yes',
+        for key in ('message', 'subtitle', 'yes_label', 'no_label', 'duration',
+                    'heading', 'timer_template', 'default_yes',
                     'poster', 'logger'):
             kwargs.pop(key, None)
         return super().__new__(cls, *args, **kwargs)
@@ -253,11 +257,12 @@ class CountdownDialog(xbmcgui.WindowXMLDialog):
     def __init__(self, *args, **kwargs):
         """Initialize the countdown dialog."""
         self._message = kwargs.pop('message', '')
+        self._subtitle = kwargs.pop('subtitle', '')
         self._yes_label = kwargs.pop('yes_label', '')
         self._no_label = kwargs.pop('no_label', '')
         self._duration = kwargs.pop('duration', 0)
-        self._heading_template = kwargs.pop('heading_template', '%s')
-        self._heading_no_timer = kwargs.pop('heading_no_timer', '')
+        self._heading = kwargs.pop('heading', '')
+        self._timer_template = kwargs.pop('timer_template', '')
         self._default_yes = kwargs.pop('default_yes', True)
         self._poster = kwargs.pop('poster', '')
         self._log = kwargs.pop('logger', None) or _get_log()
@@ -271,12 +276,33 @@ class CountdownDialog(xbmcgui.WindowXMLDialog):
 
     def onInit(self) -> None:
         """Initialize dialog controls, set labels, and start countdown."""
+        # Set theme color properties for skin XML
+        from resources.lib.ui import apply_theme
+        apply_theme(self)
+
+        # Get theme colors for button styling ($INFO doesn't resolve in
+        # WindowXMLDialog focusedcolor, so we set it via Python)
+        import xbmcaddon
+        theme = xbmcaddon.Addon().getSetting('theme') or '0'
+        colors = THEME_COLORS.get(theme, THEME_COLORS['0'])
+        focused_color = colors['EasyTV.ButtonTextFocused']
+
         # Set message label
         cast(xbmcgui.ControlLabel, self.getControl(COUNTDOWN_MESSAGE)).setLabel(self._message)
 
-        # Set button labels
-        cast(xbmcgui.ControlButton, self.getControl(COUNTDOWN_YES_BUTTON)).setLabel(self._yes_label)
-        cast(xbmcgui.ControlButton, self.getControl(COUNTDOWN_NO_BUTTON)).setLabel(self._no_label)
+        # Set subtitle label (secondary text, smaller + dimmer)
+        if self._subtitle:
+            try:
+                cast(xbmcgui.ControlLabel, self.getControl(COUNTDOWN_SUBTITLE)).setLabel(
+                    self._subtitle)
+            except RuntimeError:
+                pass  # Control not in this skin XML
+
+        # Set button labels with focusedColor
+        cast(xbmcgui.ControlButton, self.getControl(COUNTDOWN_YES_BUTTON)).setLabel(
+            self._yes_label, focusedColor=focused_color)
+        cast(xbmcgui.ControlButton, self.getControl(COUNTDOWN_NO_BUTTON)).setLabel(
+            self._no_label, focusedColor=focused_color)
 
         # Set poster image if available and control exists
         if self._poster:
@@ -285,11 +311,20 @@ class CountdownDialog(xbmcgui.WindowXMLDialog):
             except RuntimeError:
                 pass  # Control not in this skin XML
 
-        # Set initial heading and focus
+        # Set static heading (addon/clone name)
+        cast(xbmcgui.ControlLabel, self.getControl(COUNTDOWN_HEADING)).setLabel(
+            self._heading
+        )
+
+        # Set timer label and focus
         if self._duration > 0:
-            cast(xbmcgui.ControlLabel, self.getControl(COUNTDOWN_HEADING)).setLabel(
-                self._heading_template % self._duration
-            )
+            try:
+                cast(xbmcgui.ControlLabel, self.getControl(COUNTDOWN_TIMER_LABEL)).setLabel(
+                    self._timer_template % self._duration
+                )
+            except RuntimeError:
+                pass  # Timer control not in this skin XML
+
             # Focus the non-default button (user must act to override default)
             if self._default_yes:
                 self.setFocus(self.getControl(COUNTDOWN_NO_BUTTON))
@@ -300,9 +335,11 @@ class CountdownDialog(xbmcgui.WindowXMLDialog):
             self._timer_thread = threading.Thread(target=self._countdown_loop, daemon=True)
             self._timer_thread.start()
         else:
-            cast(xbmcgui.ControlLabel, self.getControl(COUNTDOWN_HEADING)).setLabel(
-                self._heading_no_timer
-            )
+            # Hide timer label when no countdown
+            try:
+                cast(xbmcgui.ControlLabel, self.getControl(COUNTDOWN_TIMER_LABEL)).setLabel('')
+            except RuntimeError:
+                pass
             # No timer — focus Yes button as natural default
             self.setFocus(self.getControl(COUNTDOWN_YES_BUTTON))
 
@@ -315,8 +352,8 @@ class CountdownDialog(xbmcgui.WindowXMLDialog):
                 return
             remaining -= 1
             try:
-                cast(xbmcgui.ControlLabel, self.getControl(COUNTDOWN_HEADING)).setLabel(
-                    self._heading_template % remaining
+                cast(xbmcgui.ControlLabel, self.getControl(COUNTDOWN_TIMER_LABEL)).setLabel(
+                    self._timer_template % remaining
                 )
             except RuntimeError:
                 return  # Dialog already destroyed
