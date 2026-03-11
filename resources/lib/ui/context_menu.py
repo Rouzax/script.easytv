@@ -45,6 +45,7 @@ from resources.lib.constants import (
     CONTEXT_UPDATE_LIBRARY,
     CONTEXT_REFRESH,
     THEME_COLORS,
+    SETTING_THEME,
 )
 from resources.lib.utils import get_logger, lang
 
@@ -121,7 +122,7 @@ class ContextMenuWindow(xbmcgui.WindowXMLDialog):
         # Get theme accent color for focused button text ($INFO doesn't
         # resolve in WindowXMLDialog focusedcolor, so we set it via Python)
         import xbmcaddon
-        theme = xbmcaddon.Addon().getSetting('theme') or '0'
+        theme = xbmcaddon.Addon().getSetting(SETTING_THEME) or '0'
         colors = THEME_COLORS.get(theme, THEME_COLORS['0'])
         focused_color = colors['EasyTV.Accent']
 

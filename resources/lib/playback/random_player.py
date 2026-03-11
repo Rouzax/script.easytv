@@ -44,6 +44,8 @@ from resources.lib.constants import (
     EPISODE_SELECTION_BOTH,
     PROP_PLAYLIST_CONFIG,
     LAZY_QUEUE_BUFFER_SIZE,
+    PROP_PLAYLIST_RUNNING,
+    PROP_RANDOM_ORDER_SHUFFLE,
 )
 from resources.lib.data.queries import (
     get_clear_video_playlist_query,
@@ -1011,8 +1013,8 @@ def _build_lazy_queue_playlist(
         session.save()
         
         # Notify service that playlist is running
-        WINDOW.setProperty("EasyTV.playlist_running", 'true')
-        WINDOW.setProperty("EasyTV.random_order_shuffle", 'true')
+        WINDOW.setProperty(PROP_PLAYLIST_RUNNING, 'true')
+        WINDOW.setProperty(PROP_RANDOM_ORDER_SHUFFLE, 'true')
         
         # Also store config for playlist continuation (same as batch mode)
         playlist_state = {
@@ -1366,8 +1368,8 @@ def build_random_playlist(
         outer_timer.mark("playlist_build")
         
         # Notify service that playlist is running
-        WINDOW.setProperty("EasyTV.playlist_running", 'true')
-        WINDOW.setProperty("EasyTV.random_order_shuffle", 'true')
+        WINDOW.setProperty(PROP_PLAYLIST_RUNNING, 'true')
+        WINDOW.setProperty(PROP_RANDOM_ORDER_SHUFFLE, 'true')
         
         # Store config for potential playlist continuation
         # Serialize config and population for regeneration

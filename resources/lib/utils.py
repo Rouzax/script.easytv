@@ -42,6 +42,7 @@ import xbmcvfs
 from resources.lib.constants import (
     DEFAULT_ADDON_ID,
     KODI_HOME_WINDOW_ID,
+    PROP_SERVICE_RUNNING,
     LOG_DIR_NAME,
     LOG_FILENAME,
     LOG_MAX_ROTATED_FILES,
@@ -1089,8 +1090,8 @@ def service_heartbeat() -> None:
     
     # Respond to service liveness check from the addon
     # When default.py sends 'marco', respond with 'polo' to confirm service is running
-    if window.getProperty('EasyTV_service_running') == 'marco':
-        window.setProperty('EasyTV_service_running', 'polo')
+    if window.getProperty(PROP_SERVICE_RUNNING) == 'marco':
+        window.setProperty(PROP_SERVICE_RUNNING, 'polo')
 
 
 def parse_lastplayed_date(date_string: str) -> float:

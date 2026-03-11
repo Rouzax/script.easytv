@@ -44,6 +44,7 @@ from resources.lib.constants import (
     CATEGORY_CONTINUE_WATCHING,
     ISTREAM_FIX_MAX_RETRIES,
     SECONDS_PER_MINUTE,
+    PROP_SHOWS_WITH_NEXT_EPISODES,
 )
 from resources.lib.service.episode_tracker import PROP_DURATION
 from resources.lib.data.queries import (
@@ -402,7 +403,7 @@ def fetch_unwatched_shows(sort_by: int, sort_reverse: bool, language: str = 'Eng
         timer.mark("query")
         
         # Get shows with cached next episodes from service
-        shows_str = WINDOW.getProperty("EasyTV.shows_with_next_episodes")
+        shows_str = WINDOW.getProperty(PROP_SHOWS_WITH_NEXT_EPISODES)
         
         if shows_str:
             shows_from_service = [int(x) for x in ast.literal_eval(shows_str)]

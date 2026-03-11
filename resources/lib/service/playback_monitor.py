@@ -45,6 +45,8 @@ from resources.lib.constants import (
     PROP_PLAYLIST_CONFIG,
     PROP_PLAYLIST_REGENERATE,
     PROP_SOURCE_ADDON_ID,
+    PROP_PLAYLIST_RUNNING,
+    PROP_SERVICE_PATH,
 )
 from resources.lib.utils import (
     get_bool_setting,
@@ -186,7 +188,7 @@ class PlaybackMonitor(xbmc.Player):
         self._ep_details = json_query(get_playing_item_query(), True)
         self._log.debug("Now playing details", details=self._ep_details)
         
-        self._pl_running_local = self._window.getProperty("EasyTV.playlist_running")
+        self._pl_running_local = self._window.getProperty(PROP_PLAYLIST_RUNNING)
         
         if 'item' not in self._ep_details or 'type' not in self._ep_details['item']:
             self._log.debug("Playback started handler complete (no item)")
@@ -507,7 +509,7 @@ class PlaybackMonitor(xbmc.Player):
 
         # Check if playlist truly ended (nothing playing + was EasyTV playlist)
         if not is_something_playing and self._pl_running_local == 'true':
-            self._window.setProperty("EasyTV.playlist_running", 'false')
+            self._window.setProperty(PROP_PLAYLIST_RUNNING, 'false')
 
             # Clear any active lazy queue session
             PlaylistSession.clear()
@@ -628,7 +630,7 @@ class PlaybackMonitor(xbmc.Player):
 
         # Fallback to main addon
         return (
-            self._window.getProperty("EasyTV.ServicePath"),
+            self._window.getProperty(PROP_SERVICE_PATH),
             xbmcaddon.Addon().getAddonInfo('name'),
             None
         )
@@ -721,7 +723,7 @@ class PlaybackMonitor(xbmc.Player):
             # continuation-eligible playlist, so prevent the continuation
             # prompt from showing when it ends.
             self._window.clearProperty(PROP_PLAYLIST_CONFIG)
-            self._window.setProperty("EasyTV.playlist_running", 'false')
+            self._window.setProperty(PROP_PLAYLIST_RUNNING, 'false')
             # User chose to play next episode
             xbmc.executeJSONRPC(
                 '{"jsonrpc": "2.0","id": 1, "method": "Playlist.Clear",'

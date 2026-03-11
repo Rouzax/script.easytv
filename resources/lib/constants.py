@@ -434,6 +434,30 @@ DURATION_CACHE_FILENAME = "duration_cache.json"
 DURATION_CACHE_VERSION = 1
 
 # =============================================================================
+# Service / System Window Properties
+# =============================================================================
+# Service lifecycle status ('starting', 'true', 'marco', 'polo')
+PROP_SERVICE_RUNNING = "EasyTV.service_running"
+# Addon version string
+PROP_VERSION = "EasyTV.Version"
+# Path to addon directory
+PROP_SERVICE_PATH = "EasyTV.ServicePath"
+# Whether a playlist is currently playing ('true'/'false'/'listview')
+PROP_PLAYLIST_RUNNING = "EasyTV.playlist_running"
+# Signal to reshuffle random order shows
+PROP_RANDOM_ORDER_SHUFFLE = "EasyTV.random_order_shuffle"
+# JSON-encoded list of show IDs with next episodes
+PROP_SHOWS_WITH_NEXT_EPISODES = "EasyTV.shows_with_next_episodes"
+# Sync revision counter for multi-instance coordination
+PROP_SYNC_REV = "EasyTV.sync_rev"
+
+# =============================================================================
+# Setting IDs
+# =============================================================================
+SETTING_THEME = "theme"
+SETTING_MULTI_INSTANCE_SYNC = "multi_instance_sync"
+
+# =============================================================================
 # Lazy Queue (Both Mode) Settings
 # =============================================================================
 # JSON-encoded session state for lazy queue playlist
