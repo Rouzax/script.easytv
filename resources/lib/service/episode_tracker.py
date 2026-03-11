@@ -267,7 +267,7 @@ class EpisodeTracker:
         # Format episode and season numbers (use .get() for defensive access)
         episode = "%.2d" % float(ep_details.get('episode', 0))
         season = "%.2d" % float(ep_details.get('season', 0))
-        episode_no = f"s{season}e{episode}"
+        episode_no = f"S{season}E{episode}"
         
         # Calculate resume state (use .get() for defensive access)
         resume_dict = ep_details.get('resume', {})

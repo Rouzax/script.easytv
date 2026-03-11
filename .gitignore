@@ -22,6 +22,7 @@ desktop.ini
 *.zip
 *.log
 _temp/
+.ruff_cache/
 
 # Implementation plans (development only)
 IMPLEMENTATION.md

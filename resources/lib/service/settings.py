@@ -454,6 +454,9 @@ class ServiceSettings:
     # Manual show selection (list of show IDs for usersel filter)
     selection: list[int] = field(default_factory=list)
     
+    # Appearance
+    theme: int = 0
+
     # Logging
     keep_logs: bool = False
 
@@ -579,6 +582,9 @@ def load_settings(
         playlist_continuation_default_action=int(float(setting('playlist_continuation_default_action'))),
     )
     
+    # Theme setting
+    settings.theme = int(float(setting('theme')))
+
     # Handle maintainsmartplaylist setting (legacy)
     # Note: We only parse the setting here. The actual playlist updates
     # are triggered in daemon._on_settings_changed() AFTER self._settings
