@@ -308,7 +308,7 @@ def build_episode_list(
             # Wait for any existing dialogs to close
             # This prevents the window from covering YesNo dialogs from the service
             count = 0
-            while count < DIALOG_WAIT_MAX_TICKS or \
+            while count < DIALOG_WAIT_MAX_TICKS and \
                   xbmc.getInfoLabel('Window.Property(xmlfile)') == 'DialogYesNo.xml':
                 xbmc.sleep(DIALOG_WAIT_SLEEP_MS)
                 count += 1
