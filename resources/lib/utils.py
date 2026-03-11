@@ -391,7 +391,7 @@ class StructuredLogger:
             except (IOError, OSError):
                 pass  # Don't crash on log write failure
     
-    def _ensure_event(self, level: str, kwargs: dict[str, Any]) -> dict[str, Any]:
+    def _ensure_event(self, level: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
         """
         Ensure event= is present for INFO/WARNING/ERROR logs.
         

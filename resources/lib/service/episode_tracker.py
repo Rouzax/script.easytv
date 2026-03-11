@@ -37,7 +37,7 @@ Logging:
 from __future__ import annotations
 
 import ast
-from typing import Any, Callable, Dict, Optional, TYPE_CHECKING, Union
+from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING, Union
 
 import xbmcgui
 
@@ -202,8 +202,8 @@ class EpisodeTracker:
         self,
         episode_id: int,
         show_id: Union[int, str],
-        ondeck_list: list[int],
-        offdeck_list: list[int],
+        ondeck_list: List[int],
+        offdeck_list: List[int],
         unwatched_count: Union[int, str] = 0,
         watched_count: Union[int, str] = 0,
         is_skipped: bool = False,

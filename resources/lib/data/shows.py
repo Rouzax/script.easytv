@@ -31,7 +31,7 @@ from __future__ import annotations
 import ast
 import os
 import random
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import xbmc
 import xbmcgui
@@ -69,7 +69,7 @@ WINDOW = xbmcgui.Window(KODI_HOME_WINDOW_ID)
 # Includes both definite ("the") and indefinite ("a/an") articles.
 # Example: "The Office" -> "Office", "A Man in Full" -> "Man in Full"
 # Languages without articles (Russian, Polish, Turkish, etc.) are not included.
-LANGUAGE_ARTICLES: dict[str, list[str]] = {
+LANGUAGE_ARTICLES: Dict[str, List[str]] = {
     'English': ['the ', 'a ', 'an '],
     'Spanish': ['el ', 'la ', 'los ', 'las ', 'un ', 'una ', 'unos ', 'unas '],
     'Dutch': ['de ', 'het ', 'een '],
@@ -206,10 +206,10 @@ def get_episode_sort_key(
 
 def find_next_episode(
     showid: int,
-    random_order_shows: list[int],
+    random_order_shows: List[int],
     epid: Optional[int] = None,
-    eps: Optional[list[int]] = None
-) -> tuple[Optional[int], Optional[list]]:
+    eps: Optional[List[int]] = None
+) -> Tuple[Optional[int], Optional[list]]:
     """
     Determine the next episode to play for a given show.
     
@@ -269,12 +269,12 @@ def find_next_episode(
 # =============================================================================
 
 def merge_and_sort_shows(
-    shows_from_query: list[dict[str, Any]],
-    shows_from_service: list[int],
+    shows_from_query: List[Dict[str, Any]],
+    shows_from_service: List[int],
     sort_by: int,
     sort_reverse: bool,
     language: str = 'English'
-) -> list[list]:
+) -> List[list]:
     """
     Merge query results with service data and sort according to user preference.
     
@@ -353,7 +353,7 @@ def merge_and_sort_shows(
         return watched + never_watched
 
 
-def fetch_unwatched_shows(sort_by: int, sort_reverse: bool, language: str = 'English') -> list[list]:
+def fetch_unwatched_shows(sort_by: int, sort_reverse: bool, language: str = 'English') -> List[list]:
     """
     Fetch all TV shows with unwatched episodes, sorted by user preference.
     
@@ -436,7 +436,7 @@ def fetch_shows_with_watched_episodes(
     sort_by: int, 
     sort_reverse: bool, 
     language: str = 'English'
-) -> list[list]:
+) -> List[list]:
     """
     Fetch all TV shows that have at least one watched episode.
     
@@ -516,7 +516,7 @@ def fetch_shows_with_watched_episodes(
     return stored_data
 
 
-def extract_showids_from_playlist(playlist_path: str, silent: bool = False) -> list[int]:
+def extract_showids_from_playlist(playlist_path: str, silent: bool = False) -> List[int]:
     """
     Extract TV show IDs from a smart playlist file.
     
@@ -565,7 +565,7 @@ def extract_showids_from_playlist(playlist_path: str, silent: bool = False) -> l
     return filtered_showids
 
 
-def extract_movieids_from_playlist(playlist_path: str) -> list[int]:
+def extract_movieids_from_playlist(playlist_path: str) -> List[int]:
     """
     Extract movie IDs from a smart playlist file.
     
@@ -692,7 +692,7 @@ def _get_playlist_filename(file_path: str) -> str:
     return os.path.basename(file_path)
 
 
-def fetch_show_episode_data(tvshowid: int) -> Optional[dict[str, Any]]:
+def fetch_show_episode_data(tvshowid: int) -> Optional[Dict[str, Any]]:
     """
     Retrieve show data from Window properties for smart playlist operations.
     
@@ -751,9 +751,9 @@ def resolve_istream_episode(
     showtitle: str,
     episode_np: str,
     season_np: str,
-    random_order_shows: list[int],
-    refresh_callback: Optional[Callable[[list[int]], None]] = None
-) -> tuple[bool, int, Union[int, bool]]:
+    random_order_shows: List[int],
+    refresh_callback: Optional[Callable[[List[int]], None]] = None
+) -> Tuple[bool, int, Union[int, bool]]:
     """
     Handle streams from iStream that don't provide showid and epid.
     
