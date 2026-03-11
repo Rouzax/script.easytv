@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import os
 import time
+from datetime import date
 from dataclasses import dataclass
 from typing import Optional, TYPE_CHECKING, Union, cast
 
@@ -45,7 +46,6 @@ import xbmcaddon
 from resources.lib.constants import (
     KODI_HOME_WINDOW_ID,
     MAX_ITEMS_HARD_LIMIT,
-    SECONDS_PER_DAY,
     ACTION_PREVIOUS_MENU,
     ACTION_NAV_BACK,
     ACTION_CONTEXT_MENU,
@@ -246,17 +246,19 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         num_watched = WINDOW.getProperty(f"{prop_prefix}.CountWatchedEps")
         num_ondeck = WINDOW.getProperty(f"{prop_prefix}.CountonDeckEps")
 
-        # Calculate time since last watched
+        # Calculate time since last watched (calendar-day aware)
         if lastplayed == 0:
             lw_time = lang(32112)  # "Never"
         else:
-            gap_days = (now - lastplayed) / SECONDS_PER_DAY
-            if gap_days < 1:
+            today = date.fromtimestamp(now)
+            watched_date = date.fromtimestamp(lastplayed)
+            gap_days = (today - watched_date).days
+            if gap_days == 0:
                 lw_time = lang(32120)  # "Today"
-            elif gap_days < 2:
+            elif gap_days == 1:
                 lw_time = f"1 {lang(32113)}"  # "1 day"
             else:
-                lw_time = f"{int(gap_days)} {lang(32114)}"  # "X days"
+                lw_time = f"{gap_days} {lang(32114)}"  # "X days"
 
         # Calculate skipped episodes
         try:
