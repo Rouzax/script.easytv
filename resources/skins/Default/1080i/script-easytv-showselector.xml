@@ -89,8 +89,8 @@
                 <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">common/line_fade.png</texture>
             </control>
 
-            <!-- Search button (ID 2) + Clear button (ID 5) -->
-            <control type="button" id="2">
+            <!-- Search edit control (ID 2) + Clear button (ID 5) -->
+            <control type="edit" id="2">
                 <left>30</left>
                 <top>82</top>
                 <width>650</width>
@@ -99,8 +99,10 @@
                 <aligny>center</aligny>
                 <font>font12</font>
                 <textoffsetx>15</textoffsetx>
-                <textcolor>88FFFFFF</textcolor>
+                <textcolor>FFFFFFFF</textcolor>
                 <focusedcolor>FFFFFFFF</focusedcolor>
+                <label> </label>
+                <hinttext>Search shows...</hinttext>
                 <onright>5</onright>
                 <ondown>10</ondown>
                 <onup>21</onup>
