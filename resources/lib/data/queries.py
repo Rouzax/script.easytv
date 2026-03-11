@@ -667,7 +667,7 @@ def build_episode_prompt_info_query(episode_id: int) -> dict[str, Any]:
         "method": "VideoLibrary.GetEpisodeDetails",
         "params": {
             "episodeid": episode_id,
-            "properties": ["season", "episode", "showtitle", "tvshowid"]
+            "properties": ["season", "episode", "showtitle", "tvshowid", "title"]
         }
     }
 

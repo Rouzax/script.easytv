@@ -61,6 +61,7 @@ from __future__ import annotations
 import ast
 import contextlib
 import json
+import os
 import random
 import time
 from dataclasses import dataclass, field
@@ -99,6 +100,7 @@ from resources.lib.utils import (
     json_query,
     lang,
     log_timing,
+    restore_custom_icon,
     runtime_converter,
     service_heartbeat,
 )
@@ -209,9 +211,8 @@ class ServiceDaemon:
         self._log = logger or get_logger('daemon')
         self._log.info("Service daemon initializing", event="service.init")
         
-        # Get Kodi window and dialog
+        # Get Kodi window
         self._window = xbmcgui.Window(KODI_HOME_WINDOW_ID)
-        self._dialog = xbmcgui.Dialog()
         
         # Initialize state
         self._state = ServiceState()
@@ -277,7 +278,6 @@ class ServiceDaemon:
         # Create PlaybackMonitor with callbacks
         self._player = PlaybackMonitor(
             window=self._window,
-            dialog=self._dialog,
             get_settings=self._get_playback_settings,
             get_random_order_shows=lambda: self._settings.random_order_shows,
             on_refresh_show=self.refresh_show_episodes,
@@ -350,10 +350,18 @@ class ServiceDaemon:
 
         self._window.setProperty('EasyTV_service_running', 'true')
 
+        # Restore custom icon if one was set before an addon update
+        restore_custom_icon()
+
         # Show startup notification if enabled
         if self._settings.startup:
+            icon = os.path.join(
+                xbmcaddon.Addon().getAddonInfo('path'), 'icon.png'
+            )
             xbmc.executebuiltin(
-                'Notification(%s,%s,%i)' % ('EasyTV', lang(32173), NOTIFICATION_DURATION_MS)
+                'Notification(%s,%s,%i,%s)' % (
+                    'EasyTV', lang(32173), NOTIFICATION_DURATION_MS, icon
+                )
             )
         
         self._log.info("Daemon loop started", event="service.loop_start")
@@ -434,7 +442,12 @@ class ServiceDaemon:
         # Check playback position for swap over
         if self._state.target:
             self._check_playback_position()
-        
+
+        # Detect abandoned playback (stopped before watched threshold)
+        if (self._state.target and self._current_show_id and
+                not xbmc.Player().isPlayingVideo()):
+            self._handle_playback_abandoned()
+
         # Reset per-cycle state
         self._player._playing_showid = False
         self._is_random_show = False
@@ -752,6 +765,28 @@ class ServiceDaemon:
             self._log.debug("Episode data swapped")
 
         # Reset state
+        self._current_show_id = False
+        self._pending_next_episode = False
+        self._state.target = False
+
+    def _handle_playback_abandoned(self) -> None:
+        """Handle playback stopped before watched threshold.
+
+        When the user stops an episode mid-playback, the daemon never re-caches
+        the episode data because no playcount change occurs. This leaves
+        PercentPlayed stale (showing the pre-playback value).
+
+        Re-caches the current show's episode to pick up the updated resume
+        bookmark, then cleans up the leaked tracking state.
+        """
+        show_id = self._current_show_id
+        self._log.debug("Playback abandoned, refreshing resume data",
+                        event="playback.abandoned", show_id=show_id)
+
+        # Refresh the show to update PercentPlayed from new resume bookmark
+        self.refresh_show_episodes(showids=show_id)
+
+        # Clean up tracking state
         self._current_show_id = False
         self._pending_next_episode = False
         self._state.target = False

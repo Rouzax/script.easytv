@@ -349,7 +349,7 @@ def merge_and_sort_shows(
         
         # Default is descending; sort_reverse inverts to ascending
         watched.sort(reverse=not sort_reverse)
-        
+
         return watched + never_watched
 
 

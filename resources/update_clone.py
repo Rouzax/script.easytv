@@ -62,6 +62,7 @@ import shutil
 import xbmc
 import xbmcgui
 import xbmcaddon
+import xbmcvfs
 import sys
 import os
 from typing import Optional
@@ -196,7 +197,12 @@ def Main():
     # Without this, $ADDON[script.easytv ...] won't resolve in clones
     skin_files = [
         os.path.join(new_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-main.xml'),
-        os.path.join(new_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-BigScreenList.xml')
+        os.path.join(new_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-BigScreenList.xml'),
+        os.path.join(new_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-cardlist.xml'),
+        os.path.join(new_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-splitlist.xml'),
+        os.path.join(new_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-confirm.xml'),
+        os.path.join(new_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-select.xml'),
+        os.path.join(new_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-showselector.xml'),
     ]
 
     for skin_file in skin_files:
@@ -204,6 +210,14 @@ def Main():
             for line in fileinput.input(skin_file, inplace=True):
                 print(line.replace('$ADDON[script.easytv ', f'$ADDON[{san_name} '), end='')
             fileinput.close()
+
+    # Restore custom icon if one was set before the update
+    custom_icon_path = xbmcvfs.translatePath(
+        f'special://profile/addon_data/{san_name}/custom_icon.png'
+    )
+    if os.path.isfile(custom_icon_path):
+        shutil.copy2(custom_icon_path, os.path.join(new_path, 'icon.png'))
+        _log(f"Restored custom icon for {san_name}")
 
     # Force Kodi to re-scan the addons directory and re-read addon.xml from disk,
     # refreshing the in-memory metadata cache before the disable/enable cycle

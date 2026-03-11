@@ -60,6 +60,7 @@ from xml.etree import ElementTree as et
 
 # Import shared utilities
 from resources.lib.utils import lang, get_logger, sanitize_filename
+from resources.lib.ui.dialogs import show_confirm
 from resources.lib.constants import ADDON_ENABLE_DELAY_MS
 
 
@@ -103,8 +104,8 @@ def errorHandle(exception: Exception, trace: object, new_path: Optional[str] = N
 
 
 def Main():
-    first_q = dialog.yesno('EasyTV', lang(32142) + '\n' + lang(32143) + '\n' + lang(32144))
-    if first_q != 1:
+    first_q = show_confirm('EasyTV', lang(32142) + '\n' + lang(32143) + '\n' + lang(32144))
+    if not first_q:
         sys.exit()
     else:
         keyboard = xbmc.Keyboard(lang(32139))
@@ -172,6 +173,11 @@ def Main():
         IGNORE_PATTERNS = ('.pyc','CVS','.git','tmp','.svn','__pycache__')
         shutil.copytree(scriptPath, temp_path, ignore=shutil.ignore_patterns(*IGNORE_PATTERNS))
 
+        # Ensure clone starts with default icon (not main addon's custom icon)
+        default_icon = os.path.join(temp_path, 'icon_default.png')
+        if os.path.isfile(default_icon):
+            shutil.copy2(default_icon, os.path.join(temp_path, 'icon.png'))
+
         progress.update(25, "Configuring clone...")
         # remove the unneeded files
         addon_file = os.path.join(temp_path,'addon.xml')
@@ -235,7 +241,12 @@ def Main():
         # Without this, $ADDON[script.easytv ...] won't resolve in clones
         skin_files = [
             os.path.join(temp_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-main.xml'),
-            os.path.join(temp_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-BigScreenList.xml')
+            os.path.join(temp_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-BigScreenList.xml'),
+            os.path.join(temp_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-cardlist.xml'),
+            os.path.join(temp_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-splitlist.xml'),
+            os.path.join(temp_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-confirm.xml'),
+            os.path.join(temp_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-select.xml'),
+            os.path.join(temp_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-showselector.xml'),
         ]
 
         for skin_file in skin_files:

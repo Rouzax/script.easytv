@@ -32,7 +32,7 @@ import traceback
 from contextlib import contextmanager
 from datetime import datetime as dt
 import re
-from typing import Any, Dict, Generator, List, Optional, TextIO, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, TextIO, Tuple, Union, cast
 
 import xbmc
 import xbmcaddon
@@ -901,6 +901,136 @@ def sanitize_filename(dirty_string: str) -> str:
     sanitized = ''.join(c for c in dirty_string if c in valid_chars)
     sanitized = sanitized.replace(' ', '_').lower()
     return sanitized
+
+
+# =============================================================================
+# Icon Management
+# =============================================================================
+
+_icon_log: Optional[StructuredLogger] = None
+
+
+def _get_icon_log() -> StructuredLogger:
+    """Lazy-init logger for icon management functions."""
+    global _icon_log
+    if _icon_log is None:
+        _icon_log = get_logger('icon')
+    return _icon_log
+
+
+def set_custom_icon(addon_id: Optional[str] = None) -> bool:
+    """Open image browser and copy selected image to addon's icon.png.
+
+    Also saves a copy to addon_data for persistence across addon/clone updates.
+
+    Args:
+        addon_id: Addon to set icon for. None for the current addon.
+
+    Returns:
+        True if icon was successfully set, False if cancelled or failed.
+    """
+    log = _get_icon_log()
+    addon = xbmcaddon.Addon(addon_id) if addon_id else xbmcaddon.Addon()
+    addon_path = addon.getAddonInfo('path')
+
+    dialog = xbmcgui.Dialog()
+    image_path = cast(str, dialog.browse(
+        2, lang(32739), 'files', '.png|.jpg|.jpeg', False, False
+    ))
+    if not image_path:
+        log.debug("Icon selection cancelled", event="icon.set_cancelled")
+        return False
+
+    log.debug("Icon selected", event="icon.selected", path=image_path)
+    icon_path = os.path.join(addon_path, 'icon.png')
+
+    # Save to addon_data for persistence across updates
+    addon_data = xbmcvfs.translatePath(addon.getAddonInfo('profile'))
+    os.makedirs(addon_data, exist_ok=True)
+    backup_path = os.path.join(addon_data, 'custom_icon.png')
+    backup_ok = xbmcvfs.copy(image_path, backup_path)
+    if not backup_ok:
+        log.warning("Failed to backup icon to addon_data",
+                    event="icon.backup_fail", path=backup_path)
+
+    # Copy to addon folder
+    result = xbmcvfs.copy(image_path, icon_path)
+    if result:
+        log.info("Custom icon set", event="icon.set",
+                 source=image_path, addon_id=addon.getAddonInfo('id'))
+    else:
+        log.warning("Failed to copy icon to addon folder",
+                    event="icon.set_fail", source=image_path, target=icon_path)
+    return result
+
+
+def reset_icon(addon_id: Optional[str] = None) -> bool:
+    """Restore the default icon and remove custom icon from addon_data.
+
+    Args:
+        addon_id: Addon to reset icon for. None for the current addon.
+
+    Returns:
+        True if icon was successfully reset, False if default icon not found.
+    """
+    log = _get_icon_log()
+    addon = xbmcaddon.Addon(addon_id) if addon_id else xbmcaddon.Addon()
+    addon_path = addon.getAddonInfo('path')
+
+    default_path = os.path.join(addon_path, 'icon_default.png')
+    icon_path = os.path.join(addon_path, 'icon.png')
+
+    # Remove custom icon backup
+    addon_data = xbmcvfs.translatePath(addon.getAddonInfo('profile'))
+    custom_backup = os.path.join(addon_data, 'custom_icon.png')
+    if xbmcvfs.exists(custom_backup):
+        xbmcvfs.delete(custom_backup)
+        log.debug("Removed custom icon backup", event="icon.backup_removed",
+                  path=custom_backup)
+
+    if xbmcvfs.exists(default_path):
+        result = xbmcvfs.copy(default_path, icon_path)
+        if result:
+            log.info("Icon reset to default", event="icon.reset",
+                     addon_id=addon.getAddonInfo('id'))
+        else:
+            log.warning("Failed to restore default icon",
+                        event="icon.reset_fail", source=default_path)
+        return result
+
+    log.warning("Default icon not found", event="icon.default_missing",
+                path=default_path)
+    return False
+
+
+def restore_custom_icon(addon_id: Optional[str] = None) -> bool:
+    """Restore custom icon from addon_data after an addon/clone update.
+
+    No-op if no custom icon was previously set. Called on service startup
+    to handle the case where a Kodi addon update overwrote icon.png.
+
+    Args:
+        addon_id: Addon to restore icon for. None for the current addon.
+
+    Returns:
+        True if custom icon was restored, False if none was set.
+    """
+    log = _get_icon_log()
+    addon = xbmcaddon.Addon(addon_id) if addon_id else xbmcaddon.Addon()
+    addon_data = xbmcvfs.translatePath(addon.getAddonInfo('profile'))
+    custom_backup = os.path.join(addon_data, 'custom_icon.png')
+    if xbmcvfs.exists(custom_backup):
+        icon_path = os.path.join(addon.getAddonInfo('path'), 'icon.png')
+        result = xbmcvfs.copy(custom_backup, icon_path)
+        if result:
+            log.info("Custom icon restored after update", event="icon.restore",
+                     addon_id=addon.getAddonInfo('id'))
+        else:
+            log.warning("Failed to restore custom icon",
+                        event="icon.restore_fail", source=custom_backup)
+        return result
+    log.debug("No custom icon to restore", event="icon.restore_skip")
+    return False
 
 
 # =============================================================================
