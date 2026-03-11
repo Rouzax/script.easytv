@@ -37,6 +37,7 @@ import xbmcvfs
 from resources.lib.constants import (
     KODI_HOME_WINDOW_ID, ADDON_RESTART_DELAY_MS,
     SERVICE_POLL_SLEEP_MS, SERVICE_POLL_TIMEOUT_TICKS,
+    PROP_SERVICE_RUNNING, PROP_VERSION, PROP_SERVICE_PATH,
 )
 from resources.lib.utils import (
     lang, get_logger, get_bool_setting, get_int_setting,
@@ -289,9 +290,9 @@ def _handle_special_modes(mode, addon, log):
 
 def _check_service_running(window, log):
     """Check if EasyTV service is running. Returns True if running."""
-    window.setProperty('EasyTV_service_running', 'marco')
+    window.setProperty(PROP_SERVICE_RUNNING, 'marco')
     count = 0
-    while window.getProperty('EasyTV_service_running') == 'marco':
+    while window.getProperty(PROP_SERVICE_RUNNING) == 'marco':
         count += 1
         if count > SERVICE_POLL_TIMEOUT_TICKS:
             return False
@@ -302,7 +303,7 @@ def _check_service_running(window, log):
 def _handle_version_mismatch(addon_version, addon_version_str, addon_id, script_path, script_name, window, dialog, log):
     """Check version compatibility. Returns True if OK to proceed."""
     try:
-        service_version_str = window.getProperty("EasyTV.Version")
+        service_version_str = window.getProperty(PROP_VERSION)
         if not service_version_str:
             service_version = (0, 0, 0, 0, 0)
             service_version_str = "0.0.0"
@@ -347,7 +348,7 @@ def _handle_version_mismatch(addon_version, addon_version_str, addon_id, script_
             import os
             # Use main addon's update_clone.py, not the clone's old version
             # This ensures clones get the latest update logic (e.g., fixed settings replacement)
-            service_path = window.getProperty("EasyTV.ServicePath")
+            service_path = window.getProperty(PROP_SERVICE_PATH)
             update_script = os.path.join(service_path, 'resources', 'update_clone.py')
             xbmc.executebuiltin(
                 f'RunScript({update_script},{service_path},'
@@ -377,7 +378,7 @@ if __name__ == "__main__":
     dialog = xbmcgui.Dialog()
 
     # Check service status
-    if window.getProperty('EasyTV_service_running') == 'starting':
+    if window.getProperty(PROP_SERVICE_RUNNING) == 'starting':
         dialog.ok("EasyTV", lang(32115) + '\n' + lang(32116))
         sys.exit()
 

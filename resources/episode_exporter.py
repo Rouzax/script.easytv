@@ -34,7 +34,11 @@ from typing import cast
 # Import shared utilities
 from resources.lib.utils import lang, json_query, get_logger, get_bool_setting
 from resources.lib.ui.dialogs import show_confirm, show_select
-from resources.lib.constants import KODI_HOME_WINDOW_ID, EXPORT_COMPLETE_DELAY_MS
+from resources.lib.constants import (
+    KODI_HOME_WINDOW_ID,
+    EXPORT_COMPLETE_DELAY_MS,
+    PROP_SHOWS_WITH_NEXT_EPISODES,
+)
 
 
 __addon__        = xbmcaddon.Addon('script.easytv')
@@ -181,7 +185,7 @@ def get_TVshows():
 		shows_retrieved = {}
 
 
-	shows_from_service = WINDOW.getProperty("EasyTV.shows_with_next_episodes")
+	shows_from_service = WINDOW.getProperty(PROP_SHOWS_WITH_NEXT_EPISODES)
 
 	if shows_from_service:
 		show_id_list = ast.literal_eval(shows_from_service)

@@ -44,6 +44,8 @@ from resources.lib.constants import (
     DIALOG_WAIT_SLEEP_MS,
     DIALOG_WAIT_MAX_TICKS,
     PROP_ART_FETCHED,
+    PROP_PLAYLIST_RUNNING,
+    PROP_RANDOM_ORDER_SHUFFLE,
 )
 from resources.lib.data.queries import (
     get_clear_video_playlist_query,
@@ -335,7 +337,7 @@ def build_episode_list(
             log.debug("Starting playback from episode list")
             
             # Mark playlist as running in listview mode
-            WINDOW.setProperty("EasyTV.playlist_running", 'listview')
+            WINDOW.setProperty(PROP_PLAYLIST_RUNNING, 'listview')
             
             # Clear and rebuild playlist
             # This approach is needed because .strm files won't start via JSON-RPC
@@ -357,7 +359,7 @@ def build_episode_list(
             list_window.reset_state()
             
             # Notify service to reshuffle random order shows
-            WINDOW.setProperty("EasyTV.random_order_shuffle", 'true')
+            WINDOW.setProperty(PROP_RANDOM_ORDER_SHUFFLE, 'true')
         
         # Check if we should stay open after playback
         if not config.skin_return:
@@ -370,6 +372,6 @@ def build_episode_list(
     del player
     
     # Final notification to service
-    WINDOW.setProperty("EasyTV.random_order_shuffle", 'true')
+    WINDOW.setProperty(PROP_RANDOM_ORDER_SHUFFLE, 'true')
     
     log.info("Browse mode closed", event="browse.stop")

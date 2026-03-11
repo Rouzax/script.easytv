@@ -68,6 +68,7 @@ from resources.lib.constants import (
     SELECTOR_SAVE,
     SELECTOR_SEARCH,
     THEME_COLORS,
+    SETTING_THEME,
 )
 from resources.lib.utils import get_logger, json_query, lang
 from resources.lib.data.queries import get_playlist_files_query
@@ -304,7 +305,7 @@ class CountdownDialog(xbmcgui.WindowXMLDialog):
         # WindowXMLDialog focusedcolor, so we set it via Python)
         import xbmcaddon
         addon = xbmcaddon.Addon(self._addon_id) if self._addon_id else xbmcaddon.Addon()
-        theme = addon.getSetting('theme') or '0'
+        theme = addon.getSetting(SETTING_THEME) or '0'
         colors = THEME_COLORS.get(theme, THEME_COLORS['0'])
         focused_color = colors['EasyTV.ButtonTextFocused']
 
@@ -453,7 +454,7 @@ class ConfirmDialog(xbmcgui.WindowXMLDialog):
 
         import xbmcaddon
         addon = xbmcaddon.Addon(self._addon_id) if self._addon_id else xbmcaddon.Addon()
-        theme = addon.getSetting('theme') or '0'
+        theme = addon.getSetting(SETTING_THEME) or '0'
         colors = THEME_COLORS.get(theme, THEME_COLORS['0'])
         focused_color = colors['EasyTV.ButtonTextFocused']
 
@@ -671,7 +672,7 @@ class ShowSelectorDialog(xbmcgui.WindowXMLDialog):
 
         import xbmcaddon
         addon = xbmcaddon.Addon(self._addon_id) if self._addon_id else xbmcaddon.Addon()
-        theme = addon.getSetting('theme') or '0'
+        theme = addon.getSetting(SETTING_THEME) or '0'
         colors = THEME_COLORS.get(theme, THEME_COLORS['0'])
         focused_color = colors['EasyTV.ButtonTextFocused']
 

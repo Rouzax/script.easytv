@@ -89,6 +89,14 @@ from resources.lib.constants import (
     # Playlist continuation
     PROP_PLAYLIST_CONFIG,
     PROP_PLAYLIST_REGENERATE,
+    # Service / system properties
+    PROP_SERVICE_RUNNING,
+    PROP_VERSION,
+    PROP_SERVICE_PATH,
+    PROP_PLAYLIST_RUNNING,
+    PROP_RANDOM_ORDER_SHUFFLE,
+    PROP_SHOWS_WITH_NEXT_EPISODES,
+    SETTING_MULTI_INSTANCE_SYNC,
 )
 from resources.lib.utils import (
     get_logger,
@@ -254,9 +262,9 @@ class ServiceDaemon:
         
         # Set initial window properties
         version_str = self._addon.getAddonInfo('version')
-        self._window.setProperty("EasyTV.Version", version_str)
-        self._window.setProperty("EasyTV.ServicePath", str(self._addon.getAddonInfo('path')))
-        self._window.setProperty('EasyTV_service_running', 'starting')
+        self._window.setProperty(PROP_VERSION, version_str)
+        self._window.setProperty(PROP_SERVICE_PATH, str(self._addon.getAddonInfo('path')))
+        self._window.setProperty(PROP_SERVICE_RUNNING, 'starting')
         
         # Create components (done in initialize())
         self._player: Optional[PlaybackMonitor] = None
@@ -306,7 +314,7 @@ class ServiceDaemon:
         )
         
         # Initialize playlist running property
-        self._window.setProperty("EasyTV.playlist_running", '')
+        self._window.setProperty(PROP_PLAYLIST_RUNNING, '')
         
         # Perform initial library scan with retry logic
         self._initial_library_scan()
@@ -315,7 +323,7 @@ class ServiceDaemon:
         self._initialize_storage()
         
         # Track initial sync setting for change detection
-        self._sync_enabled = get_bool_setting('multi_instance_sync')
+        self._sync_enabled = get_bool_setting(SETTING_MULTI_INSTANCE_SYNC)
         
         # Validate settings after library scan (removes orphaned show IDs)
         if self._all_shows_list:
@@ -336,19 +344,19 @@ class ServiceDaemon:
         at regular intervals to handle state changes.
         
         Lifecycle:
-            1. Sets 'EasyTV_service_running' property to 'true'
+            1. Sets PROP_SERVICE_RUNNING property to 'true'
             2. Optionally shows startup notification (if enabled)
             3. Enters main loop processing events every DAEMON_LOOP_SLEEP_MS
             
         Exit Conditions:
             - Kodi abort requested (shutdown/restart)
-            - 'EasyTV_service_running' property cleared
+            - PROP_SERVICE_RUNNING property cleared
         """
         assert self._monitor is not None
         assert self._player is not None
         assert self._episode_tracker is not None
 
-        self._window.setProperty('EasyTV_service_running', 'true')
+        self._window.setProperty(PROP_SERVICE_RUNNING, 'true')
 
         # Restore custom icon if one was set before an addon update
         restore_custom_icon()
@@ -368,7 +376,7 @@ class ServiceDaemon:
         
         # Main loop
         while (not self._monitor.abortRequested() and 
-               self._window.getProperty('EasyTV_service_running')):
+               self._window.getProperty(PROP_SERVICE_RUNNING)):
             xbmc.sleep(DAEMON_LOOP_SLEEP_MS)
             try:
                 self._process_events()
@@ -422,9 +430,9 @@ class ServiceDaemon:
             )
         
         # Handle random order shuffle request
-        shuffle_request = self._window.getProperty("EasyTV.random_order_shuffle")
+        shuffle_request = self._window.getProperty(PROP_RANDOM_ORDER_SHUFFLE)
         if shuffle_request == 'true':
-            self._window.setProperty("EasyTV.random_order_shuffle", 'false')
+            self._window.setProperty(PROP_RANDOM_ORDER_SHUFFLE, 'false')
             self._log.debug("Reshuffling random order shows")
             self._reshuffle_random_order_shows()
         
@@ -832,7 +840,7 @@ class ServiceDaemon:
                 total_tracked=len(self._state.shows_with_next_episodes)
             )
             self._window.setProperty(
-                "EasyTV.shows_with_next_episodes",
+                PROP_SHOWS_WITH_NEXT_EPISODES,
                 str(self._state.shows_with_next_episodes)
             )
         
@@ -853,7 +861,7 @@ class ServiceDaemon:
                 total_tracked=len(self._state.shows_with_next_episodes)
             )
             self._window.setProperty(
-                "EasyTV.shows_with_next_episodes",
+                PROP_SHOWS_WITH_NEXT_EPISODES,
                 str(self._state.shows_with_next_episodes)
             )
     
@@ -1065,7 +1073,7 @@ class ServiceDaemon:
             # Check for abort
             if self._monitor.abortRequested():
                 self._log.debug("Library scan aborted")
-                self._window.setProperty("EasyTV.shows_with_next_episodes", "[]")
+                self._window.setProperty(PROP_SHOWS_WITH_NEXT_EPISODES, "[]")
                 return
             
             # Query for shows with unwatched episodes
@@ -1102,7 +1110,7 @@ class ServiceDaemon:
             max_retries=DB_STARTUP_MAX_RETRIES
         )
         self._all_shows_list = []
-        self._window.setProperty("EasyTV.shows_with_next_episodes", "[]")
+        self._window.setProperty(PROP_SHOWS_WITH_NEXT_EPISODES, "[]")
     
     def _retrieve_all_show_ids(self) -> None:
         """
@@ -1483,7 +1491,7 @@ class ServiceDaemon:
             
             # Update window property with tracked shows
             self._window.setProperty(
-                "EasyTV.shows_with_next_episodes",
+                PROP_SHOWS_WITH_NEXT_EPISODES,
                 str(self._state.shows_with_next_episodes)
             )
         
@@ -1634,7 +1642,7 @@ class ServiceDaemon:
         old_include_positioned_specials = self._settings.include_positioned_specials
         
         # Check if multi_instance_sync setting changed
-        new_sync_enabled = get_bool_setting('multi_instance_sync')
+        new_sync_enabled = get_bool_setting(SETTING_MULTI_INSTANCE_SYNC)
         sync_changed = new_sync_enabled != self._sync_enabled
         
         if sync_changed:
