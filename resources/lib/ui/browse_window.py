@@ -275,7 +275,7 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         list_item.setProperty("numskipped", num_skipped)
         list_item.setProperty("lastwatched", lw_time)
         list_item.setProperty("percentplayed", pct_played)
-        list_item.setProperty("progress_pct", pct_raw)
+        list_item.setProperty("ProgressPercent", pct_raw)
         list_item.setProperty("episodeno", ep_no)
         list_item.setProperty("watched", 'false')
         list_item.setProperty('ID', str(show_id))
