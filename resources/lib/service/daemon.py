@@ -61,6 +61,7 @@ from __future__ import annotations
 import ast
 import contextlib
 import json
+import os
 import random
 import time
 from dataclasses import dataclass, field
@@ -99,6 +100,7 @@ from resources.lib.utils import (
     json_query,
     lang,
     log_timing,
+    restore_custom_icon,
     runtime_converter,
     service_heartbeat,
 )
@@ -348,10 +350,18 @@ class ServiceDaemon:
 
         self._window.setProperty('EasyTV_service_running', 'true')
 
+        # Restore custom icon if one was set before an addon update
+        restore_custom_icon()
+
         # Show startup notification if enabled
         if self._settings.startup:
+            icon = os.path.join(
+                xbmcaddon.Addon().getAddonInfo('path'), 'icon.png'
+            )
             xbmc.executebuiltin(
-                'Notification(%s,%s,%i)' % ('EasyTV', lang(32173), NOTIFICATION_DURATION_MS)
+                'Notification(%s,%s,%i,%s)' % (
+                    'EasyTV', lang(32173), NOTIFICATION_DURATION_MS, icon
+                )
             )
         
         self._log.info("Daemon loop started", event="service.loop_start")

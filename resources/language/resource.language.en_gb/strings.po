@@ -1222,3 +1222,38 @@ msgstr ""
 msgctxt "#32734"
 msgid "Cancel"
 msgstr ""
+
+#. Settings: Appearance - Set custom icon button
+msgctxt "#32735"
+msgid "Set custom icon"
+msgstr ""
+
+#. Settings: Appearance - Set custom icon help
+msgctxt "#32736"
+msgid "Choose an icon image for EasyTV. This replaces the addon icon shown in Kodi menus and notifications. A restart may be needed for the change to appear everywhere."
+msgstr ""
+
+#. Settings: Appearance - Reset icon button
+msgctxt "#32737"
+msgid "Reset to default icon"
+msgstr ""
+
+#. Settings: Appearance - Reset icon help
+msgctxt "#32738"
+msgid "Restore the original EasyTV icon."
+msgstr ""
+
+#. Dialog heading: icon file browser
+msgctxt "#32739"
+msgid "Select icon image"
+msgstr ""
+
+#. Notification: icon updated
+msgctxt "#32740"
+msgid "Icon updated"
+msgstr ""
+
+#. Notification: icon reset
+msgctxt "#32741"
+msgid "Icon reset to default"
+msgstr ""
