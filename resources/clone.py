@@ -59,7 +59,7 @@ from typing import Optional
 from xml.etree import ElementTree as et
 
 # Import shared utilities
-from resources.lib.utils import lang, get_logger, sanitize_filename
+from resources.lib.utils import lang, get_logger, sanitize_filename, restart_addon
 from resources.lib.ui.dialogs import show_confirm
 from resources.lib.constants import ADDON_ENABLE_DELAY_MS
 
@@ -278,9 +278,7 @@ def Main():
         
         progress.update(95, "Enabling clone...")
         # Now enable the newly discovered addon
-        xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Addons.SetAddonEnabled","id":1,"params":{"addonid":"%s","enabled":false}}' % san_name)
-        xbmc.sleep(ADDON_ENABLE_DELAY_MS)
-        xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Addons.SetAddonEnabled","id":1,"params":{"addonid":"%s", "enabled":true}}' % san_name)
+        restart_addon(san_name, ADDON_ENABLE_DELAY_MS)
         
         # Give Kodi time to fully enable the addon
         xbmc.sleep(1000)

@@ -1098,6 +1098,29 @@ def service_heartbeat() -> None:
         window.setProperty(PROP_SERVICE_RUNNING, 'polo')
 
 
+def restart_addon(addon_id: str, delay_ms: int = 500) -> None:
+    """Disable and re-enable a Kodi addon to force a restart.
+
+    Args:
+        addon_id: The addon ID to restart.
+        delay_ms: Milliseconds to wait between disable and enable.
+    """
+    import json as _json
+    xbmc.executeJSONRPC(_json.dumps({
+        "jsonrpc": "2.0",
+        "method": "Addons.SetAddonEnabled",
+        "id": 1,
+        "params": {"addonid": addon_id, "enabled": False}
+    }))
+    xbmc.sleep(delay_ms)
+    xbmc.executeJSONRPC(_json.dumps({
+        "jsonrpc": "2.0",
+        "method": "Addons.SetAddonEnabled",
+        "id": 1,
+        "params": {"addonid": addon_id, "enabled": True}
+    }))
+
+
 def parse_lastplayed_date(date_string: str) -> float:
     """
     Parse a lastplayed date string into a Unix timestamp.

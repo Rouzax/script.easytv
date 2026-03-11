@@ -41,7 +41,7 @@ from resources.lib.constants import (
 )
 from resources.lib.utils import (
     lang, get_logger, get_bool_setting, get_int_setting,
-    parse_version, compare_versions
+    parse_version, compare_versions, restart_addon
 )
 from resources.lib.ui.dialogs import show_confirm, show_playlist_selection
 from resources.lib.playback.browse_mode import EpisodeListConfig, build_episode_list
@@ -388,15 +388,7 @@ if __name__ == "__main__":
         if not _check_service_running(window, log):
             log.warning("EasyTV service not running", event="service.missing")
             if show_confirm('EasyTV', lang(32106) + '\n' + lang(32107)):
-                xbmc.executeJSONRPC(
-                    '{"jsonrpc":"2.0","method":"Addons.SetAddonEnabled",'
-                    '"id":1,"params":{"addonid":"script.easytv","enabled":false}}'
-                )
-                xbmc.sleep(ADDON_RESTART_DELAY_MS)
-                xbmc.executeJSONRPC(
-                    '{"jsonrpc":"2.0","method":"Addons.SetAddonEnabled",'
-                    '"id":1,"params":{"addonid":"script.easytv","enabled":true}}'
-                )
+                restart_addon("script.easytv", ADDON_RESTART_DELAY_MS)
             sys.exit()
 
         # Check version compatibility
