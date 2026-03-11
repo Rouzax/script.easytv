@@ -30,14 +30,20 @@
             <height>35</height>
             <font>font10</font>
             <textcolor>FFAAAAAA</textcolor>
-            <label>$ADDON[script.easytv 32220]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Season][/COLOR]  •  $ADDON[script.easytv 32221]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Episode][/COLOR]  •  $ADDON[script.easytv 32222]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(percentplayed)][/COLOR]  •  $ADDON[script.easytv 32223] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numondeck)][/COLOR]  •  $ADDON[script.easytv 32224] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numwatched)][/COLOR]  •  $ADDON[script.easytv 32225] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numskipped)][/COLOR]</label>
+            <label>$ADDON[script.easytv 32220]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Season][/COLOR]  •  $ADDON[script.easytv 32221]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Episode][/COLOR]  •  $ADDON[script.easytv 32222]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(percentplayed)][/COLOR]  •  $ADDON[script.easytv 32223] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numondeck)][/COLOR]  •  $ADDON[script.easytv 32224] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numwatched)][/COLOR]  •  $ADDON[script.easytv 32225] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numskipped)][/COLOR]  •  $ADDON[script.easytv 32065] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(lastwatched)][/COLOR]</label>
         </control>
 
         <!-- Main content group -->
         <control type="group">
             <visible>Control.IsVisible(655)</visible>
-            <include>EasyTV_ZoomIn</include>
-            <include>EasyTV_ZoomOut</include>
+            <animation type="WindowOpen" reversible="false">
+                <effect type="fade" start="0" end="100" time="300" tween="sine" easing="in" />
+                <effect type="zoom" start="85" end="100" time="300" center="auto" tween="sine" easing="out" />
+            </animation>
+            <animation type="WindowClose" reversible="false">
+                <effect type="zoom" start="100" end="85" center="auto" tween="sine" easing="out" time="300" />
+                <effect type="fade" start="100" end="0" tween="cubic" easing="out" time="300" />
+            </animation>
 
             <!-- ==================== LEFT SIDE: FANART WITH REFLECTION ==================== -->
             <control type="group">
@@ -104,7 +110,7 @@
                         <top>5</top>
                         <width>660</width>
                         <height>45</height>
-                        <texture colordiffuse="12ffffff">common/white.png</texture>
+                        <texture colordiffuse="0cffffff">common/white.png</texture>
                     </control>
 
                     <!-- Show title only -->
@@ -114,7 +120,7 @@
                         <width>630</width>
                         <height>30</height>
                         <font>font12</font>
-                        <textcolor>FFAAAAAA</textcolor>
+                        <textcolor>FFCCCCCC</textcolor>
                         <label>$INFO[ListItem.Label]</label>
                     </control>
                 </itemlayout>

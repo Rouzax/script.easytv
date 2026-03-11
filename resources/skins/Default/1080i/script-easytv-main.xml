@@ -25,8 +25,14 @@
         <!-- Main content group -->
         <control type="group">
             <visible>Control.IsVisible(655)</visible>
-            <include>EasyTV_ZoomIn</include>
-            <include>EasyTV_ZoomOut</include>
+            <animation type="WindowOpen" reversible="false">
+                <effect type="fade" start="0" end="100" time="300" tween="sine" easing="in" />
+                <effect type="zoom" start="85" end="100" time="300" center="auto" tween="sine" easing="out" />
+            </animation>
+            <animation type="WindowClose" reversible="false">
+                <effect type="zoom" start="100" end="85" center="auto" tween="sine" easing="out" time="300" />
+                <effect type="fade" start="100" end="0" tween="cubic" easing="out" time="300" />
+            </animation>
 
             <!-- ==================== LEFT SIDE: INFO PANEL ==================== -->
             <control type="group">
@@ -47,10 +53,13 @@
                 </control>
 
                 <!-- Separator line -->
-                <include content="EasyTV_Separator">
-                    <param name="top">365</param>
-                    <param name="width">620</param>
-                </include>
+                <control type="image">
+                    <left>0</left>
+                    <top>365</top>
+                    <width>620</width>
+                    <height>2</height>
+                    <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">common/line_fade.png</texture>
+                </control>
 
                 <!-- Show Title -->
                 <control type="label">
@@ -75,10 +84,13 @@
                 </control>
 
                 <!-- Separator line -->
-                <include content="EasyTV_Separator">
-                    <param name="top">480</param>
-                    <param name="width">620</param>
-                </include>
+                <control type="image">
+                    <left>0</left>
+                    <top>480</top>
+                    <width>620</width>
+                    <height>2</height>
+                    <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">common/line_fade.png</texture>
+                </control>
 
                 <!-- Season / Episode / Progress info -->
                 <control type="label">
@@ -102,21 +114,35 @@
                     <label>$ADDON[script.easytv 32223] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numondeck)][/COLOR]  •  $ADDON[script.easytv 32224] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numwatched)][/COLOR]  •  $ADDON[script.easytv 32225] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numskipped)][/COLOR]</label>
                 </control>
 
+                <!-- Last Watched -->
+                <control type="label">
+                    <left>0</left>
+                    <top>575</top>
+                    <width>620</width>
+                    <height>30</height>
+                    <font>font10</font>
+                    <textcolor>FFAAAAAA</textcolor>
+                    <label>$ADDON[script.easytv 32065]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(lastwatched)][/COLOR]</label>
+                </control>
+
                 <!-- Separator line -->
-                <include content="EasyTV_Separator">
-                    <param name="top">585</param>
-                    <param name="width">620</param>
-                </include>
+                <control type="image">
+                    <left>0</left>
+                    <top>615</top>
+                    <width>620</width>
+                    <height>2</height>
+                    <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">common/line_fade.png</texture>
+                </control>
 
                 <!-- Plot -->
                 <control type="textbox">
                     <left>0</left>
-                    <top>605</top>
+                    <top>635</top>
                     <width>620</width>
-                    <height>320</height>
+                    <height>290</height>
                     <font>font12</font>
                     <textcolor>FFCCCCCC</textcolor>
-                    <label>[COLOR $INFO[Window.Property(EasyTV.Accent)]]$ADDON[script.easytv 32226]... [/COLOR]$INFO[Container(655).ListItem.Plot]</label>
+                    <label>[COLOR $INFO[Window.Property(EasyTV.Accent)]]$ADDON[script.easytv 32226]  [/COLOR]$INFO[Container(655).ListItem.Plot]</label>
                 </control>
             </control>
 
@@ -152,7 +178,7 @@
                         <top>20</top>
                         <width>190</width>
                         <height>285</height>
-                        <texture>IconWatchedNF.png</texture>
+                        <texture>IconWatched.png</texture>
                         <visible>ListItem.IsSelected</visible>
                     </control>
 
@@ -162,14 +188,17 @@
                         <top>20</top>
                         <width>190</width>
                         <height>285</height>
-                        <texture>IconWatchedNF.png</texture>
+                        <texture>IconWatched.png</texture>
                         <visible>ListItem.Property(watched)</visible>
                     </control>
                 </itemlayout>
 
                 <!-- Focused poster item -->
                 <focusedlayout width="220" height="360">
-                    <include>EasyTV_FocusBounce</include>
+                    <animation type="Focus" reversible="false">
+                        <effect type="zoom" start="96.5" end="100" time="150" tween="sine" easing="inout" center="auto" />
+                        <effect type="fade" start="20" end="100" time="150" tween="back" easing="out" />
+                    </animation>
 
                     <!-- Border line -->
                     <control type="image">
@@ -196,7 +225,7 @@
                         <top>20</top>
                         <width>190</width>
                         <height>285</height>
-                        <texture>IconWatchedFO.png</texture>
+                        <texture>IconWatched.png</texture>
                         <visible>ListItem.IsSelected</visible>
                     </control>
 
@@ -206,7 +235,7 @@
                         <top>20</top>
                         <width>190</width>
                         <height>285</height>
-                        <texture>IconWatchedFO.png</texture>
+                        <texture>IconWatched.png</texture>
                         <visible>ListItem.Property(watched)</visible>
                     </control>
                 </focusedlayout>

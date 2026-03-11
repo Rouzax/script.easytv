@@ -46,7 +46,6 @@ from resources.lib.constants import (
     KODI_HOME_WINDOW_ID,
     MAX_ITEMS_HARD_LIMIT,
     SECONDS_PER_DAY,
-    SINGULAR_DAY_VALUE,
     ACTION_PREVIOUS_MENU,
     ACTION_NAV_BACK,
     ACTION_CONTEXT_MENU,
@@ -58,11 +57,6 @@ from resources.lib.constants import (
     CONTEXT_IGNORE_SHOW,
     CONTEXT_UPDATE_LIBRARY,
     CONTEXT_REFRESH,
-    CONTROL_OK_BUTTON,
-    CONTROL_HEADING,
-    CONTROL_LIST,
-    CONTROL_CANCEL_BUTTON,
-    CONTROL_EXTRA_BUTTON2,
 )
 from resources.lib.data.storage import get_storage
 from resources.lib.utils import get_logger, lang, json_query
@@ -91,9 +85,9 @@ WINDOW = xbmcgui.Window(KODI_HOME_WINDOW_ID)
 class BrowseWindowConfig:
     """
     Configuration for the BrowseWindow.
-    
+
     Attributes:
-        skin: Skin style (0=DialogSelect, 1=main, 2=BigScreenList)
+        skin: Skin style (0=CardList, 1=Posters, 2=BigScreen, 3=SplitView)
         limit_shows: Whether to limit the number of shows displayed
         window_length: Maximum number of shows to display when limit_shows is True
         skin_return: Whether to return to the window after playback
@@ -151,11 +145,10 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         self._play_requested: bool = False
         self._should_close: bool = False
         self._needs_refresh: bool = False
-        self._ctrl6failed: bool = False
-        
+
         # Control references (set during onInit)
         self.name_list: Optional[xbmcgui.ControlList] = None
-        
+
         # Clear running list property
         WINDOW.setProperty('runninglist', '')
     
@@ -176,18 +169,9 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         self._load_items = False
         self._log.debug("Window initializing")
 
-        skin = self._config.skin
-        
-        if skin == 0:
-            # DialogSelect skin
-            self._setup_dialog_select_skin()
-        else:
-            # Custom skins (BigScreenList, main)
-            self.name_list = cast(xbmcgui.ControlList, self.getControl(655))
-        
-        if self._ctrl6failed:
-            return
-        
+        # All skins use control ID 655
+        self.name_list = cast(xbmcgui.ControlList, self.getControl(655))
+
         # Refresh from shared storage if stale (multi-instance sync)
         # This ensures browse window shows fresh data on each open
         if self._data:
@@ -202,53 +186,11 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
                 except Exception as e:
                     self._log.warning("Refresh failed, using cached data",
                                      event="ui.refresh_error", error=str(e))
-        
+
         self._populate_list()
         assert self.name_list is not None
         self.setFocus(self.name_list)
         self._log.debug("Window initialization complete")
-    
-    def _setup_dialog_select_skin(self) -> None:
-        """Set up controls for the DialogSelect skin style."""
-        try:
-            ok_button = cast(xbmcgui.ControlButton, self.getControl(CONTROL_OK_BUTTON))
-            ok_button.setLabel(lang(32105))
-
-            heading = cast(xbmcgui.ControlButton, self.getControl(CONTROL_HEADING))
-            # Get addon name dynamically (supports clones with custom names)
-            addon_name = xbmcaddon.Addon().getAddonInfo('name')
-            heading.setLabel(addon_name)
-            heading.setVisible(True)
-
-            self.name_list = cast(xbmcgui.ControlList, self.getControl(CONTROL_LIST))
-            control_3 = self.getControl(3)
-            control_3.setVisible(False)
-            ok_button.controlRight(self.name_list)
-            
-            # Hide the Cancel button (ID 7) and Extra button 2 (ID 8)
-            # These buttons cause unintended playback when clicked because
-            # onClick receives their control ID which falls through to list handling
-            try:
-                cancel_button = self.getControl(CONTROL_CANCEL_BUTTON)
-                cancel_button.setVisible(False)
-            except RuntimeError:
-                pass  # Button may not exist in all skins
-            
-            try:
-                extra_button2 = self.getControl(CONTROL_EXTRA_BUTTON2)
-                extra_button2.setVisible(False)
-            except RuntimeError:
-                pass  # Button may not exist in all skins
-            
-        except RuntimeError:
-            # Control 3 doesn't work in some skins - fallback needed
-            self._ctrl6failed = True
-            self._log.warning(
-                "DialogSelect skin control setup failed",
-                event="ui.fallback",
-                skin=self._config.skin
-            )
-            self.close()
     
     def _populate_list(self) -> None:
         """Populate the list with show data."""
@@ -256,65 +198,42 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         self.name_list.reset()  # Clear existing items before repopulating
         now = time.time()
         count = 0
-        skin = self._config.skin
-        
+
         self._log.debug("Window data loaded", show_count=len(self._data))
-        
+
         for i, show in enumerate(self._data):
             # Check limits
             if count >= MAX_ITEMS_HARD_LIMIT:
                 break
             if self._config.limit_shows and i >= self._config.window_length:
                 break
-            
+
             show_id = show[1]
             lastplayed = show[0]
-            
+
             # Build list item
-            list_item = self._create_list_item(show_id, lastplayed, now, skin)
+            list_item = self._create_list_item(show_id, lastplayed, now)
             self.name_list.addItem(list_item)
             count += 1
-    
-    def _create_list_item(self, show_id: int, lastplayed: float, 
-                          now: float, skin: int) -> xbmcgui.ListItem:
+
+    def _create_list_item(self, show_id: int, lastplayed: float,
+                          now: float) -> xbmcgui.ListItem:
         """
         Create a list item for a show.
-        
+
         Args:
             show_id: The TV show ID
             lastplayed: Timestamp of last played episode
             now: Current timestamp
-            skin: Current skin style
             
         Returns:
             Configured ListItem for the show
         """
         prop_prefix = f"EasyTV.{show_id}"
         
-        # Get percent played
-        pct_played = WINDOW.getProperty(f"{prop_prefix}.PercentPlayed")
-        
-        # Calculate time since last watched
-        if lastplayed == 0:
-            lw_time = lang(32112)  # "Never"
-        else:
-            gap = round((now - lastplayed) / SECONDS_PER_DAY, 1)
-            if gap == SINGULAR_DAY_VALUE:
-                lw_time = f"{gap} {lang(32113)}"  # "1.0 day"
-            else:
-                lw_time = f"{gap} {lang(32114)}"  # "X.X days"
-        
-        # Format percent played label
-        if pct_played == '0%' and skin == 0:
-            pct = ''
-        elif pct_played == '0%':
-            pct = pct_played
-        else:
-            pct = f"{pct_played}, "
-        
-        label2 = pct if skin != 0 else pct + lw_time
-        
         # Get episode properties
+        pct_played = WINDOW.getProperty(f"{prop_prefix}.PercentPlayed")
+        pct_raw = WINDOW.getProperty(f"{prop_prefix}.PercentPlayedRaw")
         poster = WINDOW.getProperty(f"{prop_prefix}.Art(tvshow.poster)")
         eptitle = WINDOW.getProperty(f"{prop_prefix}.Title")
         plot = WINDOW.getProperty(f"{prop_prefix}.Plot")
@@ -322,40 +241,44 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         episode = WINDOW.getProperty(f"{prop_prefix}.Episode")
         episode_id = WINDOW.getProperty(f"{prop_prefix}.EpisodeID")
         file_path = WINDOW.getProperty(f"{prop_prefix}.File")
-        
-        if skin != 0:
-            # Custom skin - full info
-            title = WINDOW.getProperty(f"{prop_prefix}.TVshowTitle")
-            fanart = WINDOW.getProperty(f"{prop_prefix}.Art(tvshow.fanart)")
-            num_watched = WINDOW.getProperty(f"{prop_prefix}.CountWatchedEps")
-            num_ondeck = WINDOW.getProperty(f"{prop_prefix}.CountonDeckEps")
-            
-            try:
-                num_unwatched = int(WINDOW.getProperty(f"{prop_prefix}.CountUnwatchedEps"))
-                num_ondeck_int = int(num_ondeck) if num_ondeck else 0
-                num_skipped = str(num_unwatched - num_ondeck_int)
-            except ValueError:
-                num_skipped = '0'
-            
-            list_item = xbmcgui.ListItem(label=title, label2=eptitle)
-            list_item.setArt({'thumb': poster})
-            list_item.setProperty("Fanart_Image", fanart)
-            list_item.setProperty("numwatched", num_watched)
-            list_item.setProperty("numondeck", num_ondeck)
-            list_item.setProperty("numskipped", num_skipped)
-            list_item.setProperty("lastwatched", lw_time)
-            list_item.setProperty("percentplayed", pct_played)
-            list_item.setProperty("watched", 'false')
-            list_item.setProperty('ID', str(show_id))
+        title = WINDOW.getProperty(f"{prop_prefix}.TVshowTitle")
+        fanart = WINDOW.getProperty(f"{prop_prefix}.Art(tvshow.fanart)")
+        ep_no = WINDOW.getProperty(f"{prop_prefix}.EpisodeNo")
+        num_watched = WINDOW.getProperty(f"{prop_prefix}.CountWatchedEps")
+        num_ondeck = WINDOW.getProperty(f"{prop_prefix}.CountonDeckEps")
+
+        # Calculate time since last watched
+        if lastplayed == 0:
+            lw_time = lang(32112)  # "Never"
         else:
-            # DialogSelect skin - minimal info
-            ep_no = WINDOW.getProperty(f"{prop_prefix}.EpisodeNo")
-            show_title = WINDOW.getProperty(f"{prop_prefix}.TVshowTitle")
-            title = f"{show_title} {ep_no}"
-            list_item = xbmcgui.ListItem(label=title, label2=label2)
-            list_item.setArt({'thumb': poster})
-        
-        # Common properties
+            gap_days = (now - lastplayed) / SECONDS_PER_DAY
+            if gap_days < 1:
+                lw_time = lang(32120)  # "Today"
+            elif gap_days < 2:
+                lw_time = f"1 {lang(32113)}"  # "1 day"
+            else:
+                lw_time = f"{int(gap_days)} {lang(32114)}"  # "X days"
+
+        # Calculate skipped episodes
+        try:
+            num_unwatched = int(WINDOW.getProperty(f"{prop_prefix}.CountUnwatchedEps"))
+            num_ondeck_int = int(num_ondeck) if num_ondeck else 0
+            num_skipped = str(num_unwatched - num_ondeck_int)
+        except ValueError:
+            num_skipped = '0'
+
+        list_item = xbmcgui.ListItem(label=title, label2=eptitle)
+        list_item.setArt({'thumb': poster, 'icon': poster})
+        list_item.setProperty("Fanart_Image", fanart)
+        list_item.setProperty("numwatched", num_watched)
+        list_item.setProperty("numondeck", num_ondeck)
+        list_item.setProperty("numskipped", num_skipped)
+        list_item.setProperty("lastwatched", lw_time)
+        list_item.setProperty("percentplayed", pct_played)
+        list_item.setProperty("progress_pct", pct_raw)
+        list_item.setProperty("episodeno", ep_no)
+        list_item.setProperty("watched", 'false')
+        list_item.setProperty('ID', str(show_id))
         list_item.setProperty("file", file_path)
         list_item.setProperty("EpisodeID", episode_id)
         list_item.setInfo('video', {
@@ -364,8 +287,6 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
             'plot': plot,
             'title': eptitle
         })
-        list_item.setLabel(title)
-        list_item.setArt({'icon': poster})
         
         return list_item
     
@@ -434,16 +355,7 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         """
         assert self.name_list is not None
         self._log.debug("Control clicked", control_id=controlID)
-        
-        # Handle Close/Cancel/Extra buttons - all should close without playback
-        # CONTROL_OK_BUTTON (5): Our "Close" button
-        # CONTROL_CANCEL_BUTTON (7): Standard cancel button (hidden but may still receive clicks)
-        # CONTROL_EXTRA_BUTTON2 (8): Extra button (hidden but may still receive clicks)
-        if controlID in (CONTROL_OK_BUTTON, CONTROL_CANCEL_BUTTON, CONTROL_EXTRA_BUTTON2):
-            self._should_close = True
-            self.close()
-            return
-        
+
         pos = self.name_list.getSelectedPosition()
         
         if not BrowseWindow._multiselect:
@@ -530,10 +442,8 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
                 if episode_id:
                     self._log.debug("Processing episode", episode_id=episode_id)
                     
-                    # Update visual state for custom skins
-                    if self._config.skin != 0:
-                        if item.getProperty('watched') == 'false':
-                            item.setProperty("watched", 'true')
+                    if item.getProperty('watched') == 'false':
+                        item.setProperty("watched", 'true')
                     
                     # Build batch query
                     query = {
@@ -616,11 +526,6 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         """Check if a refresh was requested."""
         return self._needs_refresh
     
-    @property
-    def ctrl6failed(self) -> bool:
-        """Check if DialogSelect control setup failed."""
-        return self._ctrl6failed
-    
     def reset_state(self) -> None:
         """Reset state for re-showing the window."""
         self._selected_show = None
@@ -633,15 +538,17 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
 def get_skin_xml_file(skin: int) -> str:
     """
     Get the XML file name for the given skin style.
-    
+
     Args:
-        skin: Skin style (0=DialogSelect, 1=main, 2=BigScreenList)
-        
+        skin: Skin style (0=CardList, 1=Posters, 2=BigScreen, 3=SplitView)
+
     Returns:
         XML filename for the skin
     """
     skins = {
+        0: "script-easytv-cardlist.xml",
         1: "script-easytv-main.xml",
-        2: "script-easytv-BigScreenList.xml"
+        2: "script-easytv-BigScreenList.xml",
+        3: "script-easytv-splitlist.xml"
     }
-    return skins.get(skin, "DialogSelect.xml")
+    return skins.get(skin, "script-easytv-cardlist.xml")

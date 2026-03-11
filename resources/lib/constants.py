@@ -39,6 +39,32 @@ COUNTDOWN_TIMER_LABEL = 3
 COUNTDOWN_SUBTITLE = 4
 
 # =============================================================================
+# Confirm Dialog Control IDs
+# =============================================================================
+CONFIRM_HEADING = 1
+CONFIRM_MESSAGE = 2
+CONFIRM_YES_BUTTON = 10
+CONFIRM_NO_BUTTON = 11
+
+# =============================================================================
+# Select Dialog Control IDs
+# =============================================================================
+SELECT_HEADING = 1
+SELECT_LIST = 100
+
+# =============================================================================
+# Show Selector Dialog Control IDs
+# =============================================================================
+SELECTOR_HEADING = 1
+SELECTOR_SEARCH = 2
+SELECTOR_CLEAR_SEARCH = 5
+SELECTOR_ENABLE_ALL = 10
+SELECTOR_IGNORE_ALL = 11
+SELECTOR_LIST = 100
+SELECTOR_CANCEL = 20
+SELECTOR_SAVE = 21
+
+# =============================================================================
 # Kodi Window IDs
 # =============================================================================
 KODI_HOME_WINDOW_ID = 10000
@@ -346,18 +372,6 @@ CONTEXT_TOGGLE_WATCHED = 150
 CONTEXT_IGNORE_SHOW = 160
 CONTEXT_UPDATE_LIBRARY = 170
 CONTEXT_REFRESH = 180
-
-# =============================================================================
-# Standard Dialog/Window Control IDs
-# =============================================================================
-CONTROL_OK_BUTTON = 5
-CONTROL_HEADING = 1
-CONTROL_LIST = 6
-
-# DialogSelect button control IDs (from Kodi's GUIDialogSelect.cpp)
-# These are additional buttons that may appear in DialogSelect
-CONTROL_CANCEL_BUTTON = 7     # Standard cancel button
-CONTROL_EXTRA_BUTTON2 = 8     # Second extra button
 
 # =============================================================================
 # String Utilities

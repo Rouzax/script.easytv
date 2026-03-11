@@ -116,7 +116,6 @@ class PlaybackMonitor(xbmc.Player):
     
     Args:
         window: The Kodi home window for property access.
-        dialog: The Kodi dialog instance for user prompts.
         get_settings: Callback to get current playback settings.
         get_random_order_shows: Callback to get random order shows list.
         on_refresh_show: Callback to refresh show episode data.
@@ -125,11 +124,10 @@ class PlaybackMonitor(xbmc.Player):
         set_nextprompt_info: Callback to set next prompt episode info.
         logger: Optional logger instance.
     """
-    
+
     def __init__(
         self,
         window: xbmcgui.Window,
-        dialog: xbmcgui.Dialog,
         get_settings: SettingsGetter,
         get_random_order_shows: RandomShowsGetter,
         on_refresh_show: RefreshShowCallback,
@@ -140,9 +138,8 @@ class PlaybackMonitor(xbmc.Player):
     ):
         """Initialize the playback monitor with callbacks."""
         super().__init__()
-        
+
         self._window = window
-        self._dialog = dialog
         self._get_settings = get_settings
         self._get_random_order_shows = get_random_order_shows
         self._on_refresh_show = on_refresh_show
@@ -380,11 +377,13 @@ class PlaybackMonitor(xbmc.Player):
             )
             
             # Show notification dialog
+            from resources.lib.ui.dialogs import show_confirm
             msg = (lang(32161) % (showtitle, stored_seas, stored_epis)) + '\n' + lang(32162)
-            dialog_result = self._dialog.yesno(lang(32160), msg)
+            source_addon_id = self._window.getProperty(PROP_SOURCE_ADDON_ID) or None
+            dialog_result = show_confirm(lang(32160), msg, addon_id=source_addon_id)
             self._log.debug("User dialog result", result=dialog_result)
-            
-            if dialog_result == 0:
+
+            if not dialog_result:
                 # User chose to continue with current episode - unpause
                 xbmc.executeJSONRPC(
                     '{"jsonrpc":"2.0","method":"Player.PlayPause",'

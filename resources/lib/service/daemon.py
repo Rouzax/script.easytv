@@ -209,9 +209,8 @@ class ServiceDaemon:
         self._log = logger or get_logger('daemon')
         self._log.info("Service daemon initializing", event="service.init")
         
-        # Get Kodi window and dialog
+        # Get Kodi window
         self._window = xbmcgui.Window(KODI_HOME_WINDOW_ID)
-        self._dialog = xbmcgui.Dialog()
         
         # Initialize state
         self._state = ServiceState()
@@ -277,7 +276,6 @@ class ServiceDaemon:
         # Create PlaybackMonitor with callbacks
         self._player = PlaybackMonitor(
             window=self._window,
-            dialog=self._dialog,
             get_settings=self._get_playback_settings,
             get_random_order_shows=lambda: self._settings.random_order_shows,
             on_refresh_show=self.refresh_show_episodes,
