@@ -406,7 +406,15 @@ def fetch_unwatched_shows(sort_by: int, sort_reverse: bool, language: str = 'Eng
         shows_str = WINDOW.getProperty(PROP_SHOWS_WITH_NEXT_EPISODES)
         
         if shows_str:
-            shows_from_service = [int(x) for x in ast.literal_eval(shows_str)]
+            try:
+                shows_from_service = [int(x) for x in ast.literal_eval(shows_str)]
+            except (ValueError, SyntaxError) as e:
+                log.warning("Failed to parse shows_with_next_episodes property",
+                            event="data.parse_error", error=str(e))
+                from resources.lib.utils import lang
+                dialog = xbmcgui.Dialog()
+                dialog.ok('EasyTV', lang(32115) + '\n' + lang(32116))
+                sys.exit()
         else:
             # Service not ready - this is handled by the caller
             from resources.lib.utils import lang
@@ -814,17 +822,26 @@ def resolve_istream_episode(
                                     )
                                     
                                     if ondeck_str:
-                                        temp_ondeck_list = ast.literal_eval(ondeck_str)
+                                        try:
+                                            temp_ondeck_list = ast.literal_eval(ondeck_str)
+                                        except (ValueError, SyntaxError):
+                                            log.warning("Malformed ondeck_list property",
+                                                        event="data.parse_error", show_id=now_playing_show_id)
+                                            temp_ondeck_list = []
                                     else:
                                         temp_ondeck_list = []
-                                    
+
                                     # Include offdeck episodes for random order shows
                                     if now_playing_show_id in random_order_shows:
                                         offdeck_str = WINDOW.getProperty(
                                             "EasyTV.%s.offdeck_list" % now_playing_show_id
                                         )
                                         if offdeck_str:
-                                            temp_ondeck_list += ast.literal_eval(offdeck_str)
+                                            try:
+                                                temp_ondeck_list += ast.literal_eval(offdeck_str)
+                                            except (ValueError, SyntaxError):
+                                                log.warning("Malformed offdeck_list property",
+                                                            event="data.parse_error", show_id=now_playing_show_id)
                                     
                                     log.debug("On-deck list for iStream", 
                                              ondeck=temp_ondeck_list, 
