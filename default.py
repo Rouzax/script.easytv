@@ -108,12 +108,14 @@ def main_entry(addon, log):
 
     try:
         selected_shows = ast.literal_eval(window.getProperty("EasyTV.selection"))
-    except (ValueError, SyntaxError):
+    except (ValueError, SyntaxError) as e:
+        log.warning("Failed to parse selection property", event="ui.parse_error", error=str(e))
         selected_shows = []
 
     try:
         random_order_shows = ast.literal_eval(window.getProperty("EasyTV.random_order_shows"))
-    except (ValueError, SyntaxError):
+    except (ValueError, SyntaxError) as e:
+        log.warning("Failed to parse random_order_shows property", event="ui.parse_error", error=str(e))
         random_order_shows = []
 
     population = _get_population(
@@ -359,46 +361,56 @@ def _handle_version_mismatch(addon_version, addon_version_str, addon_id, script_
 
 
 if __name__ == "__main__":
-    addon = xbmcaddon.Addon()
-    addon_version_str = addon.getAddonInfo('version')
-    addon_version = parse_version(addon_version_str)
-    addon_id = addon.getAddonInfo('id')
-    script_path = addon.getAddonInfo('path')
-    script_name = addon.getAddonInfo('Name')
+    try:
+        addon = xbmcaddon.Addon()
+        addon_version_str = addon.getAddonInfo('version')
+        addon_version = parse_version(addon_version_str)
+        addon_id = addon.getAddonInfo('id')
+        script_path = addon.getAddonInfo('path')
+        script_name = addon.getAddonInfo('Name')
 
-    log = get_logger('default')
-    log.info("EasyTV addon started", event="ui.start", addon_id=addon_id, version=addon_version_str)
+        log = get_logger('default')
+        log.info("EasyTV addon started", event="ui.start", addon_id=addon_id, version=addon_version_str)
 
-    # Handle special modes from command line
-    if len(sys.argv) > 1:
-        _handle_special_modes(sys.argv[1], addon, log)
-        sys.exit()
+        # Handle special modes from command line
+        if len(sys.argv) > 1:
+            _handle_special_modes(sys.argv[1], addon, log)
+            sys.exit()
 
-    window = xbmcgui.Window(KODI_HOME_WINDOW_ID)
-    dialog = xbmcgui.Dialog()
+        window = xbmcgui.Window(KODI_HOME_WINDOW_ID)
+        dialog = xbmcgui.Dialog()
 
-    # Check service status
-    if window.getProperty(PROP_SERVICE_RUNNING) == 'starting':
-        dialog.ok("EasyTV", lang(32115) + '\n' + lang(32116))
-        sys.exit()
+        # Check service status
+        if window.getProperty(PROP_SERVICE_RUNNING) == 'starting':
+            dialog.ok("EasyTV", lang(32115) + '\n' + lang(32116))
+            sys.exit()
 
-    if not _check_service_running(window, log):
-        log.warning("EasyTV service not running", event="service.missing")
-        if show_confirm('EasyTV', lang(32106) + '\n' + lang(32107)):
-            xbmc.executeJSONRPC(
-                '{"jsonrpc":"2.0","method":"Addons.SetAddonEnabled",'
-                '"id":1,"params":{"addonid":"script.easytv","enabled":false}}'
-            )
-            xbmc.sleep(ADDON_RESTART_DELAY_MS)
-            xbmc.executeJSONRPC(
-                '{"jsonrpc":"2.0","method":"Addons.SetAddonEnabled",'
-                '"id":1,"params":{"addonid":"script.easytv","enabled":true}}'
-            )
-        sys.exit()
+        if not _check_service_running(window, log):
+            log.warning("EasyTV service not running", event="service.missing")
+            if show_confirm('EasyTV', lang(32106) + '\n' + lang(32107)):
+                xbmc.executeJSONRPC(
+                    '{"jsonrpc":"2.0","method":"Addons.SetAddonEnabled",'
+                    '"id":1,"params":{"addonid":"script.easytv","enabled":false}}'
+                )
+                xbmc.sleep(ADDON_RESTART_DELAY_MS)
+                xbmc.executeJSONRPC(
+                    '{"jsonrpc":"2.0","method":"Addons.SetAddonEnabled",'
+                    '"id":1,"params":{"addonid":"script.easytv","enabled":true}}'
+                )
+            sys.exit()
 
-    # Check version compatibility
-    if not _handle_version_mismatch(addon_version, addon_version_str, addon_id, script_path, script_name, window, dialog, log):
-        sys.exit()
+        # Check version compatibility
+        if not _handle_version_mismatch(addon_version, addon_version_str, addon_id, script_path, script_name, window, dialog, log):
+            sys.exit()
 
-    main_entry(addon, log)
-    log.info("EasyTV addon finished", event="ui.stop")
+        main_entry(addon, log)
+        log.info("EasyTV addon finished", event="ui.stop")
+    except SystemExit:
+        pass  # Normal exit via sys.exit()
+    except Exception:
+        try:
+            log = get_logger('default')
+            log.exception("Unhandled error in EasyTV", event="ui.crash")
+        except Exception:
+            import traceback
+            xbmc.log(f"[EasyTV] Unhandled error: {traceback.format_exc()}", xbmc.LOGERROR)

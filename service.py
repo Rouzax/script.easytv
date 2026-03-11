@@ -49,29 +49,40 @@ def _get_kodi_version() -> str:
 
 
 if __name__ == "__main__":
-    addon = xbmcaddon.Addon()
-    version_str = addon.getAddonInfo('version')
-    version = parse_version(version_str)
-    log = get_logger('service')
+    try:
+        addon = xbmcaddon.Addon()
+        version_str = addon.getAddonInfo('version')
+        version = parse_version(version_str)
+        log = get_logger('service')
 
-    # Startup banner with device identification for multi-instance debugging
-    log.info(
-        "Service started",
-        event="service.start",
-        version=version_str,
-        device=_get_device_name(),
-        kodi=_get_kodi_version()
-    )
+        # Startup banner with device identification for multi-instance debugging
+        log.info(
+            "Service started",
+            event="service.start",
+            version=version_str,
+            device=_get_device_name(),
+            kodi=_get_kodi_version()
+        )
 
-    daemon = ServiceDaemon(addon=addon, logger=log)
-    daemon.load_initial_settings()
-    daemon.initialize()
-    daemon.run()
+        daemon = ServiceDaemon(addon=addon, logger=log)
+        daemon.load_initial_settings()
+        daemon.initialize()
+        daemon.run()
 
-    log.info(
-        "Service stopped",
-        event="service.stop",
-        version=version_str,
-        device=_get_device_name()
-    )
-    StructuredLogger.shutdown()
+        log.info(
+            "Service stopped",
+            event="service.stop",
+            version=version_str,
+            device=_get_device_name()
+        )
+    except SystemExit:
+        pass
+    except Exception:
+        try:
+            log = get_logger('service')
+            log.exception("Unhandled error in EasyTV service", event="service.crash")
+        except Exception:
+            import traceback
+            xbmc.log(f"[EasyTV] Service crash: {traceback.format_exc()}", xbmc.LOGERROR)
+    finally:
+        StructuredLogger.shutdown()

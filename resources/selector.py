@@ -114,66 +114,71 @@ def Main():
     ShowSelectorDialog. The user's selections are saved inside the
     dialog's onClick handler to prevent data loss from script abortion.
     """
-    log.debug("Show selector opened", mode=list_type)
-
-    all_shows = json_query(show_request, True)
-    if 'tvshows' in all_shows:
-        all_s = all_shows['tvshows']
-        all_variables = [(x['label'], int(x['tvshowid']), x.get('art', {}).get('poster', '')) for x in all_s]
-    else:
-        all_variables = []
-
-    all_variables.sort(key=lambda x: generate_sort_key(x[0], xbmc.getInfoLabel('System.Language')))
-
-    log.debug("Available shows loaded", count=len(all_variables))
-
     try:
-        if list_type == 'random_order_shows':
-            raw_setting = ast.literal_eval(_setting_('random_order_shows'))
-        else:
-            raw_setting = ast.literal_eval(_setting_('selection'))
+        log.debug("Show selector opened", mode=list_type)
 
-        # Handle both old [id] format and new {id: title} format
-        if isinstance(raw_setting, dict):
-            # New format: extract integer IDs from string keys
-            current_list = [int(k) for k in raw_setting.keys()]
-        elif isinstance(raw_setting, list):
-            # Old format: use directly
-            current_list = raw_setting
+        all_shows = json_query(show_request, True)
+        if 'tvshows' in all_shows:
+            all_s = all_shows['tvshows']
+            all_variables = [(x['label'], int(x['tvshowid']), x.get('art', {}).get('poster', '')) for x in all_s]
         else:
+            all_variables = []
+
+        all_variables.sort(key=lambda x: generate_sort_key(x[0], xbmc.getInfoLabel('System.Language')))
+
+        log.debug("Available shows loaded", count=len(all_variables))
+
+        try:
+            if list_type == 'random_order_shows':
+                raw_setting = ast.literal_eval(_setting_('random_order_shows'))
+            else:
+                raw_setting = ast.literal_eval(_setting_('selection'))
+
+            # Handle both old [id] format and new {id: title} format
+            if isinstance(raw_setting, dict):
+                # New format: extract integer IDs from string keys
+                current_list = [int(k) for k in raw_setting.keys()]
+            elif isinstance(raw_setting, list):
+                # Old format: use directly
+                current_list = raw_setting
+            else:
+                current_list = []
+        except (ValueError, SyntaxError):
             current_list = []
-    except (ValueError, SyntaxError):
-        current_list = []
 
-    log.debug("Currently selected shows", count=len(current_list))
+        log.debug("Currently selected shows", count=len(current_list))
 
-    # Determine heading based on mode
-    if list_type == 'random_order_shows':
-        heading = lang(32731)  # "Random Order Shows"
-    else:
-        heading = lang(32730)  # "Select TV Shows"
+        # Determine heading based on mode
+        if list_type == 'random_order_shows':
+            heading = lang(32731)  # "Random Order Shows"
+        else:
+            heading = lang(32730)  # "Select TV Shows"
 
-    from resources.lib.ui.dialogs import ShowSelectorDialog
+        from resources.lib.ui.dialogs import ShowSelectorDialog
 
-    creation = ShowSelectorDialog(
-        "script-easytv-showselector.xml",
-        scriptPath,
-        'Default',
-        heading=heading,
-        all_shows_data=all_variables,
-        current_list=current_list,
-        logger=log,
-    )
-    creation.doModal()
+        creation = ShowSelectorDialog(
+            "script-easytv-showselector.xml",
+            scriptPath,
+            'Default',
+            heading=heading,
+            all_shows_data=all_variables,
+            current_list=current_list,
+            logger=log,
+        )
+        creation.doModal()
 
-    # CRITICAL: Save settings HERE after doModal returns.
-    # Kodi may abort scripts launched via RunScript() from settings
-    # immediately after doModal() returns, but the dialog's onClick
-    # sets _saved=True synchronously before close(), so we're safe.
-    if creation.saved:
-        _save_settings(creation.selected_ids, all_variables)
+        # CRITICAL: Save settings HERE after doModal returns.
+        # Kodi may abort scripts launched via RunScript() from settings
+        # immediately after doModal() returns, but the dialog's onClick
+        # sets _saved=True synchronously before close(), so we're safe.
+        if creation.saved:
+            _save_settings(creation.selected_ids, all_variables)
 
-    del creation
+        del creation
+    except SystemExit:
+        raise  # Let sys.exit() propagate
+    except Exception:
+        log.exception("Unhandled error in show selector", event="selector.crash")
 
 # Note: Main() is called explicitly from default.py
 # openSettings() is called from default.py after this module finishes
