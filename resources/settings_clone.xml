@@ -127,7 +127,7 @@
 						<dependency type="visible" setting="populate_by" operator="is">1</dependency>
 						<dependency type="visible" setting="playlist_source" operator="is">1</dependency>
 					</dependencies>
-					<data>RunScript(script.easytv,playlist)</data>
+					<data>RunScript(script.easytv,playlist,tvshows)</data>
 					<control type="button" format="action">
 						<close>true</close>
 					</control>
@@ -236,6 +236,7 @@
 							<option label="32073">0</option>
 							<option label="32074">1</option>
 							<option label="32075">2</option>
+							<option label="32077">3</option>
 						</options>
 					</constraints>
 					<control type="spinner" format="string" />
