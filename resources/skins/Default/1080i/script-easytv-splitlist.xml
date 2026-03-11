@@ -11,7 +11,6 @@
 -->
 <window>
     <zorder>1</zorder>
-    <defaultcontrol>655</defaultcontrol>
     <visible>!System.ScreenSaverActive</visible>
 
     <controls>
