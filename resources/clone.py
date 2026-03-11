@@ -173,6 +173,11 @@ def Main():
         IGNORE_PATTERNS = ('.pyc','CVS','.git','tmp','.svn','__pycache__')
         shutil.copytree(scriptPath, temp_path, ignore=shutil.ignore_patterns(*IGNORE_PATTERNS))
 
+        # Ensure clone starts with default icon (not main addon's custom icon)
+        default_icon = os.path.join(temp_path, 'icon_default.png')
+        if os.path.isfile(default_icon):
+            shutil.copy2(default_icon, os.path.join(temp_path, 'icon.png'))
+
         progress.update(25, "Configuring clone...")
         # remove the unneeded files
         addon_file = os.path.join(temp_path,'addon.xml')

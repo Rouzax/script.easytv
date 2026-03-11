@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import ast
 import json
+import os
 import random
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, TYPE_CHECKING, Union
@@ -313,10 +314,13 @@ class PlaybackMonitor(xbmc.Player):
         
         # Show playlist notification
         if self._pl_running_local == 'true' and settings.playlist_notifications:
+            source_id = self._window.getProperty(PROP_SOURCE_ADDON_ID) or None
+            source_addon = xbmcaddon.Addon(source_id) if source_id else xbmcaddon.Addon()
+            icon = os.path.join(source_addon.getAddonInfo('path'), 'icon.png')
             xbmc.executebuiltin(
-                'Notification(%s,%s S%sE%s,%i)' % (
+                'Notification(%s,%s S%sE%s,%i,%s)' % (
                     lang(32163), showtitle, season_np, episode_np,
-                    NOTIFICATION_DURATION_MS
+                    NOTIFICATION_DURATION_MS, icon
                 )
             )
         
@@ -427,14 +431,17 @@ class PlaybackMonitor(xbmc.Player):
             settings: Current playback settings.
         """
         if settings.playlist_notifications:
+            source_id = self._window.getProperty(PROP_SOURCE_ADDON_ID) or None
+            source_addon = xbmcaddon.Addon(source_id) if source_id else xbmcaddon.Addon()
+            icon = os.path.join(source_addon.getAddonInfo('path'), 'icon.png')
             xbmc.executebuiltin(
-                'Notification(%s,%s,%i)' % (
+                'Notification(%s,%s,%i,%s)' % (
                     lang(32163),
                     self._ep_details['item']['label'],
-                    NOTIFICATION_DURATION_MS
+                    NOTIFICATION_DURATION_MS, icon
                 )
             )
-        
+
         resume_info = self._ep_details['item'].get('resume', {})
         
         if settings.resume_partials_movies and resume_info.get('position', 0) > 0 and resume_info.get('total', 0) > 0:
