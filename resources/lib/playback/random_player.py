@@ -258,9 +258,9 @@ def filter_shows_by_population(
 def _fetch_movies(
     movie_selection: int,
     limit: Optional[int] = None,
-    movie_ids: Optional[list[int]] = None,
+    movie_ids: Optional[List[int]] = None,
     logger: Optional[StructuredLogger] = None
-) -> list[int]:
+) -> List[int]:
     """
     Fetch movie IDs based on watch status settings.
 
@@ -319,7 +319,7 @@ def _fetch_movies(
 def _fetch_random_episode_for_show(
     show_id: int,
     episode_selection: int,
-    exclude_episode_ids: Optional[list[int]] = None,
+    exclude_episode_ids: Optional[List[int]] = None,
     logger: Optional[StructuredLogger] = None
 ) -> Optional[int]:
     """
@@ -578,12 +578,12 @@ def _sort_partials_for_priority(
 def _process_tv_candidate(
     show_id: int,
     added_ep_dict: dict,
-    candidate_list: list[str],
-    random_order_shows: list[int],
+    candidate_list: List[str],
+    random_order_shows: List[int],
     config: RandomPlaylistConfig,
     logger: StructuredLogger,
     partial_episode_map: Optional[Dict[int, int]] = None
-) -> tuple[Optional[int], bool]:
+) -> Tuple[Optional[int], bool]:
     """
     Process a TV show candidate for playlist addition.
 
@@ -757,7 +757,7 @@ def _process_tv_candidate(
 
 def _check_premiere_exclusion(
     show_id: int,
-    candidate_list: list[str],
+    candidate_list: List[str],
     config: RandomPlaylistConfig,
     logger: StructuredLogger
 ) -> bool:
@@ -823,7 +823,7 @@ def _check_premiere_exclusion(
 def _update_added_dict(
     show_id: int,
     added_ep_dict: dict,
-    random_order_shows: list[int],
+    random_order_shows: List[int],
     is_multi: bool,
     tmp_details: Optional[list],
     config: RandomPlaylistConfig,
@@ -1035,7 +1035,7 @@ def _build_lazy_queue_playlist(
 
 def build_random_playlist(
     population: dict,
-    random_order_shows: list[int],
+    random_order_shows: List[int],
     config: RandomPlaylistConfig,
     logger: Optional[StructuredLogger] = None,
     addon_id: Optional[str] = None
@@ -1160,7 +1160,7 @@ def build_random_playlist(
             stored_show_count = len(stored_data_filtered)
             
             # Fetch movies if enabled, with appropriate limit
-            movie_list: list[int] = []
+            movie_list: List[int] = []
             if include_movies:
                 # Calculate movie limit based on content type and chance
                 if config.playlist_content == CONTENT_MOVIES_ONLY:
@@ -1172,7 +1172,7 @@ def build_random_playlist(
                 
                 if movie_limit > 0:
                     # Extract movie IDs from playlist if filter is set
-                    playlist_movie_ids: Optional[list[int]] = None
+                    playlist_movie_ids: Optional[List[int]] = None
                     if config.movie_playlist:
                         playlist_movie_ids = extract_movieids_from_playlist(config.movie_playlist)
                         log.debug("Movie playlist filter applied", 

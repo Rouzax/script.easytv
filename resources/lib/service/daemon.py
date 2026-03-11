@@ -172,7 +172,7 @@ class ServiceState:
     on_lib_update: bool = False
     
     # List of show IDs with available next episodes
-    shows_with_next_episodes: list[int] = field(default_factory=list)
+    shows_with_next_episodes: List[int] = field(default_factory=list)
 
 
 # =============================================================================
@@ -264,7 +264,7 @@ class ServiceDaemon:
         self._episode_tracker: Optional[EpisodeTracker] = None
         
         # All show IDs in library
-        self._all_shows_list: list[int] = []
+        self._all_shows_list: List[int] = []
     
     def initialize(self) -> None:
         """
@@ -523,8 +523,8 @@ class ServiceDaemon:
     
     def _process_random_show_episode(
         self,
-        ondeck_list: list[int],
-        offdeck_list: list[int],
+        ondeck_list: List[int],
+        offdeck_list: List[int],
         watched_count: int,
         unwatched_count: int,
     ) -> None:
@@ -582,8 +582,8 @@ class ServiceDaemon:
 
     def _process_sequential_show_episode(
         self,
-        ondeck_list: list[int],
-        offdeck_list: list[int],
+        ondeck_list: List[int],
+        offdeck_list: List[int],
         watched_count: int,
         unwatched_count: int,
     ) -> None:
@@ -859,7 +859,7 @@ class ServiceDaemon:
     
     def _reshuffle_random_order_shows(
         self,
-        supplied_random_shows: Optional[list[int]] = None,
+        supplied_random_shows: Optional[List[int]] = None,
     ) -> None:
         """
         Reshuffle episodes for random-order shows.
@@ -1125,7 +1125,7 @@ class ServiceDaemon:
     
     def refresh_show_episodes(
         self,
-        showids: list[int] | Optional[int] = None,
+        showids: Optional[Union[List[int], int]] = None,
         bulk: bool = False,
     ) -> None:
         """
