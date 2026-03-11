@@ -206,11 +206,10 @@
                         <top>74</top>
                         <width>870</width>
                         <height>2</height>
-                        <info>ListItem.Property(progress_pct)</info>
+                        <info>ListItem.Property(ProgressPercent)</info>
                         <texturebg colordiffuse="1fFFFFFF">common/white.png</texturebg>
-                        <textureleft colordiffuse="$INFO[Window.Property(EasyTV.Accent)]">common/white.png</textureleft>
                         <texturemid colordiffuse="$INFO[Window.Property(EasyTV.Accent)]">common/white.png</texturemid>
-                        <textureright colordiffuse="$INFO[Window.Property(EasyTV.Accent)]">common/white.png</textureright>
+                        <visible>!Integer.IsEqual(ListItem.Property(ProgressPercent),0)</visible>
                     </control>
 
                     <!-- Watched indicator -->
@@ -319,11 +318,10 @@
                         <top>74</top>
                         <width>870</width>
                         <height>2</height>
-                        <info>ListItem.Property(progress_pct)</info>
+                        <info>ListItem.Property(ProgressPercent)</info>
                         <texturebg colordiffuse="1fFFFFFF">common/white.png</texturebg>
-                        <textureleft colordiffuse="$INFO[Window.Property(EasyTV.Accent)]">common/white.png</textureleft>
                         <texturemid colordiffuse="$INFO[Window.Property(EasyTV.Accent)]">common/white.png</texturemid>
-                        <textureright colordiffuse="$INFO[Window.Property(EasyTV.Accent)]">common/white.png</textureright>
+                        <visible>!Integer.IsEqual(ListItem.Property(ProgressPercent),0)</visible>
                     </control>
 
                     <!-- Watched indicator -->
