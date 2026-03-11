@@ -38,15 +38,17 @@
 				<setting id="set_icon" type="action" label="32735" help="32736">
 					<level>0</level>
 					<data>RunScript(script.easytv,set_icon)</data>
-					<control type="button" />
-					<close>true</close>
+					<control type="button" format="action">
+						<close>true</close>
+					</control>
 				</setting>
 
 				<setting id="reset_icon" type="action" label="32737" help="32738">
 					<level>0</level>
 					<data>RunScript(script.easytv,reset_icon)</data>
-					<control type="button" />
-					<close>true</close>
+					<control type="button" format="action">
+						<close>true</close>
+					</control>
 				</setting>
 			</group>
 		</category>

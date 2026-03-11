@@ -199,6 +199,7 @@
                         <aligny>center</aligny>
                         <font>font12</font>
                         <textcolor>FFCCCCCC</textcolor>
+                        <selectedcolor>$INFO[Window.Property(EasyTV.Accent)]</selectedcolor>
                         <label>$INFO[ListItem.Label]</label>
                     </control>
 
@@ -243,6 +244,7 @@
                         <aligny>center</aligny>
                         <font>font12</font>
                         <textcolor>$INFO[Window.Property(EasyTV.Accent)]</textcolor>
+                        <selectedcolor>$INFO[Window.Property(EasyTV.Accent)]</selectedcolor>
                         <label>$INFO[ListItem.Label]</label>
                     </control>
 
