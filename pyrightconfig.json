@@ -1,0 +1,18 @@
+{
+  "pythonVersion": "3.8",
+  "typeCheckingMode": "basic",
+  "reportMissingImports": "warning",
+  "reportMissingModuleSource": "none",
+  "extraPaths": [
+    "resources/lib"
+  ],
+  "exclude": [
+    "**/__pycache__",
+    "**/node_modules",
+    ".git",
+    ".worktrees"
+  ],
+  "ignore": [
+    "**/test_*"
+  ]
+}
