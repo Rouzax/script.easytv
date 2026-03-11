@@ -272,8 +272,12 @@ class StructuredLogger:
                     existing_size = 0  # File was rotated, new file is empty
             
             cls._log_file_path = log_path
-            cls._log_file = open(log_path, "a", encoding="utf-8")
-            cls._log_file_size = existing_size  # Track actual size for mid-session rotation
+            try:
+                cls._log_file = open(log_path, "a", encoding="utf-8")
+                cls._log_file_size = existing_size
+            except (OSError, IOError):
+                cls._log_file = None
+                raise  # Re-raise to hit the outer except
         except (OSError, IOError) as e:
             # Log to Kodi if file init fails
             xbmc.log(

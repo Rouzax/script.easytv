@@ -67,7 +67,6 @@ import sys
 import os
 from typing import Optional
 from xml.etree import ElementTree as et
-import fileinput
 
 # Constants (inlined to avoid import issues)
 ADDON_ENABLE_DELAY_MS = 1000
@@ -139,9 +138,10 @@ def Main():
         # This includes: section id, RunScript() calls for selector/playlist/exporter
         # Without this, settings actions would invoke the main addon instead of the clone
         settings_file = os.path.join(new_path, 'resources', 'settings.xml')
-        for line in fileinput.input(settings_file, inplace=True):
-            print(line.replace('script.easytv', san_name), end='')
-        fileinput.close()
+        with open(settings_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        with open(settings_file, 'w', encoding='utf-8') as f:
+            f.write(content.replace('script.easytv', san_name))
 
         progress.update(55, "Updating language files...")
         # Update strings.po header in ALL language folders to match clone addon id
@@ -150,11 +150,12 @@ def Main():
         for lang_folder in os.listdir(language_dir):
             strings_file = os.path.join(language_dir, lang_folder, 'strings.po')
             if os.path.isfile(strings_file):
-                for line in fileinput.input(strings_file, inplace=True):
-                    line = line.replace('# Addon Name: EasyTV', f'# Addon Name: {clone_name}')
-                    line = line.replace('# Addon id: script.easytv', f'# Addon id: {san_name}')
-                    print(line, end='')
-                fileinput.close()
+                with open(strings_file, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                content = content.replace('# Addon Name: EasyTV', f'# Addon Name: {clone_name}')
+                content = content.replace('# Addon id: script.easytv', f'# Addon id: {san_name}')
+                with open(strings_file, 'w', encoding='utf-8') as f:
+                    f.write(content)
 
     except Exception as e:
         _, _, tb = sys.exc_info()
@@ -186,11 +187,10 @@ def Main():
     ]
 
     for py in py_files:
-        try:
-            for line in fileinput.input(py, inplace=True):
-                print(line.replace('script.easytv', san_name), end='')
-        finally:
-            fileinput.close()
+        with open(py, 'r', encoding='utf-8') as f:
+            content = f.read()
+        with open(py, 'w', encoding='utf-8') as f:
+            f.write(content.replace('script.easytv', san_name))
 
     progress.update(85, "Updating skins...")
     # Update skin XML files to use clone's addon ID for language strings
@@ -207,9 +207,10 @@ def Main():
 
     for skin_file in skin_files:
         if os.path.isfile(skin_file):
-            for line in fileinput.input(skin_file, inplace=True):
-                print(line.replace('$ADDON[script.easytv ', f'$ADDON[{san_name} '), end='')
-            fileinput.close()
+            with open(skin_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+            with open(skin_file, 'w', encoding='utf-8') as f:
+                f.write(content.replace('$ADDON[script.easytv ', f'$ADDON[{san_name} '))
 
     # Restore custom icon if one was set before the update
     custom_icon_path = xbmcvfs.translatePath(
