@@ -167,14 +167,10 @@ class ContextMenuWindow(xbmcgui.WindowXMLDialog):
         self.contextoption = controlID
         
         if controlID == CONTEXT_TOGGLE_MULTISELECT:
-            # Toggle the multiselect label
+            self._multiselect = not self._multiselect
             btn = cast(xbmcgui.ControlButton, self.getControl(CONTEXT_TOGGLE_MULTISELECT))
-            if btn.getLabel() == lang(32200):
-                btn.setLabel(lang(32201))
-                xbmc.sleep(CONTEXT_TOGGLE_DELAY_MS)
-            else:
-                btn.setLabel(lang(32200))
-                xbmc.sleep(CONTEXT_TOGGLE_DELAY_MS)
+            btn.setLabel(lang(32201) if self._multiselect else lang(32200))
+            xbmc.sleep(CONTEXT_TOGGLE_DELAY_MS)
         
         self.close()
     
