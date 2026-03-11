@@ -153,7 +153,7 @@ def Main():
         "7. All Dialogs (cycle through)",
     ]
 
-    choice = dialog.select("EasyTV Dialog Preview", options)
+    choice = dialog.select("EasyTV Dialog Preview", options)  # type: ignore[arg-type]
 
     if choice == 0:
         preview_confirm()

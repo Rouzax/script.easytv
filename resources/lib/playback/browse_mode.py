@@ -126,6 +126,7 @@ def _fetch_show_art(logger: 'StructuredLogger') -> None:
     logger.debug("Art fetched and cached", show_count=len(shows))
 
 
+
 @dataclass
 class EpisodeListConfig:
     """
@@ -212,55 +213,45 @@ def build_episode_list(
     log = logger or _get_log()
     mon = monitor or xbmc.Monitor()
     
-    # Show loading indicator during data fetching operations
-    with busy_progress("Loading shows..."):
-        # Fetch show data based on population filter
-        # Browse mode always uses unwatched episodes (primary use case)
+    # Premiere filter helper (needed by _fetch_data)
+    def should_include(show_entry):
+        """Check if episode should be included based on premiere settings."""
+        episode_no = WINDOW.getProperty(f"EasyTV.{show_entry[1]}.EpisodeNo")
+        if not episode_no or len(episode_no) < 6:
+            return True
+        try:
+            episode_num = int(episode_no[4:6])
+            if episode_num != 1:
+                return True
+            season_num = int(episode_no[1:3])
+            if season_num == 1:
+                return config.include_series_premieres
+            else:
+                return config.include_season_premieres
+        except (ValueError, IndexError):
+            return True
+
+    def _fetch_data():
+        """Fetch, filter, and sort show data from Kodi."""
         show_data = filter_shows_by_population(
             population, config.sort_by, config.sort_reverse, config.language, logger=log
         )
-        
-        # Apply duration filter if enabled
         if config.duration_filter_enabled and show_data:
             show_data = filter_shows_by_duration(
                 show_data,
                 min_minutes=config.duration_min,
                 max_minutes=config.duration_max
             )
-        
-        # Apply premiere filter if needed
         if not config.include_series_premieres or not config.include_season_premieres:
-            def should_include(show_entry):
-                """Check if episode should be included based on premiere settings."""
-                # Episode number is stored in window properties by the service
-                episode_no = WINDOW.getProperty(f"EasyTV.{show_entry[1]}.EpisodeNo")
-                if not episode_no or len(episode_no) < 6:
-                    return True
-                
-                # Check if this is episode 1
-                try:
-                    episode_num = int(episode_no[4:6])
-                    if episode_num != 1:
-                        return True
-                    
-                    season_num = int(episode_no[1:3])
-                    if season_num == 1:
-                        # Series premiere (S01E01)
-                        return config.include_series_premieres
-                    else:
-                        # Season premiere (S02E01, S03E01, etc.)
-                        return config.include_season_premieres
-                except (ValueError, IndexError):
-                    return True
-            
             show_data = [x for x in show_data if should_include(x)]
-        
-        # Filter out random-order shows if configured
         if config.excl_random_order_shows and random_order_shows:
-            filtered_data = [x for x in show_data if x[1] not in random_order_shows]
-        else:
-            filtered_data = show_data
-        
+            return [x for x in show_data if x[1] not in random_order_shows]
+        return show_data
+
+    # Show loading indicator during data fetching operations
+    with busy_progress("Loading shows..."):
+        filtered_data = _fetch_data()
+
         # Refresh from shared storage if stale (multi-instance sync)
         # This ensures window properties are up-to-date before displaying
         if filtered_data:
@@ -275,9 +266,9 @@ def build_episode_list(
                 except Exception as e:
                     log.warning("Refresh failed, using cached data",
                                event="browse.refresh_error", error=str(e))
-        
+
         log.info("Browse mode starting", event="browse.start", show_count=len(filtered_data))
-        
+
         # Fetch show art if not already cached this session
         _fetch_show_art(log)
     
@@ -331,6 +322,9 @@ def build_episode_list(
             continue
         
         if list_window.needs_refresh:
+            # Re-fetch show data with fresh sort order from Kodi
+            filtered_data = _fetch_data()
+            list_window.update_data(filtered_data)
             open_window = True
             list_window.reset_state()
             continue

@@ -277,7 +277,7 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         list_item.setProperty("lastwatched", lw_time)
         list_item.setProperty("percentplayed", pct_played)
         list_item.setProperty("episodeno", ep_no)
-        list_item.setProperty("watched", 'false')
+
         list_item.setProperty('ID', str(show_id))
         list_item.setProperty("file", file_path)
         list_item.setProperty("EpisodeID", episode_id)
@@ -288,7 +288,51 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         info_tag.setTitle(eptitle)
         
         return list_item
-    
+
+    def _update_list_item(self, item: xbmcgui.ListItem, show_id: int) -> None:
+        """Update a list item in-place from current window properties."""
+        prop_prefix = f"EasyTV.{show_id}"
+
+        # Re-read all properties from the daemon's updated cache
+        pct_played = WINDOW.getProperty(f"{prop_prefix}.PercentPlayed")
+        poster = WINDOW.getProperty(f"{prop_prefix}.Art(tvshow.poster)")
+        eptitle = WINDOW.getProperty(f"{prop_prefix}.Title")
+        plot = WINDOW.getProperty(f"{prop_prefix}.Plot")
+        season = WINDOW.getProperty(f"{prop_prefix}.Season")
+        episode = WINDOW.getProperty(f"{prop_prefix}.Episode")
+        episode_id = WINDOW.getProperty(f"{prop_prefix}.EpisodeID")
+        file_path = WINDOW.getProperty(f"{prop_prefix}.File")
+        fanart = WINDOW.getProperty(f"{prop_prefix}.Art(tvshow.fanart)")
+        ep_no = WINDOW.getProperty(f"{prop_prefix}.EpisodeNo")
+        num_watched = WINDOW.getProperty(f"{prop_prefix}.CountWatchedEps")
+        num_ondeck = WINDOW.getProperty(f"{prop_prefix}.CountonDeckEps")
+
+        # Calculate skipped episodes
+        try:
+            num_unwatched = int(WINDOW.getProperty(f"{prop_prefix}.CountUnwatchedEps"))
+            num_ondeck_int = int(num_ondeck) if num_ondeck else 0
+            num_skipped = str(num_unwatched - num_ondeck_int)
+        except ValueError:
+            num_skipped = '0'
+
+        # Update the item in-place
+        item.setLabel2(eptitle)
+        item.setArt({'thumb': poster, 'icon': poster})
+        item.setProperty("Fanart_Image", fanart)
+        item.setProperty("numwatched", num_watched)
+        item.setProperty("numondeck", num_ondeck)
+        item.setProperty("numskipped", num_skipped)
+        item.setProperty("lastwatched", lang(32120))  # "Today"
+        item.setProperty("percentplayed", pct_played)
+        item.setProperty("episodeno", ep_no)
+        item.setProperty("file", file_path)
+        item.setProperty("EpisodeID", episode_id)
+        info_tag = item.getVideoInfoTag()
+        info_tag.setSeason(int(season) if season else 0)
+        info_tag.setEpisode(int(episode) if episode else 0)
+        info_tag.setPlot(plot)
+        info_tag.setTitle(eptitle)
+
     def onAction(self, action: xbmcgui.Action) -> None:
         """
         Handle user actions (key presses, button clicks).
@@ -428,22 +472,20 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
             self.close()
     
     def _toggle_watched(self) -> None:
-        """Mark selected episodes as watched."""
+        """Mark selected episodes as watched and update list in-place."""
         assert self.name_list is not None
         self._log.debug("Toggling watched status")
         pos = self.name_list.getSelectedPosition()
         query_batch = []
-        
+        affected_indices = []
+
         for i in range(self.name_list.size()):
             item = self.name_list.getListItem(i)
             if item.isSelected() or i == pos:
                 episode_id = item.getProperty('EpisodeID')
                 if episode_id:
                     self._log.debug("Processing episode", episode_id=episode_id)
-                    
-                    if item.getProperty('watched') == 'false':
-                        item.setProperty("watched", 'true')
-                    
+
                     # Build batch query
                     query = {
                         "jsonrpc": "2.0",
@@ -452,10 +494,19 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
                         "params": {"episodeid": int(episode_id), "playcount": 1}
                     }
                     query_batch.append(query)
-        
+                    affected_indices.append(i)
+
         if query_batch:
             self._log.debug("Watched status batch query", query_count=len(query_batch))
             json_query(query_batch, False)
+            # Wait for daemon to process OnUpdate notifications
+            xbmc.sleep(500)
+            # Update affected items in-place from refreshed window properties
+            for i in affected_indices:
+                item = self.name_list.getListItem(i)
+                show_id = item.getProperty('ID')
+                if show_id:
+                    self._update_list_item(item, int(show_id))
     
     def _export_selection(self) -> None:
         """Export selected episodes via episode_exporter."""
@@ -489,10 +540,9 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         xbmc.executebuiltin('UpdateLibrary(video)')
     
     def _refresh(self) -> None:
-        """Request a refresh of the episode list."""
+        """Refresh the episode list in-place."""
         self._log.debug("Manual refresh requested")
-        self._needs_refresh = True
-        self.close()
+        self._populate_list()
     
     def data_refresh(self) -> None:
         """
@@ -525,6 +575,10 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         """Check if a refresh was requested."""
         return self._needs_refresh
     
+    def update_data(self, data: list) -> None:
+        """Update the show data for the next window open."""
+        self._data = data
+
     def reset_state(self) -> None:
         """Reset state for re-showing the window."""
         self._selected_show = None

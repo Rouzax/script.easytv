@@ -141,16 +141,6 @@
                             <texture>IconWatched.png</texture>
                             <visible>ListItem.IsSelected</visible>
                         </control>
-
-                        <!-- Watched indicator -->
-                        <control type="image">
-                            <left>705</left>
-                            <top>13</top>
-                            <width>24</width>
-                            <height>24</height>
-                            <texture>IconWatched.png</texture>
-                            <visible>ListItem.Property(watched)</visible>
-                        </control>
                     </itemlayout>
 
                     <!-- Focused row -->
@@ -197,16 +187,6 @@
                             <height>24</height>
                             <texture>IconWatched.png</texture>
                             <visible>ListItem.IsSelected</visible>
-                        </control>
-
-                        <!-- Watched indicator -->
-                        <control type="image">
-                            <left>705</left>
-                            <top>13</top>
-                            <width>24</width>
-                            <height>24</height>
-                            <texture>IconWatched.png</texture>
-                            <visible>ListItem.Property(watched)</visible>
                         </control>
                     </focusedlayout>
                 </control>

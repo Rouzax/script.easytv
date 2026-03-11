@@ -196,7 +196,12 @@ def Main():
     # Without this, $ADDON[script.easytv ...] won't resolve in clones
     skin_files = [
         os.path.join(new_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-main.xml'),
-        os.path.join(new_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-BigScreenList.xml')
+        os.path.join(new_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-BigScreenList.xml'),
+        os.path.join(new_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-cardlist.xml'),
+        os.path.join(new_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-splitlist.xml'),
+        os.path.join(new_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-confirm.xml'),
+        os.path.join(new_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-select.xml'),
+        os.path.join(new_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-showselector.xml'),
     ]
 
     for skin_file in skin_files:
