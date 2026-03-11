@@ -81,7 +81,10 @@ def _parse_show_setting(raw_value: str) -> Tuple[Dict[str, str], bool]:
     
     try:
         parsed = ast.literal_eval(raw_value)
-    except (ValueError, SyntaxError):
+    except (ValueError, SyntaxError) as e:
+        from resources.lib.utils import get_logger
+        get_logger('settings').debug("Failed to parse show setting",
+                                     raw_value=raw_value[:100], error=str(e))
         return {}, False
     
     if isinstance(parsed, dict):
