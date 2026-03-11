@@ -680,8 +680,7 @@ class ShowSelectorDialog(xbmcgui.WindowXMLDialog):
             self._heading)
 
         # Buttons
-        cast(xbmcgui.ControlButton, self.getControl(SELECTOR_SEARCH)).setLabel(
-            self._hint_text, focusedColor=focused_color)
+        # Search edit hint text is set in XML via <hinttext>
         cast(xbmcgui.ControlButton, self.getControl(SELECTOR_ENABLE_ALL)).setLabel(
             lang(32732), focusedColor=focused_color)
         cast(xbmcgui.ControlButton, self.getControl(SELECTOR_IGNORE_ALL)).setLabel(
@@ -736,19 +735,14 @@ class ShowSelectorDialog(xbmcgui.WindowXMLDialog):
             self._closed = True
             self.close()
         elif controlID == SELECTOR_SEARCH:
-            kb = xbmc.Keyboard(self._search_text, self._hint_text)
-            kb.doModal()
-            if kb.isConfirmed():
-                self._search_text = kb.getText()
-                search_btn = cast(xbmcgui.ControlButton,
-                                  self.getControl(SELECTOR_SEARCH))
-                search_btn.setLabel(
-                    self._search_text if self._search_text else self._hint_text)
-                self._filter_shows(self._search_text)
+            search_ctrl = cast(xbmcgui.ControlEdit,
+                               self.getControl(SELECTOR_SEARCH))
+            self._search_text = search_ctrl.getText()
+            self._filter_shows(self._search_text)
         elif controlID == SELECTOR_CLEAR_SEARCH:
             self._search_text = ''
-            cast(xbmcgui.ControlButton,
-                 self.getControl(SELECTOR_SEARCH)).setLabel(self._hint_text)
+            cast(xbmcgui.ControlEdit,
+                 self.getControl(SELECTOR_SEARCH)).setText('')
             self._filter_shows('')
             self.setFocus(self.getControl(SELECTOR_LIST))
         elif controlID == SELECTOR_ENABLE_ALL:
@@ -770,10 +764,23 @@ class ShowSelectorDialog(xbmcgui.WindowXMLDialog):
                     item.select(self._selected[show_id])
 
     def onAction(self, action: xbmcgui.Action) -> None:
-        """Handle ESC/back as cancel."""
+        """Handle ESC/back as cancel and live search filtering."""
         if action.getId() in (ACTION_PREVIOUS_MENU, ACTION_NAV_BACK):
             self._closed = True
             self.close()
+            return
+        # Live filter: check if search text changed while edit is focused
+        try:
+            focused_id = self.getFocusId()
+        except RuntimeError:
+            return
+        if focused_id == SELECTOR_SEARCH:
+            search_ctrl = cast(xbmcgui.ControlEdit,
+                               self.getControl(SELECTOR_SEARCH))
+            current_text = search_ctrl.getText()
+            if current_text != self._search_text:
+                self._search_text = current_text
+                self._filter_shows(self._search_text)
 
     @property
     def saved(self) -> bool:
