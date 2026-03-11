@@ -233,7 +233,6 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         
         # Get episode properties
         pct_played = WINDOW.getProperty(f"{prop_prefix}.PercentPlayed")
-        pct_raw = WINDOW.getProperty(f"{prop_prefix}.PercentPlayedRaw")
         poster = WINDOW.getProperty(f"{prop_prefix}.Art(tvshow.poster)")
         eptitle = WINDOW.getProperty(f"{prop_prefix}.Title")
         plot = WINDOW.getProperty(f"{prop_prefix}.Plot")
@@ -285,7 +284,6 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         info_tag.setEpisode(int(episode) if episode else 0)
         info_tag.setPlot(plot)
         info_tag.setTitle(eptitle)
-        info_tag.setResumePoint(float(pct_raw) if pct_raw else 0.0, 100.0)
         
         return list_item
     
