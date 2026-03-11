@@ -199,18 +199,6 @@
                         <label>$INFO[ListItem.Property(percentplayed)]</label>
                     </control>
 
-                    <!-- Progress bar (2px thin, bottom of row) -->
-                    <control type="progress">
-                        <left>65</left>
-                        <top>74</top>
-                        <width>870</width>
-                        <height>2</height>
-                        <info>ListItem.PercentPlayed</info>
-                        <texturebg colordiffuse="1fFFFFFF">common/white.png</texturebg>
-                        <texturemid colordiffuse="$INFO[Window.Property(EasyTV.Accent)]">common/white.png</texturemid>
-                        <visible>!Integer.IsEqual(ListItem.PercentPlayed,0)</visible>
-                    </control>
-
                     <!-- Watched indicator -->
                     <control type="image">
                         <left>10</left>
@@ -309,18 +297,6 @@
                         <font>font10</font>
                         <textcolor>ffFFFFFF</textcolor>
                         <label>$INFO[ListItem.Property(percentplayed)]</label>
-                    </control>
-
-                    <!-- Progress bar (2px thin, bottom of row) -->
-                    <control type="progress">
-                        <left>65</left>
-                        <top>74</top>
-                        <width>870</width>
-                        <height>2</height>
-                        <info>ListItem.PercentPlayed</info>
-                        <texturebg colordiffuse="1fFFFFFF">common/white.png</texturebg>
-                        <texturemid colordiffuse="$INFO[Window.Property(EasyTV.Accent)]">common/white.png</texturemid>
-                        <visible>!Integer.IsEqual(ListItem.PercentPlayed,0)</visible>
                     </control>
 
                     <!-- Watched indicator -->

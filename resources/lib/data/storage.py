@@ -601,11 +601,9 @@ class SharedDatabaseStorage(StorageBackend):
             resume = "true"
             percent = int((float(resume_pos) / float(resume_total)) * PERCENT_MULTIPLIER)
             percent_played = f"{percent}%"
-            percent_raw = str(percent)
         else:
             resume = "false"
             percent_played = "0%"
-            percent_raw = "0"
         
         # Get artwork
         art = ep.get('art', {})
@@ -627,7 +625,6 @@ class SharedDatabaseStorage(StorageBackend):
             "Art(tvshow.fanart)": art.get('tvshow.fanart', ''),
             "Resume": resume,
             "PercentPlayed": percent_played,
-            "PercentPlayedRaw": percent_raw,
             "CountWatchedEps": str(watched_count),
             "CountUnwatchedEps": str(unwatched_count),
             "CountonDeckEps": str(len(ondeck_list)),
