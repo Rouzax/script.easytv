@@ -952,7 +952,7 @@ class ServiceDaemon:
         
         try:
             playlist_state = json.loads(config_json)
-        except (json.JSONDecodeError, ValueError) as e:
+        except ValueError as e:  # Covers json.JSONDecodeError (subclass of ValueError)
             self._log.warning("Failed to parse playlist config", error=str(e))
             self._window.clearProperty(PROP_PLAYLIST_CONFIG)
             return

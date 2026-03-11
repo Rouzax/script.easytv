@@ -149,9 +149,6 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         # Control references (set during onInit)
         self.name_list: Optional[xbmcgui.ControlList] = None
 
-        # Clear running list property
-        WINDOW.setProperty('runninglist', '')
-    
     def onInit(self) -> None:
         """
         Initialize window controls and populate the list.
