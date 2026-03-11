@@ -11,7 +11,6 @@
 -->
 <window>
     <zorder>1</zorder>
-    <defaultcontrol>655</defaultcontrol>
     <visible>!System.ScreenSaverActive</visible>
 
     <controls>
@@ -206,10 +205,10 @@
                         <top>74</top>
                         <width>870</width>
                         <height>2</height>
-                        <info>ListItem.Property(ProgressPercent)</info>
+                        <info>ListItem.PercentPlayed</info>
                         <texturebg colordiffuse="1fFFFFFF">common/white.png</texturebg>
                         <texturemid colordiffuse="$INFO[Window.Property(EasyTV.Accent)]">common/white.png</texturemid>
-                        <visible>!Integer.IsEqual(ListItem.Property(ProgressPercent),0)</visible>
+                        <visible>!Integer.IsEqual(ListItem.PercentPlayed,0)</visible>
                     </control>
 
                     <!-- Watched indicator -->
@@ -318,10 +317,10 @@
                         <top>74</top>
                         <width>870</width>
                         <height>2</height>
-                        <info>ListItem.Property(ProgressPercent)</info>
+                        <info>ListItem.PercentPlayed</info>
                         <texturebg colordiffuse="1fFFFFFF">common/white.png</texturebg>
                         <texturemid colordiffuse="$INFO[Window.Property(EasyTV.Accent)]">common/white.png</texturemid>
-                        <visible>!Integer.IsEqual(ListItem.Property(ProgressPercent),0)</visible>
+                        <visible>!Integer.IsEqual(ListItem.PercentPlayed,0)</visible>
                     </control>
 
                     <!-- Watched indicator -->

@@ -9,7 +9,6 @@
         655 - Main fixed list container
 -->
 <window>
-    <defaultcontrol>655</defaultcontrol>
     <visible>!System.ScreenSaverActive</visible>
 
     <controls>
