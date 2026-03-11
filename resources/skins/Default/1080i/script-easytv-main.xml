@@ -171,24 +171,14 @@
                         <aspectratio aligny="top">stretch</aspectratio>
                     </control>
 
-                    <!-- Multiselect checkmark overlay -->
+                    <!-- Multiselect checkmark (bottom-right of poster) -->
                     <control type="image">
-                        <left>15</left>
-                        <top>20</top>
-                        <width>190</width>
-                        <height>285</height>
+                        <left>170</left>
+                        <top>270</top>
+                        <width>30</width>
+                        <height>30</height>
                         <texture>IconWatched.png</texture>
                         <visible>ListItem.IsSelected</visible>
-                    </control>
-
-                    <!-- Watched indicator -->
-                    <control type="image">
-                        <left>15</left>
-                        <top>20</top>
-                        <width>190</width>
-                        <height>285</height>
-                        <texture>IconWatched.png</texture>
-                        <visible>ListItem.Property(watched)</visible>
                     </control>
                 </itemlayout>
 
@@ -213,24 +203,14 @@
                         <aspectratio aligny="top">stretch</aspectratio>
                     </control>
 
-                    <!-- Multiselect checkmark overlay -->
+                    <!-- Multiselect checkmark (bottom-right of poster) -->
                     <control type="image">
-                        <left>15</left>
-                        <top>20</top>
-                        <width>190</width>
-                        <height>285</height>
+                        <left>170</left>
+                        <top>270</top>
+                        <width>30</width>
+                        <height>30</height>
                         <texture>IconWatched.png</texture>
                         <visible>ListItem.IsSelected</visible>
-                    </control>
-
-                    <!-- Watched indicator -->
-                    <control type="image">
-                        <left>15</left>
-                        <top>20</top>
-                        <width>190</width>
-                        <height>285</height>
-                        <texture>IconWatched.png</texture>
-                        <visible>ListItem.Property(watched)</visible>
                     </control>
                 </focusedlayout>
             </control>

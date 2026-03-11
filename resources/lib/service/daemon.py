@@ -432,7 +432,12 @@ class ServiceDaemon:
         # Check playback position for swap over
         if self._state.target:
             self._check_playback_position()
-        
+
+        # Detect abandoned playback (stopped before watched threshold)
+        if (self._state.target and self._current_show_id and
+                not xbmc.Player().isPlayingVideo()):
+            self._handle_playback_abandoned()
+
         # Reset per-cycle state
         self._player._playing_showid = False
         self._is_random_show = False
@@ -750,6 +755,28 @@ class ServiceDaemon:
             self._log.debug("Episode data swapped")
 
         # Reset state
+        self._current_show_id = False
+        self._pending_next_episode = False
+        self._state.target = False
+
+    def _handle_playback_abandoned(self) -> None:
+        """Handle playback stopped before watched threshold.
+
+        When the user stops an episode mid-playback, the daemon never re-caches
+        the episode data because no playcount change occurs. This leaves
+        PercentPlayed stale (showing the pre-playback value).
+
+        Re-caches the current show's episode to pick up the updated resume
+        bookmark, then cleans up the leaked tracking state.
+        """
+        show_id = self._current_show_id
+        self._log.debug("Playback abandoned, refreshing resume data",
+                        event="playback.abandoned", show_id=show_id)
+
+        # Refresh the show to update PercentPlayed from new resume bookmark
+        self.refresh_show_episodes(showids=show_id)
+
+        # Clean up tracking state
         self._current_show_id = False
         self._pending_next_episode = False
         self._state.target = False

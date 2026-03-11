@@ -131,16 +131,6 @@
                         <aspectratio>keep</aspectratio>
                     </control>
 
-                    <!-- Multiselect checkmark overlay -->
-                    <control type="image">
-                        <left>10</left>
-                        <top>4</top>
-                        <width>40</width>
-                        <height>70</height>
-                        <texture>IconWatched.png</texture>
-                        <visible>ListItem.IsSelected</visible>
-                    </control>
-
                     <!-- Show title (top left) -->
                     <control type="label">
                         <left>65</left>
@@ -164,11 +154,21 @@
                         <label>$INFO[ListItem.Property(episodeno)]</label>
                     </control>
 
+                    <!-- Multiselect checkmark (inline after episode number) -->
+                    <control type="image">
+                        <left>1095</left>
+                        <top>14</top>
+                        <width>20</width>
+                        <height>20</height>
+                        <texture>IconWatched.png</texture>
+                        <visible>ListItem.IsSelected</visible>
+                    </control>
+
                     <!-- Last watched (top far right) -->
                     <control type="label">
-                        <left>1100</left>
+                        <left>1120</left>
                         <top>11</top>
-                        <width>230</width>
+                        <width>210</width>
                         <height>28</height>
                         <align>right</align>
                         <font>font10</font>
@@ -198,16 +198,6 @@
                         <textcolor>FF888888</textcolor>
                         <label>$INFO[ListItem.Property(percentplayed)]</label>
                     </control>
-
-                    <!-- Watched indicator -->
-                    <control type="image">
-                        <left>10</left>
-                        <top>4</top>
-                        <width>40</width>
-                        <height>70</height>
-                        <texture>IconWatched.png</texture>
-                        <visible>ListItem.Property(watched)</visible>
-                    </control>
                 </itemlayout>
 
                 <!-- Focused card row -->
@@ -229,16 +219,6 @@
                         <height>70</height>
                         <texture background="true">$INFO[ListItem.Art(thumb)]</texture>
                         <aspectratio>keep</aspectratio>
-                    </control>
-
-                    <!-- Multiselect checkmark overlay -->
-                    <control type="image">
-                        <left>10</left>
-                        <top>4</top>
-                        <width>40</width>
-                        <height>70</height>
-                        <texture>IconWatched.png</texture>
-                        <visible>ListItem.IsSelected</visible>
                     </control>
 
                     <!-- Show title (top left, accent color) -->
@@ -264,11 +244,21 @@
                         <label>$INFO[ListItem.Property(episodeno)]</label>
                     </control>
 
+                    <!-- Multiselect checkmark (inline after episode number) -->
+                    <control type="image">
+                        <left>1095</left>
+                        <top>14</top>
+                        <width>20</width>
+                        <height>20</height>
+                        <texture>IconWatched.png</texture>
+                        <visible>ListItem.IsSelected</visible>
+                    </control>
+
                     <!-- Last watched (top far right) -->
                     <control type="label">
-                        <left>1100</left>
+                        <left>1120</left>
                         <top>11</top>
-                        <width>230</width>
+                        <width>210</width>
                         <height>28</height>
                         <align>right</align>
                         <font>font10</font>
@@ -297,16 +287,6 @@
                         <font>font10</font>
                         <textcolor>ffFFFFFF</textcolor>
                         <label>$INFO[ListItem.Property(percentplayed)]</label>
-                    </control>
-
-                    <!-- Watched indicator -->
-                    <control type="image">
-                        <left>10</left>
-                        <top>4</top>
-                        <width>40</width>
-                        <height>70</height>
-                        <texture>IconWatched.png</texture>
-                        <visible>ListItem.Property(watched)</visible>
                     </control>
                 </focusedlayout>
             </control>

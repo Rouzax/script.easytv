@@ -116,11 +116,21 @@
                     <control type="label">
                         <left>15</left>
                         <top>12</top>
-                        <width>630</width>
+                        <width>610</width>
                         <height>30</height>
                         <font>font12</font>
                         <textcolor>FFCCCCCC</textcolor>
                         <label>$INFO[ListItem.Label]</label>
+                    </control>
+
+                    <!-- Multiselect checkmark -->
+                    <control type="image">
+                        <left>630</left>
+                        <top>17</top>
+                        <width>20</width>
+                        <height>20</height>
+                        <texture>IconWatched.png</texture>
+                        <visible>ListItem.IsSelected</visible>
                     </control>
                 </itemlayout>
 
@@ -150,11 +160,21 @@
                     <control type="label">
                         <left>15</left>
                         <top>40</top>
-                        <width>630</width>
+                        <width>610</width>
                         <height>26</height>
                         <font>font10</font>
                         <textcolor>ffFFFFFF</textcolor>
                         <label>$INFO[ListItem.Label2]</label>
+                    </control>
+
+                    <!-- Multiselect checkmark -->
+                    <control type="image">
+                        <left>630</left>
+                        <top>28</top>
+                        <width>20</width>
+                        <height>20</height>
+                        <texture>IconWatched.png</texture>
+                        <visible>ListItem.IsSelected</visible>
                     </control>
                 </focusedlayout>
             </control>
