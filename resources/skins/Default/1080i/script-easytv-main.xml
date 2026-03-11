@@ -161,10 +161,6 @@
 
                 <!-- Unfocused poster item -->
                 <itemlayout width="220" height="360">
-                    <animation type="Focus" reversible="false">
-                        <effect type="fade" start="100" end="60" time="150" tween="sine" easing="out" />
-                    </animation>
-
                     <!-- Poster image -->
                     <control type="image">
                         <left>15</left>
@@ -198,12 +194,7 @@
 
                 <!-- Focused poster item -->
                 <focusedlayout width="220" height="360">
-                    <animation type="Focus" reversible="false">
-                        <effect type="zoom" start="95" end="100" time="150" tween="sine" easing="inout" center="auto" />
-                        <effect type="fade" start="60" end="100" time="150" tween="sine" easing="out" />
-                    </animation>
-
-                    <!-- Border line -->
+                    <!-- Accent border -->
                     <control type="image">
                         <left>12</left>
                         <top>17</top>
