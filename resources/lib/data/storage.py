@@ -591,8 +591,8 @@ class SharedDatabaseStorage(StorageBackend):
         ep = ep_result['episodedetails']
         
         # Format episode and season numbers
-        episode_num = "%.2d" % float(ep.get('episode', 0))
-        season_num = "%.2d" % float(ep.get('season', 0))
+        episode_num = "%02d" % int(ep.get('episode', 0))
+        season_num = "%02d" % int(ep.get('season', 0))
         episode_no = f"s{season_num}e{episode_num}"
         
         # Calculate resume state

@@ -265,8 +265,8 @@ class EpisodeTracker:
             ep_details = ep_result['episodedetails']
         
         # Format episode and season numbers (use .get() for defensive access)
-        episode = "%.2d" % float(ep_details.get('episode', 0))
-        season = "%.2d" % float(ep_details.get('season', 0))
+        episode = "%02d" % int(ep_details.get('episode', 0))
+        season = "%02d" % int(ep_details.get('season', 0))
         episode_no = f"S{season}E{episode}"
         
         # Calculate resume state (use .get() for defensive access)
@@ -305,10 +305,6 @@ class EpisodeTracker:
         self._set_property(normalized_show_id, PROP_PREMIERED, ep_details.get('firstaired', ''))
         self._set_property(normalized_show_id, PROP_PLOT, ep_details.get('plot', ''))
         self._set_property(normalized_show_id, PROP_IS_SKIPPED, str(is_skipped).lower())
-        
-        # Clean up (only if we queried)
-        if ep_data is None:
-            del ep_details
         
         # Update smart playlists for non-temp show IDs
         if normalized_show_id != TEMP_SHOW_ID and self._on_update_smartplaylist:
