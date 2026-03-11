@@ -1,6 +1,40 @@
 EasyTV Changelog
 ================
 
+v1.5.0~alpha1 (2026-03-11)
+--------------------------
+New Features:
+  - Four browse view styles: Card List (renamed from Standard, now the default
+    with data-dense rows showing poster, show/episode info, and stats), Posters
+    (visual poster grid), Big Screen (large artwork for 10-foot viewing), and
+    new Split View (two-column layout with show list on the left and detail
+    panel with poster, stats, and plot on the right).
+  - Theme selection: Choose from Golden Hour (default), Ultraviolet, Ember, or
+    Nightfall accent color themes. Each theme styles all EasyTV windows and
+    dialogs consistently. Configurable in Settings > EasyTV > Appearance.
+  - Custom icon selection: Set a custom addon icon for EasyTV or any clone via
+    Settings > EasyTV > Appearance. Reset to default also available. Changes
+    apply to Kodi menus and notifications.
+  - Redesigned dialogs: Main dialog, next-up prompt, playlist finished dialog,
+    and confirmation dialogs all use the new themed styling.
+  - Show selector redesign: Now a dedicated centered window with inline search
+    edit control, Enable All/Ignore All bulk actions, and poster preview for
+    the focused show.
+  - In-place browse list updates: The browse list refreshes in-place after
+    playback completes without requiring a full window reload.
+  - Abandoned playback detection: The service now detects when playback was
+    stopped early and handles episode tracking appropriately.
+
+Internal:
+  - Replaced deprecated setInfo() calls with InfoTagVideo API.
+  - Removed non-functional progress bar from list layouts (not viable in
+    WindowXMLDialog contexts).
+  - Calendar-aware "last watched" display (shows "today", "yesterday" instead
+    of "0 days", "1 day").
+  - Consolidated skin media assets: removed legacy texture files, added shared
+    common textures and checkbox/watched indicator icons.
+  - Added dialog preview tool for testing all dialog types in Kodi.
+
 v1.4.0 (2026-03-02)
 --------------------------
 New Features:

@@ -25,13 +25,13 @@
         <forum>https://forum.kodi.tv/showthread.php?tid=383902</forum>
         <website>https://github.com/Rouzax/script.easytv</website>
         <source>https://github.com/Rouzax/script.easytv</source>
-        <news>v1.4.0 (2026-03-02)
-- Multi-instance sync: share watch progress across Kodi devices via shared MariaDB
-- Positioned specials: include TVDB-positioned specials in the watch order
-- Movie chance slider replaces confusing ratio setting with intuitive percentage
-- Playlist continuation now fully configurable with countdown timer display
-- Fixed clone creation on SteamOS and other Arch-based Linux systems
-- Fixed partial episodes not being prioritized correctly in playlists</news>
+        <news>v1.5.0~alpha1 (2026-03-11)
+- Four browse views: Card List, Posters, Big Screen, and new Split View
+- Theme selection with four accent color schemes
+- Custom addon icon for EasyTV and clones
+- Redesigned dialogs with consistent themed styling
+- Show selector with inline search and poster preview
+- Browse list updates in-place after playback</news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
