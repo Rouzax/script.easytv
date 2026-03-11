@@ -60,6 +60,7 @@ from xml.etree import ElementTree as et
 
 # Import shared utilities
 from resources.lib.utils import lang, get_logger, sanitize_filename
+from resources.lib.ui.dialogs import show_confirm
 from resources.lib.constants import ADDON_ENABLE_DELAY_MS
 
 
@@ -103,8 +104,8 @@ def errorHandle(exception: Exception, trace: object, new_path: Optional[str] = N
 
 
 def Main():
-    first_q = dialog.yesno('EasyTV', lang(32142) + '\n' + lang(32143) + '\n' + lang(32144))
-    if first_q != 1:
+    first_q = show_confirm('EasyTV', lang(32142) + '\n' + lang(32143) + '\n' + lang(32144))
+    if not first_q:
         sys.exit()
     else:
         keyboard = xbmc.Keyboard(lang(32139))
@@ -235,7 +236,12 @@ def Main():
         # Without this, $ADDON[script.easytv ...] won't resolve in clones
         skin_files = [
             os.path.join(temp_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-main.xml'),
-            os.path.join(temp_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-BigScreenList.xml')
+            os.path.join(temp_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-BigScreenList.xml'),
+            os.path.join(temp_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-cardlist.xml'),
+            os.path.join(temp_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-splitlist.xml'),
+            os.path.join(temp_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-confirm.xml'),
+            os.path.join(temp_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-select.xml'),
+            os.path.join(temp_path, 'resources', 'skins', 'Default', '1080i', 'script-easytv-showselector.xml'),
         ]
 
         for skin_file in skin_files:

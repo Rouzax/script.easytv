@@ -33,6 +33,7 @@ from typing import cast
 
 # Import shared utilities
 from resources.lib.utils import lang, json_query, get_logger, get_bool_setting
+from resources.lib.ui.dialogs import show_confirm, show_select
 from resources.lib.constants import KODI_HOME_WINDOW_ID, EXPORT_COMPLETE_DELAY_MS
 
 
@@ -69,7 +70,7 @@ def playlist_selection_window():
 	if playlist_files is not None:
 		plist_files = dict((x['label'], x['file']) for x in playlist_files)
 		playlist_list = sorted(plist_files.keys())
-		inputchoice = xbmcgui.Dialog().select(lang(32104), playlist_list)
+		inputchoice = show_select(lang(32104), playlist_list)
 		if inputchoice >= 0:
 			return plist_files[playlist_list[inputchoice]]
 	return 'empty'
@@ -254,15 +255,15 @@ def Main():
 
 	if failures:
 		# 32181: "Some files failed to transfer", 32182: "Would you like to see them?"
-		ans = dialog.yesno('EasyTV', lang(32181) + '\n' + lang(32182))
-		
+		ans = show_confirm('EasyTV', lang(32181) + '\n' + lang(32182))
+
 		if ans:
 			# populate list view with file names in alphabetical order
 			log.debug("Displaying failed files to user", failure_count=len(failures))
 
 			failures.sort()
 
-			dialog.select('EasyTV', failures)
+			show_select('EasyTV', failures)
 	else:
 		xbmc.sleep(EXPORT_COMPLETE_DELAY_MS)
 		dialog.ok('EasyTV',lang(32185))

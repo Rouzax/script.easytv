@@ -41,7 +41,7 @@ from resources.lib.utils import (
     lang, get_logger, get_bool_setting, get_int_setting,
     parse_version, compare_versions
 )
-from resources.lib.ui.dialogs import show_playlist_selection
+from resources.lib.ui.dialogs import show_confirm, show_playlist_selection
 from resources.lib.playback.browse_mode import EpisodeListConfig, build_episode_list
 from resources.lib.playback.random_player import (
     RandomPlaylistConfig, build_random_playlist
@@ -122,10 +122,9 @@ def main_entry(addon, log):
 
     # Determine mode: 0=browse, 1=random playlist, 2=ask
     if primary_function == '2':
-        choice = dialog.yesno('EasyTV', lang(32100) + '\n\n' + lang(32101),
-                              nolabel=lang(32102), yeslabel=lang(32103))
-        if choice < 0:
-            sys.exit()
+        choice = show_confirm('EasyTV', lang(32100) + '\n\n' + lang(32101),
+                              yes_label=lang(32103), no_label=lang(32102))
+        # show_confirm returns bool: True=yes(surprise me), False=no(show me)
     else:
         choice = int(primary_function) if primary_function in ('0', '1') else 0
 
@@ -249,6 +248,11 @@ def _handle_special_modes(mode, addon, log):
         from resources import clear_sync_data
         clear_sync_data.main()
 
+    elif mode == 'dialog_preview':
+        log.debug("Dialog preview mode")
+        from resources import dialog_preview
+        dialog_preview.Main()
+
 
 def _check_service_running(window, log):
     """Check if EasyTV service is running. Returns True if running."""
@@ -306,7 +310,7 @@ def _handle_version_mismatch(addon_version, addon_version_str, addon_id, script_
         
         log.warning("Clone addon out of date", event="clone.outdated",
                     clone_version=addon_version_str, service_version=service_version_str)
-        if dialog.yesno('EasyTV', lang(32110) + '\n' + lang(32111)) == 1:
+        if show_confirm('EasyTV', lang(32110) + '\n' + lang(32111)):
             import os
             # Use main addon's update_clone.py, not the clone's old version
             # This ensures clones get the latest update logic (e.g., fixed settings replacement)
@@ -346,7 +350,7 @@ if __name__ == "__main__":
 
     if not _check_service_running(window, log):
         log.warning("EasyTV service not running", event="service.missing")
-        if dialog.yesno('EasyTV', lang(32106) + '\n' + lang(32107)) == 1:
+        if show_confirm('EasyTV', lang(32106) + '\n' + lang(32107)):
             xbmc.executeJSONRPC(
                 '{"jsonrpc":"2.0","method":"Addons.SetAddonEnabled",'
                 '"id":1,"params":{"addonid":"script.easytv","enabled":false}}'
