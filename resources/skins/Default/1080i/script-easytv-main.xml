@@ -54,7 +54,7 @@
                 <!-- Separator line -->
                 <control type="image">
                     <left>0</left>
-                    <top>365</top>
+                    <top>357</top>
                     <width>620</width>
                     <height>2</height>
                     <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">common/line_fade.png</texture>
@@ -63,7 +63,7 @@
                 <!-- Show Title -->
                 <control type="label">
                     <left>0</left>
-                    <top>385</top>
+                    <top>369</top>
                     <width>620</width>
                     <height>45</height>
                     <font>font13</font>
@@ -71,21 +71,10 @@
                     <label>$INFO[Container(655).ListItem.Label]</label>
                 </control>
 
-                <!-- Genre + Duration -->
-                <control type="label">
-                    <left>0</left>
-                    <top>430</top>
-                    <width>620</width>
-                    <height>28</height>
-                    <font>font10</font>
-                    <textcolor>FF888888</textcolor>
-                    <label>$INFO[Container(655).ListItem.Property(genre),[, ]]$INFO[Container(655).ListItem.Property(duration),  •  ~,/ep]</label>
-                </control>
-
                 <!-- Episode Title -->
                 <control type="label">
                     <left>0</left>
-                    <top>460</top>
+                    <top>419</top>
                     <width>620</width>
                     <height>30</height>
                     <font>font12</font>
@@ -93,21 +82,24 @@
                     <label>$INFO[Container(655).ListItem.Label2]</label>
                 </control>
 
-                <!-- Separator line -->
-                <control type="image">
+                <!-- Genre + Duration -->
+                <control type="label">
                     <left>0</left>
-                    <top>502</top>
+                    <top>454</top>
                     <width>620</width>
-                    <height>2</height>
-                    <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">common/line_fade.png</texture>
+                    <height>28</height>
+                    <scroll>true</scroll>
+                    <font>font10</font>
+                    <textcolor>FFAAAAAA</textcolor>
+                    <label>$INFO[Container(655).ListItem.Property(genre),[, ]]$INFO[Container(655).ListItem.Property(duration),  •  ~,/ep]</label>
                 </control>
 
                 <!-- Episode number / Progress info (compact S01E01 notation) -->
                 <control type="label">
                     <left>0</left>
-                    <top>520</top>
+                    <top>487</top>
                     <width>620</width>
-                    <height>30</height>
+                    <height>28</height>
                     <font>font10</font>
                     <textcolor>FFAAAAAA</textcolor>
                     <label>[COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(episodeno)][/COLOR]  •  $ADDON[script.easytv 32222]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(percentplayed)][/COLOR]</label>
@@ -116,9 +108,9 @@
                 <!-- On Deck / Watched / Skipped counts -->
                 <control type="label">
                     <left>0</left>
-                    <top>555</top>
+                    <top>520</top>
                     <width>620</width>
-                    <height>30</height>
+                    <height>28</height>
                     <font>font10</font>
                     <textcolor>FFAAAAAA</textcolor>
                     <label>$ADDON[script.easytv 32223] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numondeck)][/COLOR]  •  $ADDON[script.easytv 32224] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numwatched)][/COLOR]  •  $ADDON[script.easytv 32225] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numskipped)][/COLOR]</label>
@@ -127,9 +119,9 @@
                 <!-- Last Watched -->
                 <control type="label">
                     <left>0</left>
-                    <top>590</top>
+                    <top>553</top>
                     <width>620</width>
-                    <height>30</height>
+                    <height>28</height>
                     <font>font10</font>
                     <textcolor>FFAAAAAA</textcolor>
                     <label>$ADDON[script.easytv 32065]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(lastwatched)][/COLOR]</label>
@@ -138,7 +130,7 @@
                 <!-- Separator line -->
                 <control type="image">
                     <left>0</left>
-                    <top>630</top>
+                    <top>591</top>
                     <width>620</width>
                     <height>2</height>
                     <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">common/line_fade.png</texture>
@@ -147,10 +139,11 @@
                 <!-- Plot -->
                 <control type="textbox">
                     <left>0</left>
-                    <top>648</top>
+                    <top>603</top>
                     <width>620</width>
-                    <height>275</height>
-                    <font>font12</font>
+                    <height>320</height>
+                    <scroll>true</scroll>
+                    <font>font10</font>
                     <textcolor>FFCCCCCC</textcolor>
                     <label>[COLOR $INFO[Window.Property(EasyTV.Accent)]]$ADDON[script.easytv 32226]  [/COLOR]$INFO[Container(655).ListItem.Plot]</label>
                 </control>

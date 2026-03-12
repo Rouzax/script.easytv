@@ -91,6 +91,7 @@
                     <top>82</top>
                     <width>1340</width>
                     <height>25</height>
+                    <align>center</align>
                     <font>font10</font>
                     <textcolor>FFAAAAAA</textcolor>
                     <label>$INFO[Container(655).ListItem.Property(genre),[, ]]$INFO[Container(655).ListItem.Property(duration),  •  ~,/ep]  •  $ADDON[script.easytv 32223] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numondeck)][/COLOR]  •  $ADDON[script.easytv 32224] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numwatched)][/COLOR]  •  $ADDON[script.easytv 32225] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numskipped)][/COLOR]</label>
@@ -100,7 +101,7 @@
             <!-- Card list -->
             <control type="list" id="655">
                 <left>30</left>
-                <top>112</top>
+                <top>122</top>
                 <width>1340</width>
                 <height>624</height>
                 <orientation>vertical</orientation>
