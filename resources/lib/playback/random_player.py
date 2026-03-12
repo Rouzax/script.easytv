@@ -42,6 +42,9 @@ from resources.lib.constants import (
     EPISODE_SELECTION_UNWATCHED,
     EPISODE_SELECTION_WATCHED,
     EPISODE_SELECTION_BOTH,
+    PREMIERE_MIX_IN,
+    PREMIERE_ONLY,
+    PREMIERE_SKIP,
     PROP_PLAYLIST_CONFIG,
     LAZY_QUEUE_BUFFER_SIZE,
     PROP_PLAYLIST_RUNNING,
@@ -108,8 +111,8 @@ class RandomPlaylistConfig:
         movie_chance: Percentage of playlist that should be movies (0-100), only applies to CONTENT_MIXED
         start_partials_tv: Whether to prioritize partially watched TV episodes
         start_partials_movies: Whether to prioritize partially watched movies
-        premieres: Whether to include series premiere episodes (S01E01)
-        season_premieres: Whether to include season premiere episodes (S02E01, S03E01, etc.)
+        premieres: Series premiere filter mode (PREMIERE_SKIP=0, PREMIERE_MIX_IN=1, PREMIERE_ONLY=2)
+        season_premieres: Season premiere filter mode (PREMIERE_SKIP=0, PREMIERE_MIX_IN=1, PREMIERE_ONLY=2)
         multiple_shows: Whether the same show can appear multiple times
         sort_by: Sort method for shows (0=name, 1=last played, 2=random)
         sort_reverse: Whether to reverse the sort order
@@ -127,8 +130,8 @@ class RandomPlaylistConfig:
     movie_chance: int = 25
     start_partials_tv: bool = True
     start_partials_movies: bool = True
-    premieres: bool = True
-    season_premieres: bool = True
+    premieres: int = PREMIERE_MIX_IN
+    season_premieres: int = PREMIERE_MIX_IN
     multiple_shows: bool = False
     sort_by: int = 0
     sort_reverse: bool = False
@@ -765,61 +768,68 @@ def _check_premiere_exclusion(
 ) -> bool:
     """
     Check if episode should be excluded due to premiere settings.
-    
-    Handles two independent settings:
-    - premieres: Controls series premieres (S01E01)
-    - season_premieres: Controls season premieres (S02E01, S03E01, etc.)
-    
+
+    Each premiere type has three modes: SKIP (exclude), MIX_IN (normal),
+    ONLY (premieres-only). When either type is ONLY, non-premiere episodes
+    are excluded and the other selector controls which premiere types appear.
+
     Args:
         show_id: The TV show ID
         candidate_list: List of remaining candidates (modified in place)
         config: Playlist configuration
         logger: Logger instance
-    
+
     Returns:
         True if episode should be excluded, False otherwise.
     """
-    # If both premiere types are allowed, nothing to exclude
-    if config.premieres and config.season_premieres:
+    only_mode = (config.premieres == PREMIERE_ONLY
+                 or config.season_premieres == PREMIERE_ONLY)
+
+    # Fast path: both MIX_IN and no ONLY → nothing to filter
+    if not only_mode and config.premieres == PREMIERE_MIX_IN and config.season_premieres == PREMIERE_MIX_IN:
         return False
-    
+
     episode_no = WINDOW.getProperty(f"EasyTV.{show_id}.EpisodeNo")
     if not episode_no:
-        return False
-    
+        # Can't determine episode type; exclude in ONLY mode, keep otherwise
+        return _remove_candidate(show_id, candidate_list) if only_mode else False
+
     # Parse episode number (format: 's01e01', 's02e05', etc.)
-    # Extract season and episode numbers
     try:
-        # episode_no is lowercase like 's01e01'
-        season_str = episode_no[1:3]  # '01' from 's01e01'
-        episode_str = episode_no[4:6]  # '01' from 's01e01'
-        season_num = int(season_str)
-        episode_num = int(episode_str)
+        season_num = int(episode_no[1:3])
+        episode_num = int(episode_no[4:6])
     except (ValueError, IndexError):
-        # Can't parse, don't exclude
+        return _remove_candidate(show_id, candidate_list) if only_mode else False
+
+    is_premiere = (episode_num == 1)
+
+    if only_mode:
+        # Non-premieres are always excluded in ONLY mode
+        if not is_premiere:
+            return _remove_candidate(show_id, candidate_list)
+        # Check if this specific premiere type is allowed
+        if season_num == 1 and config.premieres == PREMIERE_SKIP:
+            return _remove_candidate(show_id, candidate_list)
+        if season_num > 1 and config.season_premieres == PREMIERE_SKIP:
+            return _remove_candidate(show_id, candidate_list)
         return False
-    
-    # Check if this is episode 1 (a premiere of some kind)
-    if episode_num != 1:
-        return False
-    
-    # Determine if we should exclude based on season number
-    candidate_tag = f't{show_id}'
-    
-    if season_num == 1:
-        # Series premiere (S01E01) - check premieres setting
-        if not config.premieres:
-            if candidate_tag in candidate_list:
-                candidate_list.remove(candidate_tag)
-            return True
     else:
-        # Season premiere (S02E01, S03E01, etc.) - check season_premieres setting
-        if not config.season_premieres:
-            if candidate_tag in candidate_list:
-                candidate_list.remove(candidate_tag)
-            return True
-    
-    return False
+        # Normal mode: only SKIP excludes premieres
+        if not is_premiere:
+            return False
+        if season_num == 1 and config.premieres == PREMIERE_SKIP:
+            return _remove_candidate(show_id, candidate_list)
+        if season_num > 1 and config.season_premieres == PREMIERE_SKIP:
+            return _remove_candidate(show_id, candidate_list)
+        return False
+
+
+def _remove_candidate(show_id: int, candidate_list: List[str]) -> bool:
+    """Remove a show from the candidate list and return True (excluded)."""
+    candidate_tag = f't{show_id}'
+    if candidate_tag in candidate_list:
+        candidate_list.remove(candidate_tag)
+    return True
 
 
 def _update_added_dict(

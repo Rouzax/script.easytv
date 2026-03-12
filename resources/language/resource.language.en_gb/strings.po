@@ -448,7 +448,7 @@ msgid "Select shows where episode order doesn't matter."
 msgstr ""
 
 msgctxt "#32407"
-msgid "Include S01E01 episodes. Disable to hide shows you haven't started watching yet."
+msgid "Skip: exclude series premieres. Mix in: include normally. Only: show only premieres (filters the list to premiere episodes)."
 msgstr ""
 
 msgctxt "#32408"
@@ -616,7 +616,7 @@ msgid "Select shows for random order..."
 msgstr ""
 
 msgctxt "#32514"
-msgid "Include series premieres"
+msgid "Series premieres"
 msgstr ""
 
 #. Browse mode settings
@@ -945,11 +945,11 @@ msgstr ""
 
 #. Season premieres
 msgctxt "#32610"
-msgid "Include season premieres"
+msgid "Season premieres"
 msgstr ""
 
 msgctxt "#32611"
-msgid "Include first episode of each season (S02E01, S03E01, etc.). Disable if you prefer starting seasons from where you left off."
+msgid "Skip: exclude season premieres (S02E01, S03E01, etc.). Mix in: include normally. Only: show only premieres."
 msgstr ""
 
 #. Playlist continuation
@@ -1264,4 +1264,17 @@ msgstr ""
 #. Notification: icon reset
 msgctxt "#32741"
 msgid "Icon reset to default"
+msgstr ""
+
+#. Premiere filter mode options
+msgctxt "#32742"
+msgid "Skip"
+msgstr ""
+
+msgctxt "#32743"
+msgid "Mix in"
+msgstr ""
+
+msgctxt "#32744"
+msgid "Only"
 msgstr ""
