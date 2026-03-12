@@ -151,7 +151,7 @@ from resources.lib.service.settings import (
 )
 from resources.lib.service.library_monitor import LibraryMonitor
 from resources.lib.service.playback_monitor import PlaybackMonitor, PlaybackSettings
-from resources.lib.service.episode_tracker import EpisodeTracker, PROP_DURATION
+from resources.lib.service.episode_tracker import EpisodeTracker, PROP_DURATION, PROP_GENRE
 from resources.lib.data.storage import get_storage, reset_storage, SharedDatabaseStorage
 
 if TYPE_CHECKING:
@@ -1178,6 +1178,7 @@ class ServiceDaemon:
             if 'tvshows' not in lshows_result:
                 show_lw = []
                 show_years: Dict[int, int] = {}
+                show_genres: Dict[int, str] = {}
             else:
                 show_lw = [
                     x['tvshowid'] for x in lshows_result['tvshows']
@@ -1189,10 +1190,20 @@ class ServiceDaemon:
                     for x in lshows_result['tvshows']
                     if x['tvshowid'] in showids
                 }
-            
-            # Store show years in window properties (for write-through to shared DB)
+                # Extract show genres (list of strings → comma-separated)
+                show_genres = {
+                    x['tvshowid']: ', '.join(x.get('genre', []))
+                    for x in lshows_result['tvshows']
+                    if x['tvshowid'] in showids
+                }
+
+            # Store show years and genres in window properties
             for show_id, year in show_years.items():
                 self._window.setProperty(f"EasyTV.{show_id}.Year", str(year) if year else '')
+            for show_id, genre in show_genres.items():
+                self._window.setProperty(
+                    f"EasyTV.{show_id}.{PROP_GENRE}", genre
+                )
             
             # Mark end of show query phase
             if timer is not None:

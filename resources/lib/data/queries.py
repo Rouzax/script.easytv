@@ -441,7 +441,7 @@ def get_shows_by_lastplayed_query() -> Dict[str, Any]:
                 "operator": "is",
                 "value": "0"
             },
-            "properties": ["lastplayed", "year"],
+            "properties": ["lastplayed", "year", "genre"],
             "sort": {
                 "order": "descending",
                 "method": "lastplayed"

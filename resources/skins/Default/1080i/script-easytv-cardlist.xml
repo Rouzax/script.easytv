@@ -93,7 +93,7 @@
                     <height>25</height>
                     <font>font10</font>
                     <textcolor>FFAAAAAA</textcolor>
-                    <label>$ADDON[script.easytv 32220]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Season][/COLOR]  •  $ADDON[script.easytv 32221]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Episode][/COLOR]  •  $ADDON[script.easytv 32222]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(percentplayed)][/COLOR]  •  $ADDON[script.easytv 32223] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numondeck)][/COLOR]  •  $ADDON[script.easytv 32224] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numwatched)][/COLOR]  •  $ADDON[script.easytv 32225] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numskipped)][/COLOR]  •  $ADDON[script.easytv 32065] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(lastwatched)][/COLOR]</label>
+                    <label>$INFO[Container(655).ListItem.Property(genre),[, ]]$INFO[Container(655).ListItem.Property(duration),  •  ~,/ep]  •  $ADDON[script.easytv 32223] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numondeck)][/COLOR]  •  $ADDON[script.easytv 32224] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numwatched)][/COLOR]  •  $ADDON[script.easytv 32225] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numskipped)][/COLOR]</label>
                 </control>
             </control>
 
@@ -135,28 +135,16 @@
                     <control type="label">
                         <left>65</left>
                         <top>11</top>
-                        <width>870</width>
+                        <width>890</width>
                         <height>28</height>
                         <font>font12</font>
                         <textcolor>FFCCCCCC</textcolor>
                         <label>$INFO[ListItem.Label]</label>
                     </control>
 
-                    <!-- Episode number (top right) -->
-                    <control type="label">
-                        <left>940</left>
-                        <top>11</top>
-                        <width>150</width>
-                        <height>28</height>
-                        <align>right</align>
-                        <font>font10</font>
-                        <textcolor>FFAAAAAA</textcolor>
-                        <label>$INFO[ListItem.Property(episodeno)]</label>
-                    </control>
-
-                    <!-- Multiselect checkmark (inline after episode number) -->
+                    <!-- Multiselect checkmark -->
                     <control type="image">
-                        <left>1095</left>
+                        <left>960</left>
                         <top>14</top>
                         <width>20</width>
                         <height>20</height>
@@ -164,39 +152,39 @@
                         <visible>ListItem.IsSelected</visible>
                     </control>
 
-                    <!-- Last watched (top far right) -->
+                    <!-- Last watched label + value (top far right) -->
                     <control type="label">
-                        <left>1120</left>
+                        <left>1000</left>
                         <top>11</top>
-                        <width>210</width>
+                        <width>330</width>
                         <height>28</height>
                         <align>right</align>
                         <font>font10</font>
                         <textcolor>FF888888</textcolor>
-                        <label>$INFO[ListItem.Property(lastwatched)]</label>
+                        <label>[COLOR FF666666]$ADDON[script.easytv 32065][/COLOR]  $INFO[ListItem.Property(lastwatched)]</label>
                     </control>
 
-                    <!-- Episode title (bottom left) -->
+                    <!-- Episode number + title (bottom left) -->
                     <control type="label">
                         <left>65</left>
                         <top>42</top>
-                        <width>870</width>
+                        <width>890</width>
                         <height>26</height>
                         <font>font10</font>
                         <textcolor>FFAAAAAA</textcolor>
-                        <label>$INFO[ListItem.Label2]</label>
+                        <label>[COLOR FF888888]$INFO[ListItem.Property(episodeno)][/COLOR]  $INFO[ListItem.Label2]</label>
                     </control>
 
-                    <!-- Progress percentage (bottom right) -->
+                    <!-- Progress label + value (bottom right) -->
                     <control type="label">
-                        <left>1100</left>
+                        <left>1000</left>
                         <top>42</top>
-                        <width>230</width>
+                        <width>330</width>
                         <height>26</height>
                         <align>right</align>
                         <font>font10</font>
                         <textcolor>FF888888</textcolor>
-                        <label>$INFO[ListItem.Property(percentplayed)]</label>
+                        <label>[COLOR FF666666]$ADDON[script.easytv 32222][/COLOR]  $INFO[ListItem.Property(percentplayed)]</label>
                     </control>
                 </itemlayout>
 
@@ -225,28 +213,16 @@
                     <control type="label">
                         <left>65</left>
                         <top>11</top>
-                        <width>870</width>
+                        <width>890</width>
                         <height>28</height>
                         <font>font12</font>
                         <textcolor>$INFO[Window.Property(EasyTV.Accent)]</textcolor>
                         <label>$INFO[ListItem.Label]</label>
                     </control>
 
-                    <!-- Episode number (top right) -->
-                    <control type="label">
-                        <left>940</left>
-                        <top>11</top>
-                        <width>150</width>
-                        <height>28</height>
-                        <align>right</align>
-                        <font>font10</font>
-                        <textcolor>ffFFFFFF</textcolor>
-                        <label>$INFO[ListItem.Property(episodeno)]</label>
-                    </control>
-
-                    <!-- Multiselect checkmark (inline after episode number) -->
+                    <!-- Multiselect checkmark -->
                     <control type="image">
-                        <left>1095</left>
+                        <left>960</left>
                         <top>14</top>
                         <width>20</width>
                         <height>20</height>
@@ -254,39 +230,39 @@
                         <visible>ListItem.IsSelected</visible>
                     </control>
 
-                    <!-- Last watched (top far right) -->
+                    <!-- Last watched label + value (top far right) -->
                     <control type="label">
-                        <left>1120</left>
+                        <left>1000</left>
                         <top>11</top>
-                        <width>210</width>
+                        <width>330</width>
                         <height>28</height>
                         <align>right</align>
                         <font>font10</font>
                         <textcolor>ffFFFFFF</textcolor>
-                        <label>$INFO[ListItem.Property(lastwatched)]</label>
+                        <label>[COLOR FFCCCCCC]$ADDON[script.easytv 32065][/COLOR]  $INFO[ListItem.Property(lastwatched)]</label>
                     </control>
 
-                    <!-- Episode title (bottom left) -->
+                    <!-- Episode number + title (bottom left) -->
                     <control type="label">
                         <left>65</left>
                         <top>42</top>
-                        <width>870</width>
+                        <width>890</width>
                         <height>26</height>
                         <font>font10</font>
                         <textcolor>ffFFFFFF</textcolor>
-                        <label>$INFO[ListItem.Label2]</label>
+                        <label>[COLOR FFCCCCCC]$INFO[ListItem.Property(episodeno)][/COLOR]  $INFO[ListItem.Label2]</label>
                     </control>
 
-                    <!-- Progress percentage (bottom right) -->
+                    <!-- Progress label + value (bottom right) -->
                     <control type="label">
-                        <left>1100</left>
+                        <left>1000</left>
                         <top>42</top>
-                        <width>230</width>
+                        <width>330</width>
                         <height>26</height>
                         <align>right</align>
                         <font>font10</font>
                         <textcolor>ffFFFFFF</textcolor>
-                        <label>$INFO[ListItem.Property(percentplayed)]</label>
+                        <label>[COLOR FFCCCCCC]$ADDON[script.easytv 32222][/COLOR]  $INFO[ListItem.Property(percentplayed)]</label>
                     </control>
                 </focusedlayout>
             </control>

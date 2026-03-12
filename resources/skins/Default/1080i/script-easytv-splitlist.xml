@@ -216,28 +216,28 @@
                         <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">common/line_fade.png</texture>
                     </control>
 
-                    <!-- Episode title -->
+                    <!-- Genre + Duration -->
                     <control type="label">
                         <left>0</left>
                         <top>377</top>
+                        <width>590</width>
+                        <height>28</height>
+                        <align>center</align>
+                        <font>font10</font>
+                        <textcolor>FF888888</textcolor>
+                        <label>$INFO[Container(655).ListItem.Property(genre),[, ]]$INFO[Container(655).ListItem.Property(duration),  •  ~,/ep]</label>
+                    </control>
+
+                    <!-- Episode title -->
+                    <control type="label">
+                        <left>0</left>
+                        <top>405</top>
                         <width>590</width>
                         <height>35</height>
                         <align>center</align>
                         <font>font13</font>
                         <textcolor>ffFFFFFF</textcolor>
                         <label>$INFO[Container(655).ListItem.Label2]</label>
-                    </control>
-
-                    <!-- Season / Episode info -->
-                    <control type="label">
-                        <left>0</left>
-                        <top>416</top>
-                        <width>590</width>
-                        <height>30</height>
-                        <align>center</align>
-                        <font>font10</font>
-                        <textcolor>FFAAAAAA</textcolor>
-                        <label>$ADDON[script.easytv 32220]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Season][/COLOR]  •  $ADDON[script.easytv 32221]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Episode][/COLOR]  •  $ADDON[script.easytv 32222]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(percentplayed)][/COLOR]</label>
                     </control>
 
                     <!-- On Deck / Watched / Skipped counts -->
@@ -252,7 +252,7 @@
                         <label>$ADDON[script.easytv 32223] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numondeck)][/COLOR]  •  $ADDON[script.easytv 32224] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numwatched)][/COLOR]  •  $ADDON[script.easytv 32225] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numskipped)][/COLOR]</label>
                     </control>
 
-                    <!-- Last watched -->
+                    <!-- Last watched + Progress -->
                     <control type="label">
                         <left>0</left>
                         <top>484</top>
@@ -261,7 +261,7 @@
                         <align>center</align>
                         <font>font10</font>
                         <textcolor>FFAAAAAA</textcolor>
-                        <label>$ADDON[script.easytv 32065]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(lastwatched)][/COLOR]</label>
+                        <label>$ADDON[script.easytv 32065]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(lastwatched)][/COLOR]  •  $ADDON[script.easytv 32222]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(percentplayed)][/COLOR]</label>
                     </control>
 
                     <!-- Separator -->

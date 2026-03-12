@@ -59,7 +59,7 @@ from resources.lib.constants import (
     CONTEXT_REFRESH,
 )
 from resources.lib.data.storage import get_storage
-from resources.lib.utils import get_logger, lang, json_query
+from resources.lib.utils import get_logger, lang, json_query, format_duration
 
 if TYPE_CHECKING:
     from resources.lib.utils import StructuredLogger
@@ -242,6 +242,8 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         ep_no = WINDOW.getProperty(f"{prop_prefix}.EpisodeNo")
         num_watched = WINDOW.getProperty(f"{prop_prefix}.CountWatchedEps")
         num_ondeck = WINDOW.getProperty(f"{prop_prefix}.CountonDeckEps")
+        genre = WINDOW.getProperty(f"{prop_prefix}.Genre")
+        duration_secs = WINDOW.getProperty(f"{prop_prefix}.Duration")
 
         # Calculate time since last watched (calendar-day aware)
         if lastplayed == 0:
@@ -274,6 +276,8 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         list_item.setProperty("lastwatched", lw_time)
         list_item.setProperty("percentplayed", pct_played)
         list_item.setProperty("episodeno", ep_no)
+        list_item.setProperty("genre", genre)
+        list_item.setProperty("duration", format_duration(duration_secs))
 
         list_item.setProperty('ID', str(show_id))
         list_item.setProperty("file", file_path)
@@ -312,6 +316,9 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         except ValueError:
             num_skipped = '0'
 
+        genre = WINDOW.getProperty(f"{prop_prefix}.Genre")
+        duration_secs = WINDOW.getProperty(f"{prop_prefix}.Duration")
+
         # Update the item in-place
         item.setLabel2(eptitle)
         item.setArt({'thumb': poster, 'icon': poster})
@@ -322,6 +329,8 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         item.setProperty("lastwatched", lang(32120))  # "Today"
         item.setProperty("percentplayed", pct_played)
         item.setProperty("episodeno", ep_no)
+        item.setProperty("genre", genre)
+        item.setProperty("duration", format_duration(duration_secs))
         item.setProperty("file", file_path)
         item.setProperty("EpisodeID", episode_id)
         info_tag = item.getVideoInfoTag()

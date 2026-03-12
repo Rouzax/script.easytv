@@ -282,7 +282,7 @@ def merge_and_sort_shows(
     Args:
         shows_from_query: Raw show data from Kodi's JSON-RPC query.
         shows_from_service: List of show IDs that have next episodes cached.
-        sort_by: Sort method (0=name, 1=lastplayed, 2=unwatched, 3=watched, 4=season, 5=random).
+        sort_by: Sort method (0=name, 1=lastplayed, 2=unwatched, 3=watched, 4=season, 5=random, 6=duration).
         sort_reverse: If True, reverse the sort order.
         language: User's language for article stripping.
     
@@ -346,6 +346,18 @@ def merge_and_sort_shows(
         random.shuffle(intermediate)
         return intermediate
 
+    elif sort_by == 6:
+        # Sort by average episode duration
+        intermediate = [
+            [get_show_duration(x['tvshowid']),
+             parse_lastplayed_date(x['lastplayed']) if x.get('lastplayed') else 0,
+             x['tvshowid']]
+            for x in shows_from_query if x['tvshowid'] in shows_from_service
+        ]
+        # Default is descending (longest first); sort_reverse inverts to ascending
+        intermediate.sort(reverse=not sort_reverse)
+        return [x[1:] for x in intermediate]
+
     else:
         # Default: SORT BY LAST WATCHED (sort_by == 1 or other)
         intermediate = [
@@ -372,7 +384,7 @@ def fetch_unwatched_shows(sort_by: int, sort_reverse: bool, language: str = 'Eng
     cached show data. Returns only shows that have next episodes ready.
     
     Args:
-        sort_by: Sort method (0=name, 1=lastplayed, 2=unwatched, 3=watched, 4=season, 5=random).
+        sort_by: Sort method (0=name, 1=lastplayed, 2=unwatched, 3=watched, 4=season, 5=random, 6=duration).
         sort_reverse: If True, reverse the sort order.
         language: User's language for article stripping.
     
