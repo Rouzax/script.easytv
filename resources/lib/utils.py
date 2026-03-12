@@ -704,6 +704,30 @@ def runtime_converter(time_string: str) -> int:
         return 0
 
 
+def format_duration(seconds: Union[int, str]) -> str:
+    """
+    Format a duration in seconds to a human-readable string.
+
+    Args:
+        seconds: Duration in seconds (int or string).
+
+    Returns:
+        Formatted string like "43 min" or "1h 30min". Empty string if zero/invalid.
+    """
+    try:
+        total = int(seconds)
+    except (ValueError, TypeError):
+        return ''
+    if total <= 0:
+        return ''
+    minutes = round(total / 60)
+    if minutes < 60:
+        return f"{minutes} min"
+    hours = minutes // 60
+    remaining = minutes % 60
+    if remaining == 0:
+        return f"{hours}h"
+    return f"{hours}h {remaining}min"
 
 
 def get_playcount_minimum_percent() -> int:

@@ -80,6 +80,7 @@ PROP_PREMIERED = "Premiered"
 PROP_PLOT = "Plot"
 PROP_IS_SKIPPED = "IsSkipped"
 PROP_DURATION = "Duration"
+PROP_GENRE = "Genre"
 PROP_YEAR = "Year"
 
 # All properties that need to be copied during swap_over

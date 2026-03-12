@@ -340,6 +340,8 @@ zip -r "script.easytv-${version}.zip" script.easytv/ \
   -x "script.easytv/.worktrees/" \
   -x "script.easytv/.ruff_cache/*" \
   -x "script.easytv/.ruff_cache/" \
+  -x "script.easytv/.pytest_cache/*" \
+  -x "script.easytv/.pytest_cache/" \
   -x "script.easytv/tests/*" \
   -x "script.easytv/tests/" \
   -x "script.easytv/conftest.py" \
@@ -362,6 +364,7 @@ zip -r "script.easytv-${version}.zip" script.easytv/ \
 - `_temp/` — temporary working directory
 - `.worktrees/` — git worktree checkouts
 - `.ruff_cache/` — ruff linter cache
+- `.pytest_cache/` — pytest cache
 - `tests/` — pytest test suite
 - `conftest.py`, `pytest.ini` — pytest configuration
 

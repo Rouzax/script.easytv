@@ -74,6 +74,10 @@ msgctxt "#32069"
 msgid "Random"
 msgstr ""
 
+msgctxt "#32070"
+msgid "Avg Episode Duration"
+msgstr ""
+
 #. View style options
 msgctxt "#32073"
 msgid "Card List"
