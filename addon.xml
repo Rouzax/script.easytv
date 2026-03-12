@@ -25,13 +25,13 @@
         <forum>https://forum.kodi.tv/showthread.php?tid=383902</forum>
         <website>https://github.com/Rouzax/script.easytv</website>
         <source>https://github.com/Rouzax/script.easytv</source>
-        <news>v1.5.0~alpha1 (2026-03-11)
-- Four browse views: Card List, Posters, Big Screen, and new Split View
-- Theme selection with four accent color schemes
-- Custom addon icon for EasyTV and clones
-- Redesigned dialogs with consistent themed styling
-- Show selector with inline search and poster preview
-- Browse list updates in-place after playback</news>
+        <news>v1.5.0~alpha2 (2026-03-12)
+- Browse views now show genre and average episode duration
+- New sort options: duration and random shuffle
+- 3-state premiere filter: Skip, Mix in, or Only
+- Fixed clone settings missing new view and filter options
+- Fixed various display issues in browse views
+- Improved crash resilience with exception handlers on all entry points</news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>

@@ -1,6 +1,52 @@
 EasyTV Changelog
 ================
 
+v1.5.0~alpha2 (2026-03-12)
+--------------------------
+New Features:
+  - Genre and duration info in browse views: All four view styles now display
+    the show's genre and average episode duration. Added compact S01E01
+    notation replacing verbose "Season X • Episode Y" format.
+  - Duration sort in browse mode: "Avg Episode Duration" available as a new
+    sort option alongside Name, Last Watched, Unwatched, etc.
+  - Random sort option in browse mode: Shuffle the show list randomly.
+  - 3-state premiere filter: Series premieres and season premieres settings now
+    offer three modes — Skip (exclude), Mix in (default, include in rotation),
+    or Only (show exclusively premieres for discovering new shows).
+
+Bug Fixes:
+  - Fixed: Clone settings missing Split View and playlist type filter options
+    added in alpha1.
+  - Fixed: Clone dialogs showing hardcoded "EasyTV" instead of the clone's
+    own addon name.
+  - Fixed: Partially-watched premiere episodes not categorized as Continue
+    Watching in browse views.
+  - Fixed: Median duration calculation incorrect for shows with an even number
+    of episodes (off-by-one in middle element selection).
+  - Fixed: Episode and season numbers displayed as floats (e.g., "2.0") instead
+    of integers in some browse view layouts.
+  - Fixed: Potential infinite loop in browse mode when the dialog window fails
+    to open within the expected timeout.
+  - Fixed: Python 3.10+ type hints (X | Y syntax) breaking compatibility with
+    Kodi Windows builds running Python 3.8.
+  - Fixed: File handle leaks in log file initialization and clone updater when
+    exceptions occur during file operations.
+
+Improvements:
+  - Added top-level exception handlers to all script entry points, preventing
+    silent crashes from unhandled exceptions.
+  - Added logging to previously silent exception handlers across the codebase.
+  - Refined browse view detail panel layout for consistency across all four
+    view styles.
+
+Internal:
+  - Added unit test suite with 167 tests covering pure logic functions
+    (sorting, filtering, duration calculation, version parsing, etc.).
+  - Consolidated window property names and setting IDs into constants module.
+  - Extracted duplicate addon restart pattern to utils.restart_addon().
+  - Removed dead code, fixed multiselect dialog state sync, added database
+    column validation for shared sync storage.
+
 v1.5.0~alpha1 (2026-03-11)
 --------------------------
 New Features:
