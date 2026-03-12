@@ -96,6 +96,7 @@ from resources.lib.constants import (
     PROP_PLAYLIST_RUNNING,
     PROP_RANDOM_ORDER_SHUFFLE,
     PROP_SHOWS_WITH_NEXT_EPISODES,
+    PREMIERE_MIX_IN,
     SETTING_MULTI_INSTANCE_SYNC,
 )
 from resources.lib.utils import (
@@ -978,8 +979,8 @@ class ServiceDaemon:
             movie_chance=config_dict.get('movie_chance', 25),
             start_partials_tv=config_dict.get('start_partials_tv', True),
             start_partials_movies=config_dict.get('start_partials_movies', True),
-            premieres=config_dict.get('premieres', True),
-            season_premieres=config_dict.get('season_premieres', True),
+            premieres=config_dict.get('premieres', PREMIERE_MIX_IN),
+            season_premieres=config_dict.get('season_premieres', PREMIERE_MIX_IN),
             multiple_shows=config_dict.get('multiple_shows', False),
             sort_by=config_dict.get('sort_by', 0),
             sort_reverse=config_dict.get('sort_reverse', False),

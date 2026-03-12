@@ -164,8 +164,8 @@ def main_entry(addon, log):
                 movie_chance=get_int_setting('movie_chance'),
                 start_partials_tv=get_bool_setting('start_partials_tv'),
                 start_partials_movies=get_bool_setting('start_partials_movies'),
-                premieres=get_bool_setting('premieres'),
-                season_premieres=get_bool_setting('season_premieres'),
+                premieres=get_int_setting('premieres'),
+                season_premieres=get_int_setting('season_premieres'),
                 multiple_shows=get_bool_setting('multiple_shows'),
                 sort_by=sort_by, sort_reverse=sort_reverse, language=language,
                 movie_playlist=movie_playlist,
@@ -195,8 +195,8 @@ def main_entry(addon, log):
                 sort_by=sort_by,
                 sort_reverse=sort_reverse,
                 language=language,
-                include_series_premieres=get_bool_setting('premieres'),
-                include_season_premieres=get_bool_setting('season_premieres')
+                series_premieres=get_int_setting('premieres'),
+                season_premieres=get_int_setting('season_premieres')
             ),
             monitor=xbmc.Monitor(),
             logger=log

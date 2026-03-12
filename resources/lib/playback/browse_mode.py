@@ -43,6 +43,9 @@ from resources.lib.constants import (
     PLAYLIST_ADD_DELAY_MS,
     DIALOG_WAIT_SLEEP_MS,
     DIALOG_WAIT_MAX_TICKS,
+    PREMIERE_MIX_IN,
+    PREMIERE_ONLY,
+    PREMIERE_SKIP,
     PROP_ART_FETCHED,
     PROP_PLAYLIST_RUNNING,
     PROP_RANDOM_ORDER_SHUFFLE,
@@ -147,8 +150,8 @@ class EpisodeListConfig:
         sort_by: Sort method for shows (0=name, 1=last played, 2=random)
         sort_reverse: Whether to reverse the sort order
         language: System language for sorting
-        include_series_premieres: Whether to include series premieres (S01E01)
-        include_season_premieres: Whether to include season premieres (SxxE01)
+        series_premieres: Series premiere filter mode (PREMIERE_SKIP=0, PREMIERE_MIX_IN=1, PREMIERE_ONLY=2)
+        season_premieres: Season premiere filter mode (PREMIERE_SKIP=0, PREMIERE_MIX_IN=1, PREMIERE_ONLY=2)
     """
     skin: int = 0
     limit_shows: bool = False
@@ -162,8 +165,8 @@ class EpisodeListConfig:
     sort_by: int = 1
     sort_reverse: bool = False
     language: str = 'English'
-    include_series_premieres: bool = True
-    include_season_premieres: bool = True
+    series_premieres: int = PREMIERE_MIX_IN
+    season_premieres: int = PREMIERE_MIX_IN
 
 
 def build_episode_list(
@@ -216,22 +219,39 @@ def build_episode_list(
     mon = monitor or xbmc.Monitor()
     
     # Premiere filter helper (needed by _fetch_data)
+    only_mode = (config.series_premieres == PREMIERE_ONLY
+                 or config.season_premieres == PREMIERE_ONLY)
+    needs_premiere_filter = (only_mode
+                             or config.series_premieres == PREMIERE_SKIP
+                             or config.season_premieres == PREMIERE_SKIP)
+
     def should_include(show_entry):
         """Check if episode should be included based on premiere settings."""
         episode_no = WINDOW.getProperty(f"EasyTV.{show_entry[1]}.EpisodeNo")
         if not episode_no or len(episode_no) < 6:
-            return True
+            return not only_mode
         try:
-            episode_num = int(episode_no[4:6])
-            if episode_num != 1:
-                return True
             season_num = int(episode_no[1:3])
-            if season_num == 1:
-                return config.include_series_premieres
-            else:
-                return config.include_season_premieres
+            episode_num = int(episode_no[4:6])
         except (ValueError, IndexError):
+            return not only_mode
+
+        is_premiere = (episode_num == 1)
+
+        if only_mode:
+            if not is_premiere:
+                return False
+            if season_num == 1 and config.series_premieres == PREMIERE_SKIP:
+                return False
+            if season_num > 1 and config.season_premieres == PREMIERE_SKIP:
+                return False
             return True
+        else:
+            if not is_premiere:
+                return True
+            if season_num == 1:
+                return config.series_premieres != PREMIERE_SKIP
+            return config.season_premieres != PREMIERE_SKIP
 
     def _fetch_data():
         """Fetch, filter, and sort show data from Kodi."""
@@ -244,7 +264,7 @@ def build_episode_list(
                 min_minutes=config.duration_min,
                 max_minutes=config.duration_max
             )
-        if not config.include_series_premieres or not config.include_season_premieres:
+        if needs_premiere_filter:
             show_data = [x for x in show_data if should_include(x)]
         if config.excl_random_order_shows and random_order_shows:
             return [x for x in show_data if x[1] not in random_order_shows]
