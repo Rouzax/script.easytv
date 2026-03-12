@@ -437,7 +437,7 @@ DURATION_CACHE_VERSION = 1
 # Service / System Window Properties
 # =============================================================================
 # Service lifecycle status ('starting', 'true', 'marco', 'polo')
-PROP_SERVICE_RUNNING = "EasyTV.service_running"
+PROP_SERVICE_RUNNING = "EasyTV_service_running"
 # Addon version string
 PROP_VERSION = "EasyTV.Version"
 # Path to addon directory

@@ -195,31 +195,6 @@
 				</setting>
 			</group>
 
-			<!-- Group 2.4: Sorting -->
-			<!-- Note: "Watch Order" (random_order_shows) is configured in main EasyTV only,
-			     as it's a library-wide behavior setting, not a per-clone preference -->
-			<group id="sorting" label="32556">
-				<setting id="sort_by" type="integer" label="32516" help="32410">
-					<level>0</level>
-					<default>1</default>
-					<constraints>
-						<options>
-							<option label="32064">0</option>
-							<option label="32065">1</option>
-							<option label="32066">2</option>
-							<option label="32067">3</option>
-							<option label="32068">4</option>
-						</options>
-					</constraints>
-					<control type="spinner" format="string" />
-				</setting>
-
-				<setting id="sort_reverse" type="boolean" label="32517" help="32411">
-					<level>1</level>
-					<default>false</default>
-					<control type="toggle" />
-				</setting>
-			</group>
 		</category>
 
 		<!-- ============================================================== -->
@@ -255,7 +230,31 @@
 				</setting>
 			</group>
 
-			<!-- Group 3.2: Performance -->
+			<!-- Group 3.2: Sorting -->
+			<group id="sorting" label="32556">
+				<setting id="sort_by" type="integer" label="32516" help="32410">
+					<level>0</level>
+					<default>1</default>
+					<constraints>
+						<options>
+							<option label="32064">0</option>
+							<option label="32065">1</option>
+							<option label="32066">2</option>
+							<option label="32067">3</option>
+							<option label="32068">4</option>
+						</options>
+					</constraints>
+					<control type="spinner" format="string" />
+				</setting>
+
+				<setting id="sort_reverse" type="boolean" label="32517" help="32411">
+					<level>1</level>
+					<default>false</default>
+					<control type="toggle" />
+				</setting>
+			</group>
+
+			<!-- Group 3.3: Performance -->
 			<group id="performance" label="32557">
 				<setting id="limit_shows" type="boolean" label="32519" help="32413">
 					<level>1</level>

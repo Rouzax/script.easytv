@@ -1569,7 +1569,8 @@ class ServiceDaemon:
         show_title = show_data['show_title']
         episode_number = show_data['episode_number']
         season_number = show_data['season_number']
-        
+        has_resume = show_data['has_resume']
+
         if remove:
             remove_show_from_all_playlists(
                 show_id,
@@ -1583,8 +1584,8 @@ class ServiceDaemon:
                     show_id=show_id
                 )
         else:
-            category = get_show_category(episode_number)
-            premiere_category = get_premiere_category(season_number, episode_number)
+            category = get_show_category(episode_number, has_resume=has_resume)
+            premiere_category = get_premiere_category(season_number, episode_number, has_resume=has_resume)
             
             update_show_in_playlists(
                 show_id,
