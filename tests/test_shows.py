@@ -110,6 +110,16 @@ class TestGetShowCategory:
     def test_episode_10_is_continue(self):
         assert get_show_category(10) == CATEGORY_CONTINUE_WATCHING
 
+    def test_episode_1_with_resume_is_continue(self):
+        """Partially-watched premiere should be continue_watching, not start_fresh."""
+        assert get_show_category(1, has_resume=True) == CATEGORY_CONTINUE_WATCHING
+
+    def test_episode_1_without_resume_is_start_fresh(self):
+        assert get_show_category(1, has_resume=False) == CATEGORY_START_FRESH
+
+    def test_episode_2_with_resume_is_continue(self):
+        assert get_show_category(2, has_resume=True) == CATEGORY_CONTINUE_WATCHING
+
 
 # ── get_premiere_category ────────────────────────────────────────────
 
@@ -128,6 +138,17 @@ class TestGetPremiereCategory:
 
     def test_s03e05_not_premiere(self):
         assert get_premiere_category(3, 5) == ""
+
+    def test_s01e01_with_resume_not_premiere(self):
+        """Partially-watched show premiere is no longer a premiere."""
+        assert get_premiere_category(1, 1, has_resume=True) == ""
+
+    def test_s02e01_with_resume_not_premiere(self):
+        """Partially-watched season premiere is no longer a premiere."""
+        assert get_premiere_category(2, 1, has_resume=True) == ""
+
+    def test_s05e01_with_resume_not_premiere(self):
+        assert get_premiere_category(5, 1, has_resume=True) == ""
 
 
 # ── _get_playlist_filename ───────────────────────────────────────────

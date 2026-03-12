@@ -26,6 +26,7 @@ _temp/
 
 # Implementation plans (development only)
 IMPLEMENTATION.md
+docs/plans/
 
 # Claude Code
 CLAUDE.md

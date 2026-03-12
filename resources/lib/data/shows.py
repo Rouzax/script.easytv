@@ -623,49 +623,57 @@ def extract_movieids_from_playlist(playlist_path: str) -> List[int]:
 # Smart Playlist Categorization
 # =============================================================================
 
-def get_show_category(episode_number: int) -> str:
+def get_show_category(episode_number: int, has_resume: bool = False) -> str:
     """
-    Determine which category playlist a show belongs to based on episode number.
-    
-    Episode 1 of any season means the user hasn't started watching that season yet,
-    so it goes in "Start Fresh". Episode 2+ means they're mid-season, so it goes
-    in "Continue Watching".
-    
+    Determine which category playlist a show belongs to based on episode number
+    and resume state.
+
+    Episode 1 of any season with no resume point means the user hasn't started
+    watching that season yet, so it goes in "Start Fresh". Episode 1 with a
+    resume point means the user started but didn't finish, so it goes in
+    "Continue Watching". Episode 2+ always goes in "Continue Watching".
+
     Args:
         episode_number: The episode number (1, 2, 3, etc.)
-    
+        has_resume: Whether the episode has a resume point (partially watched).
+
     Returns:
-        CATEGORY_START_FRESH if episode == 1, CATEGORY_CONTINUE_WATCHING otherwise.
+        CATEGORY_START_FRESH if episode == 1 and no resume point,
+        CATEGORY_CONTINUE_WATCHING otherwise.
     """
-    if episode_number == SEASON_START_EPISODE:
+    if episode_number == SEASON_START_EPISODE and not has_resume:
         return CATEGORY_START_FRESH
     return CATEGORY_CONTINUE_WATCHING
 
 
-def get_premiere_category(season_number: int, episode_number: int) -> str:
+def get_premiere_category(
+    season_number: int, episode_number: int, has_resume: bool = False
+) -> str:
     """
     Determine which premiere playlist a show belongs to, if any.
-    
+
     - S01E01 = Show Premiere (brand new show)
     - S02E01+ = Season Premiere (new season of existing show)
     - Episode > 1 = Not a premiere (empty string)
-    
+    - Episode 1 with resume point = Not a premiere (user already started it)
+
     Args:
         season_number: The season number (1, 2, 3, etc.)
         episode_number: The episode number (1, 2, 3, etc.)
-    
+        has_resume: Whether the episode has a resume point (partially watched).
+
     Returns:
-        CATEGORY_SHOW_PREMIERE if S01E01
-        CATEGORY_SEASON_PREMIERE if S02E01+
-        Empty string if episode > 1 (not a premiere)
+        CATEGORY_SHOW_PREMIERE if S01E01 and no resume point
+        CATEGORY_SEASON_PREMIERE if S02E01+ and no resume point
+        Empty string if episode > 1 or has resume point
     """
     from resources.lib.constants import (
         CATEGORY_SHOW_PREMIERE,
         CATEGORY_SEASON_PREMIERE,
     )
-    
-    # Not a premiere if episode > 1
-    if episode_number != SEASON_START_EPISODE:
+
+    # Not a premiere if episode > 1 or already partially watched
+    if episode_number != SEASON_START_EPISODE or has_resume:
         return ""
     
     # S01E01 = Show Premiere
@@ -741,13 +749,18 @@ def fetch_show_episode_data(tvshowid: int) -> Optional[Dict[str, Any]]:
         season_number = int(season_str) if season_str else SEASON_START_EPISODE
     except (ValueError, TypeError):
         season_number = SEASON_START_EPISODE
-    
+
+    # Check resume state
+    resume_str = WINDOW.getProperty("EasyTV.%s.Resume" % tvshowid)
+    has_resume = resume_str.lower() == "true"
+
     return {
         'filename': filename,
         'episode_number': episode_number,
         'season_number': season_number,
         'episodeno': episodeno,
-        'show_title': showname
+        'show_title': showname,
+        'has_resume': has_resume
     }
 
 
