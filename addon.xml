@@ -23,7 +23,7 @@
         <platform>all</platform>
         <license>GPL-3.0-only</license>
         <forum>https://forum.kodi.tv/showthread.php?tid=383902</forum>
-        <website>https://github.com/Rouzax/script.easytv</website>
+        <website>https://rouzax.github.io/script.easytv/</website>
         <source>https://github.com/Rouzax/script.easytv</source>
         <news>v1.5.0~alpha2 (2026-03-12)
 - Browse views now show genre and average episode duration
