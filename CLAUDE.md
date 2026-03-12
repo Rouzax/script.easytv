@@ -113,6 +113,23 @@ find . -name "*.py" -exec python3 -m py_compile {} \;
 pyflakes $(find . -name "*.py" -not -path "*/__pycache__/*")
 ```
 
+## Testing
+
+Tests live in `tests/` and use pytest. Kodistubs provide runtime Kodi API stubs — no mocking needed for imports.
+
+```bash
+# Run all tests
+python3 -m pytest tests/ -v
+
+# Run a specific test file
+python3 -m pytest tests/test_utils.py -v
+```
+
+Guidelines:
+- When writing new pure logic functions, add corresponding tests
+- When fixing bugs, add a regression test
+- `tests/conftest.py` handles sys.path setup and logger reset
+
 ## Architecture
 
 Modular structure under `resources/lib/`:
@@ -322,7 +339,11 @@ zip -r "script.easytv-${version}.zip" script.easytv/ \
   -x "script.easytv/.worktrees/*" \
   -x "script.easytv/.worktrees/" \
   -x "script.easytv/.ruff_cache/*" \
-  -x "script.easytv/.ruff_cache/"
+  -x "script.easytv/.ruff_cache/" \
+  -x "script.easytv/tests/*" \
+  -x "script.easytv/tests/" \
+  -x "script.easytv/conftest.py" \
+  -x "script.easytv/pytest.ini"
 ```
 
 **Include** (Kodi needs these):
@@ -341,6 +362,8 @@ zip -r "script.easytv-${version}.zip" script.easytv/ \
 - `_temp/` — temporary working directory
 - `.worktrees/` — git worktree checkouts
 - `.ruff_cache/` — ruff linter cache
+- `tests/` — pytest test suite
+- `conftest.py`, `pytest.ini` — pytest configuration
 
 If you add a new dev-only file to the repo root, **add it to the exclude list above**.
 
