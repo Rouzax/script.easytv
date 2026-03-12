@@ -1706,9 +1706,9 @@ class ServiceDaemon:
             logger=self._log,
             on_add_random_show=self._add_to_shows_with_next_episodes,
             on_reshuffle_random_shows=self._reshuffle_random_order_shows,
-            on_store_next_ep=lambda *args: None,  # Not ready yet
+            on_store_next_ep=lambda *_args: None,  # Not ready yet
             on_remove_show=self._remove_from_shows_with_next_episodes,
-            on_update_smartplaylist=lambda *args: None,  # Not ready yet
+            on_update_smartplaylist=lambda *_args: None,  # Not ready yet
             shows_with_next_episodes=self._state.shows_with_next_episodes,
         )
         
