@@ -160,6 +160,9 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         from resources.lib.ui import apply_theme
         apply_theme(self)
 
+        # Set addon name for skin heading (shows clone name for clones)
+        self.setProperty('EasyTV.AddonName', xbmcaddon.Addon().getAddonInfo('name'))
+
         if not self._load_items:
             return
 
