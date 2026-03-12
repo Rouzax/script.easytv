@@ -70,6 +70,10 @@ msgctxt "#32068"
 msgid "Season"
 msgstr ""
 
+msgctxt "#32069"
+msgid "Random"
+msgstr ""
+
 #. View style options
 msgctxt "#32073"
 msgid "Card List"

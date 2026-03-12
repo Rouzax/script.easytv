@@ -264,6 +264,7 @@
 							<option label="32066">2</option>
 							<option label="32067">3</option>
 							<option label="32068">4</option>
+							<option label="32069">5</option>
 						</options>
 					</constraints>
 					<control type="spinner" format="string" />
