@@ -51,7 +51,8 @@ from resources.lib.playback.random_player import (
 
 
 def _get_population(filter_enabled, populate_by, playlist_source,
-                    user_playlist_path, selected_shows, dialog, log):
+                    user_playlist_path, selected_shows, dialog, log,
+                    addon_name='EasyTV'):
     """Build population filter based on settings."""
     if not filter_enabled:
         return {'none': ''}
@@ -67,7 +68,7 @@ def _get_population(filter_enabled, populate_by, playlist_source,
                 log.warning("TV show playlist file not found", 
                            event="playlist.missing", path=user_playlist_path)
                 # 32607 = "TV show playlist not found. Please update your settings."
-                dialog.ok("EasyTV", lang(32607))
+                dialog.ok(addon_name, lang(32607))
                 sys.exit()
             return {'playlist': user_playlist_path}
         return {'none': ''}
@@ -96,6 +97,7 @@ def main_entry(addon, log):
     dialog = xbmcgui.Dialog()
     window = xbmcgui.Window(KODI_HOME_WINDOW_ID)
     script_path = addon.getAddonInfo('path')
+    addon_name = addon.getAddonInfo('name')
 
     # Track which addon (main or clone) started playback for service dialogs
     window.setProperty('EasyTV.SourceAddonId', addon.getAddonInfo('id'))
@@ -121,12 +123,12 @@ def main_entry(addon, log):
     population = _get_population(
         filter_enabled, addon.getSetting('populate_by'),
         addon.getSetting('playlist_source'), addon.getSetting('user_playlist_path'),
-        selected_shows, dialog, log
+        selected_shows, dialog, log, addon_name=addon_name
     )
 
     # Determine mode: 0=browse, 1=random playlist, 2=ask
     if primary_function == '2':
-        choice = show_confirm('EasyTV', lang(32100) + '\n\n' + lang(32101),
+        choice = show_confirm(addon_name, lang(32100) + '\n\n' + lang(32101),
                               yes_label=lang(32103), no_label=lang(32102))
         # show_confirm returns bool: True=yes(surprise me), False=no(show me)
     else:
@@ -149,7 +151,7 @@ def main_entry(addon, log):
                     log.warning("Movie playlist file not found", 
                                event="playlist.missing", path=movie_playlist_path)
                     # 32606 = "Movie playlist not found. Please update your settings."
-                    dialog.ok("EasyTV", lang(32606))
+                    dialog.ok(addon_name, lang(32606))
                     sys.exit()
                 movie_playlist = movie_playlist_path
         
@@ -203,7 +205,7 @@ def main_entry(addon, log):
         )
 
 
-def _handle_special_modes(mode, addon, log):
+def _handle_special_modes(mode, addon, log, addon_name='EasyTV'):
     """Handle special invocation modes (from settings actions)."""
     if mode == 'playlist':
         # Parse optional playlist type from argv[2]
@@ -254,7 +256,7 @@ def _handle_special_modes(mode, addon, log):
         if set_custom_icon(addon_id):
             xbmc.executebuiltin(
                 'Notification(%s,%s,%i,%s)' % (
-                    'EasyTV', lang(32740), 3000,
+                    addon_name, lang(32740), 3000,
                     os.path.join(addon.getAddonInfo('path'), 'icon.png')
                 )
             )
@@ -270,7 +272,7 @@ def _handle_special_modes(mode, addon, log):
         if reset_icon(addon_id):
             xbmc.executebuiltin(
                 'Notification(%s,%s,%i,%s)' % (
-                    'EasyTV', lang(32741), 3000,
+                    addon_name, lang(32741), 3000,
                     os.path.join(addon.getAddonInfo('path'), 'icon.png')
                 )
             )
@@ -318,7 +320,7 @@ def _handle_version_mismatch(addon_version, addon_version_str, addon_id, script_
     if addon_version != service_version and addon_id == "script.easytv":
         log.warning("Version mismatch", event="version.mismatch", 
                     addon_version=addon_version_str, service_version=service_version_str)
-        dialog.ok('EasyTV', lang(32108))
+        dialog.ok(script_name, lang(32108))
         return False
 
     # Check if clone is older than service (compare_versions returns -1 if v1 < v2)
@@ -346,7 +348,7 @@ def _handle_version_mismatch(addon_version, addon_version_str, addon_id, script_
         
         log.warning("Clone addon out of date", event="clone.outdated",
                     clone_version=addon_version_str, service_version=service_version_str)
-        if show_confirm('EasyTV', lang(32110) + '\n' + lang(32111)):
+        if show_confirm(script_name, lang(32110) + '\n' + lang(32111)):
             import os
             # Use main addon's update_clone.py, not the clone's old version
             # This ensures clones get the latest update logic (e.g., fixed settings replacement)
@@ -374,7 +376,7 @@ if __name__ == "__main__":
 
         # Handle special modes from command line
         if len(sys.argv) > 1:
-            _handle_special_modes(sys.argv[1], addon, log)
+            _handle_special_modes(sys.argv[1], addon, log, addon_name=script_name)
             sys.exit()
 
         window = xbmcgui.Window(KODI_HOME_WINDOW_ID)
@@ -382,12 +384,12 @@ if __name__ == "__main__":
 
         # Check service status
         if window.getProperty(PROP_SERVICE_RUNNING) == 'starting':
-            dialog.ok("EasyTV", lang(32115) + '\n' + lang(32116))
+            dialog.ok(script_name, lang(32115) + '\n' + lang(32116))
             sys.exit()
 
         if not _check_service_running(window, log):
             log.warning("EasyTV service not running", event="service.missing")
-            if show_confirm('EasyTV', lang(32106) + '\n' + lang(32107)):
+            if show_confirm(script_name, lang(32106) + '\n' + lang(32107)):
                 restart_addon("script.easytv", ADDON_RESTART_DELAY_MS)
             sys.exit()
 
