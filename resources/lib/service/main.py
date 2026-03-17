@@ -53,7 +53,7 @@ def main() -> None:
     try:
         addon = xbmcaddon.Addon()
         version_str = addon.getAddonInfo('version')
-        version = parse_version(version_str)
+        parse_version(version_str)  # Validate version string early
         log = get_logger('service')
 
         log.info(
