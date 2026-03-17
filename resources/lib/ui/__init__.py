@@ -12,6 +12,7 @@
 EasyTV User Interface Components.
 
 This package provides UI functionality:
+- main.py: UI entry point logic (called from default.py)
 - browse_window.py: BrowseWindow class (main episode list window)
 - context_menu.py: ContextMenuWindow class (right-click menu)
 - dialogs.py: Dialog helper functions (error dialogs, playlist selection)
