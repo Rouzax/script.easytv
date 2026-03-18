@@ -1,85 +1,57 @@
 EasyTV Changelog
 ================
 
-v1.5.0~alpha2 (2026-03-12)
+v1.5.0 (2026-03-18)
 --------------------------
 New Features:
-  - Genre and duration info in browse views: All four view styles now display
-    the show's genre and average episode duration. Added compact S01E01
-    notation replacing verbose "Season X • Episode Y" format.
-  - Duration sort in browse mode: "Avg Episode Duration" available as a new
-    sort option alongside Name, Last Watched, Unwatched, etc.
-  - Random sort option in browse mode: Shuffle the show list randomly.
-  - 3-state premiere filter: Series premieres and season premieres settings now
-    offer three modes — Skip (exclude), Mix in (default, include in rotation),
-    or Only (show exclusively premieres for discovering new shows).
+  - Four browse view styles: Card List (default, data-dense rows with poster and
+    stats), Posters (visual poster grid), Big Screen (large artwork for 10-foot
+    viewing), and Split View (two-column layout with show list and detail panel).
+  - Theme selection: Choose from Golden Hour (default), Ultraviolet, Ember, or
+    Nightfall accent color themes. Configurable in Settings > Appearance.
+  - Custom icon selection: Set a custom addon icon for EasyTV or any clone via
+    Settings > Appearance. Reset to default also available.
+  - Redesigned dialogs: Main dialog, next-up prompt, playlist finished dialog,
+    and confirmation dialogs all use the new themed styling.
+  - Show selector redesign: Dedicated centered window with inline search, Enable
+    All/Ignore All bulk actions, and poster preview for the focused show.
+  - In-place browse list updates: The browse list refreshes after playback
+    completes without requiring a full window reload.
+  - Abandoned playback detection: The service detects when playback was stopped
+    early and handles episode tracking appropriately.
+  - Genre and duration info in browse views: All four view styles display the
+    show's genre and average episode duration with compact S01E01 notation.
+  - Duration sort and random sort options in browse mode.
+  - 3-state premiere filter: Series and season premieres settings now offer
+    Skip (exclude), Mix in (default), or Only (show exclusively premieres).
 
 Bug Fixes:
-  - Fixed: Clone settings missing Split View and playlist type filter options
-    added in alpha1.
-  - Fixed: Clone dialogs showing hardcoded "EasyTV" instead of the clone's
-    own addon name.
-  - Fixed: Partially-watched premiere episodes not categorized as Continue
-    Watching in browse views.
+  - Fixed: Python 3.10+ type hints (X | Y syntax) breaking compatibility with
+    Kodi Windows builds running Python 3.8.
+  - Fixed: File handle leaks in log file initialization and clone updater when
+    exceptions occur during file operations.
   - Fixed: Median duration calculation incorrect for shows with an even number
     of episodes (off-by-one in middle element selection).
   - Fixed: Episode and season numbers displayed as floats (e.g., "2.0") instead
     of integers in some browse view layouts.
   - Fixed: Potential infinite loop in browse mode when the dialog window fails
     to open within the expected timeout.
-  - Fixed: Python 3.10+ type hints (X | Y syntax) breaking compatibility with
-    Kodi Windows builds running Python 3.8.
-  - Fixed: File handle leaks in log file initialization and clone updater when
-    exceptions occur during file operations.
+  - Fixed: Clone dialogs showing hardcoded "EasyTV" instead of the clone's
+    own addon name.
 
 Improvements:
   - Added top-level exception handlers to all script entry points, preventing
     silent crashes from unhandled exceptions.
-  - Added logging to previously silent exception handlers across the codebase.
-  - Refined browse view detail panel layout for consistency across all four
-    view styles.
-
-Internal:
-  - Added unit test suite with 167 tests covering pure logic functions
-    (sorting, filtering, duration calculation, version parsing, etc.).
-  - Consolidated window property names and setting IDs into constants module.
-  - Extracted duplicate addon restart pattern to utils.restart_addon().
-  - Removed dead code, fixed multiselect dialog state sync, added database
-    column validation for shared sync storage.
-
-v1.5.0~alpha1 (2026-03-11)
---------------------------
-New Features:
-  - Four browse view styles: Card List (renamed from Standard, now the default
-    with data-dense rows showing poster, show/episode info, and stats), Posters
-    (visual poster grid), Big Screen (large artwork for 10-foot viewing), and
-    new Split View (two-column layout with show list on the left and detail
-    panel with poster, stats, and plot on the right).
-  - Theme selection: Choose from Golden Hour (default), Ultraviolet, Ember, or
-    Nightfall accent color themes. Each theme styles all EasyTV windows and
-    dialogs consistently. Configurable in Settings > EasyTV > Appearance.
-  - Custom icon selection: Set a custom addon icon for EasyTV or any clone via
-    Settings > EasyTV > Appearance. Reset to default also available. Changes
-    apply to Kodi menus and notifications.
-  - Redesigned dialogs: Main dialog, next-up prompt, playlist finished dialog,
-    and confirmation dialogs all use the new themed styling.
-  - Show selector redesign: Now a dedicated centered window with inline search
-    edit control, Enable All/Ignore All bulk actions, and poster preview for
-    the focused show.
-  - In-place browse list updates: The browse list refreshes in-place after
-    playback completes without requiring a full window reload.
-  - Abandoned playback detection: The service now detects when playback was
-    stopped early and handles episode tracking appropriately.
-
-Internal:
-  - Replaced deprecated setInfo() calls with InfoTagVideo API.
-  - Removed non-functional progress bar from list layouts (not viable in
-    WindowXMLDialog contexts).
   - Calendar-aware "last watched" display (shows "today", "yesterday" instead
     of "0 days", "1 day").
-  - Consolidated skin media assets: removed legacy texture files, added shared
-    common textures and checkbox/watched indicator icons.
-  - Added dialog preview tool for testing all dialog types in Kodi.
+
+Internal:
+  - Entry points (service.py, default.py) are now thin stubs delegating to
+    cached library modules for improved startup performance.
+  - Added unit test suite with 208 tests covering pure logic functions.
+  - Consolidated window property names and setting IDs into constants module.
+  - Replaced deprecated setInfo() calls with InfoTagVideo API.
+  - Removed dead code, added database column validation for shared sync storage.
 
 v1.4.0 (2026-03-02)
 --------------------------

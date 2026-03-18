@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <addon id="script.easytv"
        name="EasyTV"
-       version="1.5.0~alpha3"
+       version="1.5.0"
        provider-name="Rouzax, KODeKarnage">
     <requires>
         <import addon="xbmc.python" version="3.0.1"/>
@@ -25,13 +25,13 @@
         <forum>https://forum.kodi.tv/showthread.php?tid=383902</forum>
         <website>https://rouzax.github.io/script.easytv/</website>
         <source>https://github.com/Rouzax/script.easytv</source>
-        <news>v1.5.0~alpha2 (2026-03-12)
-- Browse views now show genre and average episode duration
-- New sort options: duration and random shuffle
-- 3-state premiere filter: Skip, Mix in, or Only
-- Fixed clone settings missing new view and filter options
-- Fixed various display issues in browse views
-- Improved crash resilience with exception handlers on all entry points</news>
+        <news>v1.5.0 (2026-03-18)
+- Four browse view styles: Card List, Posters, Big Screen, and Split View
+- Color themes: Golden Hour, Ultraviolet, Ember, and Nightfall
+- Custom addon icon selection for main addon and clones
+- Redesigned dialogs and show selector with inline search
+- Genre, duration info, and new sort options in browse views
+- 3-state premiere filter: Skip, Mix in, or Only</news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
