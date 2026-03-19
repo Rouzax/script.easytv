@@ -251,9 +251,10 @@ def _handle_special_modes(mode, addon, log, addon_name='EasyTV'):
 
     elif mode == 'set_icon':
         log.debug("Set custom icon mode")
-        from resources.lib.utils import set_custom_icon
+        from resources.lib.utils import set_custom_icon, invalidate_icon_cache
         addon_id = addon.getAddonInfo('id')
         if set_custom_icon(addon_id):
+            invalidate_icon_cache(addon_id)
             xbmc.executebuiltin(
                 'Notification(%s,%s,%i,%s)' % (
                     addon_name, lang(32740), 3000,
@@ -267,9 +268,10 @@ def _handle_special_modes(mode, addon, log, addon_name='EasyTV'):
 
     elif mode == 'reset_icon':
         log.debug("Reset icon mode")
-        from resources.lib.utils import reset_icon
+        from resources.lib.utils import reset_icon, invalidate_icon_cache
         addon_id = addon.getAddonInfo('id')
         if reset_icon(addon_id):
+            invalidate_icon_cache(addon_id)
             xbmc.executebuiltin(
                 'Notification(%s,%s,%i,%s)' % (
                     addon_name, lang(32741), 3000,
