@@ -1,6 +1,15 @@
 EasyTV Changelog
 ================
 
+v1.5.1~alpha1
+--------------------------
+Changes:
+  - Added icon theme selection with 4 bundled icon styles (Golden Hour,
+    Ultraviolet, Ember, Nightfall) plus custom image browse option.
+  - Added Kodi texture cache invalidation for immediate icon updates after
+    changing icons — no more waiting 24 hours for the change to appear.
+  - Added icon_default.png for reliable icon reset.
+
 v1.5.0 (2026-03-18)
 --------------------------
 New Features:
