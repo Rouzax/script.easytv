@@ -73,6 +73,7 @@ The following tools are installed on the development machine and available for u
 | **pytest** | 9.0.2 | Test framework |
 | **pytest-mock** | 3.15.1 | Mocker fixture for pytest (wraps `unittest.mock`) |
 | **coverage** | 7.13.4 | Code coverage measurement for pytest |
+| **kodi-addon-checker** | 0.0.36 | Official Kodi repo pre-validation (addon.xml, images, PO files, dependencies, banned files) |
 
 ### Kodistubs
 
@@ -111,6 +112,9 @@ find . -name "*.py" -exec python3 -m py_compile {} \;
 
 # Static analysis only
 pyflakes $(find . -name "*.py" -not -path "*/__pycache__/*")
+
+# Kodi addon checker (official repo pre-validation)
+kodi-addon-checker --branch omega .
 ```
 
 ## Testing
