@@ -125,3 +125,42 @@ class TestParseLastplayedDate:
     def test_none_returns_zero(self):
         # The function checks 'if not date_string' which handles None too
         assert parse_lastplayed_date(None) == 0.0
+
+
+# ── invalidate_icon_cache ───────────────────────────────────────────
+
+class TestInvalidateIconCache:
+    """Tests for invalidate_icon_cache()."""
+
+    def test_queries_textures_and_removes_each(self, mocker):
+        """Cache invalidation should query matching textures then remove each."""
+        mocker.patch('resources.lib.utils.xbmcaddon')
+        mock_json = mocker.patch('resources.lib.utils.json_query')
+        mock_json.return_value = {
+            "textures": [
+                {"textureid": 10},
+                {"textureid": 20},
+            ]
+        }
+        from resources.lib.utils import invalidate_icon_cache
+        invalidate_icon_cache('script.easytv')
+
+        # First call: GetTextures query
+        get_call = mock_json.call_args_list[0]
+        assert get_call[0][0]['method'] == 'Textures.GetTextures'
+        assert get_call[0][0]['params']['filter']['value'] == 'script.easytv'
+
+        # Subsequent calls: RemoveTexture for each ID
+        remove_calls = mock_json.call_args_list[1:]
+        assert len(remove_calls) == 2
+        assert remove_calls[0][0][0]['params']['textureid'] == 10
+        assert remove_calls[1][0][0]['params']['textureid'] == 20
+
+    def test_no_textures_found(self, mocker):
+        """No errors when texture cache has no matching entries."""
+        mocker.patch('resources.lib.utils.xbmcaddon')
+        mock_json = mocker.patch('resources.lib.utils.json_query')
+        mock_json.return_value = {"textures": []}
+        from resources.lib.utils import invalidate_icon_cache
+        invalidate_icon_cache('script.easytv')
+        assert mock_json.call_count == 1  # Only the GetTextures query

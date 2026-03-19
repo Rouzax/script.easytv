@@ -1032,6 +1032,42 @@ def reset_icon(addon_id: Optional[str] = None) -> bool:
     return False
 
 
+def invalidate_icon_cache(addon_id: str) -> None:
+    """Remove addon textures from Kodi's cache so icon changes appear immediately.
+
+    Kodi caches textures by file path (CRC32). After replacing icon.png,
+    the old cached version persists for ~24h unless removed via JSON-RPC.
+
+    Args:
+        addon_id: Addon ID to filter textures by (e.g. 'script.easytv').
+    """
+    log = _get_icon_log()
+    result = json_query({
+        "jsonrpc": "2.0",
+        "method": "Textures.GetTextures",
+        "params": {
+            "filter": {
+                "field": "url",
+                "operator": "contains",
+                "value": addon_id,
+            }
+        },
+        "id": 1,
+    })
+    textures = result.get("textures", [])
+    for texture in textures:
+        tid = texture.get("textureid")
+        if tid:
+            json_query({
+                "jsonrpc": "2.0",
+                "method": "Textures.RemoveTexture",
+                "params": {"textureid": tid},
+                "id": 1,
+            }, return_result=False)
+    log.debug("Icon texture cache invalidated", event="icon.cache_clear",
+              addon_id=addon_id, removed=len(textures))
+
+
 def restore_custom_icon(addon_id: Optional[str] = None) -> bool:
     """Restore custom icon from addon_data after an addon/clone update.
 
