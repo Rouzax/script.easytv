@@ -164,3 +164,76 @@ class TestInvalidateIconCache:
         from resources.lib.utils import invalidate_icon_cache
         invalidate_icon_cache('script.easytv')
         assert mock_json.call_count == 1  # Only the GetTextures query
+
+
+# ── set_custom_icon ─────────────────────────────────────────────────
+
+class TestSetCustomIcon:
+    """Tests for set_custom_icon() with preset selection."""
+
+    def test_preset_selection_copies_bundled_icon(self, mocker):
+        """Selecting a preset copies bundled icon to addon root."""
+        mock_addon = mocker.MagicMock()
+        mock_addon.getAddonInfo.side_effect = lambda k: {
+            'path': '/addon', 'id': 'script.easytv', 'profile': '/profile'
+        }[k]
+        mocker.patch('resources.lib.utils.xbmcaddon.Addon', return_value=mock_addon)
+        mock_dialog = mocker.MagicMock()
+        mock_dialog.select.return_value = 2  # Ember
+        mocker.patch('resources.lib.utils.xbmcgui.Dialog', return_value=mock_dialog)
+        mock_copy = mocker.patch('resources.lib.utils.xbmcvfs.copy', return_value=True)
+        mocker.patch('resources.lib.utils.xbmcvfs.exists', return_value=True)
+        mocker.patch('resources.lib.utils.os.makedirs')
+        mocker.patch('resources.lib.utils.lang', side_effect=lambda x, **kw: str(x))
+
+        from resources.lib.utils import set_custom_icon
+        result = set_custom_icon('script.easytv')
+
+        assert result is True
+        # Should copy the ember icon to icon.png
+        copy_calls = mock_copy.call_args_list
+        # Backup call + main copy call
+        main_copy = [c for c in copy_calls if c[0][1] == '/addon/icon.png']
+        assert len(main_copy) == 1
+        assert 'icon-ember.png' in main_copy[0][0][0]
+
+    def test_cancelled_selection_returns_false(self, mocker):
+        """Cancelling the dialog returns False without copying."""
+        mock_addon = mocker.MagicMock()
+        mock_addon.getAddonInfo.side_effect = lambda k: {
+            'path': '/addon', 'id': 'script.easytv', 'profile': '/profile'
+        }[k]
+        mocker.patch('resources.lib.utils.xbmcaddon.Addon', return_value=mock_addon)
+        mock_dialog = mocker.MagicMock()
+        mock_dialog.select.return_value = -1  # Cancelled
+        mocker.patch('resources.lib.utils.xbmcgui.Dialog', return_value=mock_dialog)
+        mock_copy = mocker.patch('resources.lib.utils.xbmcvfs.copy')
+        mocker.patch('resources.lib.utils.lang', side_effect=lambda x, **kw: str(x))
+
+        from resources.lib.utils import set_custom_icon
+        result = set_custom_icon('script.easytv')
+
+        assert result is False
+        mock_copy.assert_not_called()
+
+    def test_browse_option_opens_file_browser(self, mocker):
+        """Selecting Browse opens the file browser dialog."""
+        mock_addon = mocker.MagicMock()
+        mock_addon.getAddonInfo.side_effect = lambda k: {
+            'path': '/addon', 'id': 'script.easytv', 'profile': '/profile'
+        }[k]
+        mocker.patch('resources.lib.utils.xbmcaddon.Addon', return_value=mock_addon)
+        mock_dialog = mocker.MagicMock()
+        mock_dialog.select.return_value = 4  # Browse...
+        mock_dialog.browse.return_value = '/custom/my_icon.png'
+        mocker.patch('resources.lib.utils.xbmcgui.Dialog', return_value=mock_dialog)
+        mocker.patch('resources.lib.utils.xbmcvfs.copy', return_value=True)
+        mocker.patch('resources.lib.utils.xbmcvfs.exists', return_value=True)
+        mocker.patch('resources.lib.utils.os.makedirs')
+        mocker.patch('resources.lib.utils.lang', side_effect=lambda x, **kw: str(x))
+
+        from resources.lib.utils import set_custom_icon
+        result = set_custom_icon('script.easytv')
+
+        assert result is True
+        mock_dialog.browse.assert_called_once()
