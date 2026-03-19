@@ -947,9 +947,19 @@ def _get_icon_log() -> StructuredLogger:
     return _icon_log
 
 
-def set_custom_icon(addon_id: Optional[str] = None) -> bool:
-    """Open image browser and copy selected image to addon's icon.png.
+# Icon preset filenames — order matches theme string IDs 32722-32725
+ICON_PRESETS = [
+    "icon-golden-hour.png",
+    "icon-ultraviolet.png",
+    "icon-ember.png",
+    "icon-nightfall.png",
+]
 
+
+def set_custom_icon(addon_id: Optional[str] = None) -> bool:
+    """Show icon selection dialog and copy chosen image to addon's icon.png.
+
+    Presents 4 bundled icon presets plus a Browse option for custom images.
     Also saves a copy to addon_data for persistence across addon/clone updates.
 
     Args:
@@ -962,34 +972,53 @@ def set_custom_icon(addon_id: Optional[str] = None) -> bool:
     addon = xbmcaddon.Addon(addon_id) if addon_id else xbmcaddon.Addon()
     addon_path = addon.getAddonInfo('path')
 
+    # Build selection list: 4 presets + Browse
+    options = [
+        lang(32722),  # Golden Hour
+        lang(32723),  # Ultraviolet
+        lang(32724),  # Ember
+        lang(32725),  # Nightfall
+        lang(32746),  # Browse...
+    ]
     dialog = xbmcgui.Dialog()
-    image_path = cast(str, dialog.browse(
-        2, lang(32739), 'files', '.png|.jpg|.jpeg', False, False
-    ))
-    if not image_path:
+    idx = dialog.select(lang(32745), options)  # "Choose icon"
+
+    if idx < 0:
         log.debug("Icon selection cancelled", event="icon.set_cancelled")
         return False
 
-    log.debug("Icon selected", event="icon.selected", path=image_path)
+    # Determine source path
+    if idx < len(ICON_PRESETS):
+        source = os.path.join(addon_path, 'resources', 'icons', ICON_PRESETS[idx])
+    else:
+        image_path = cast(str, dialog.browse(
+            2, lang(32739), 'files', '.png|.jpg|.jpeg', False, False
+        ))
+        if not image_path:
+            log.debug("Icon browse cancelled", event="icon.browse_cancelled")
+            return False
+        source = image_path
+
+    log.debug("Icon selected", event="icon.selected", path=source)
     icon_path = os.path.join(addon_path, 'icon.png')
 
     # Save to addon_data for persistence across updates
     addon_data = xbmcvfs.translatePath(addon.getAddonInfo('profile'))
     os.makedirs(addon_data, exist_ok=True)
     backup_path = os.path.join(addon_data, 'custom_icon.png')
-    backup_ok = xbmcvfs.copy(image_path, backup_path)
+    backup_ok = xbmcvfs.copy(source, backup_path)
     if not backup_ok:
         log.warning("Failed to backup icon to addon_data",
                     event="icon.backup_fail", path=backup_path)
 
     # Copy to addon folder
-    result = xbmcvfs.copy(image_path, icon_path)
+    result = xbmcvfs.copy(source, icon_path)
     if result:
-        log.info("Custom icon set", event="icon.set",
-                 source=image_path, addon_id=addon.getAddonInfo('id'))
+        log.info("Icon set", event="icon.set",
+                 source=source, addon_id=addon.getAddonInfo('id'))
     else:
         log.warning("Failed to copy icon to addon folder",
-                    event="icon.set_fail", source=image_path, target=icon_path)
+                    event="icon.set_fail", source=source, target=icon_path)
     return result
 
 
