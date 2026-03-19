@@ -973,7 +973,7 @@ def set_custom_icon(addon_id: Optional[str] = None) -> bool:
     addon_path = addon.getAddonInfo('path')
 
     # Build selection list: 4 presets + Browse
-    options = [
+    options: List[Union[str, xbmcgui.ListItem]] = [
         lang(32722),  # Golden Hour
         lang(32723),  # Ultraviolet
         lang(32724),  # Ember
