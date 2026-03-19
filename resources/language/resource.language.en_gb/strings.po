@@ -1238,7 +1238,7 @@ msgstr ""
 
 #. Settings: Appearance - Set custom icon help
 msgctxt "#32736"
-msgid "Choose an icon image for EasyTV. This replaces the addon icon shown in Kodi menus and notifications. A restart may be needed for the change to appear everywhere."
+msgid "Choose from built-in icon themes or browse for a custom image. The addon icon shown in Kodi menus and notifications will update immediately."
 msgstr ""
 
 #. Settings: Appearance - Reset icon button
@@ -1277,4 +1277,14 @@ msgstr ""
 
 msgctxt "#32744"
 msgid "Only"
+msgstr ""
+
+#. Dialog heading: choose icon from presets
+msgctxt "#32745"
+msgid "Choose icon"
+msgstr ""
+
+#. Icon selection dialog: browse for custom file
+msgctxt "#32746"
+msgid "Browse..."
 msgstr ""
