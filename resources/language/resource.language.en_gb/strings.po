@@ -464,7 +464,7 @@ msgid "Visual layout for the episode list."
 msgstr ""
 
 msgctxt "#32409"
-msgid "Return to the episode list after watching, instead of going back to where you were."
+msgid "Return to the episode list after an episode finishes playing."
 msgstr ""
 
 msgctxt "#32410"
@@ -508,7 +508,7 @@ msgid "How much of the playlist should be movies. 0% = no movies, 50% = equal mi
 msgstr ""
 
 msgctxt "#32424"
-msgid "Display a notification when each episode or movie starts in the playlist."
+msgid "Show a notification with title and details when an episode starts playing."
 msgstr ""
 
 msgctxt "#32425"
@@ -974,7 +974,7 @@ msgid "When a random playlist ends, show a prompt asking whether to generate ano
 msgstr ""
 
 msgctxt "#32615"
-msgid "Countdown duration"
+msgid "Countdown duration (seconds)"
 msgstr ""
 
 msgctxt "#32616"
@@ -999,7 +999,7 @@ msgid "Start playlist with unfinished episodes"
 msgstr ""
 
 msgctxt "#32622"
-msgid "Prioritize partially watched TV episodes at the start of the playlist."
+msgid "Partially watched episodes play first in the playlist."
 msgstr ""
 
 msgctxt "#32623"
@@ -1007,7 +1007,7 @@ msgid "Seek to resume point for episodes"
 msgstr ""
 
 msgctxt "#32624"
-msgid "When playing a partial TV episode, automatically skip to where you left off."
+msgid "Automatically skip to where you left off for episodes."
 msgstr ""
 
 msgctxt "#32625"
