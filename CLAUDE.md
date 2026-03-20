@@ -199,6 +199,27 @@ grep -r "lang(32XXX)" resources/lib/
 grep -r "32XXX" resources/skins/
 ```
 
+### Settings Language Consistency
+
+EasyTV and EasyMovie are sibling addons that share a settings vocabulary.
+When adding or changing any setting label or help text:
+
+1. **Check the sibling addon** — look at the equivalent setting in `/home/martijn/script.easymovie/resources/language/resource.language.en_gb/strings.po`
+2. **Use the same wording** for equivalent concepts (see conventions below)
+3. **Every user-facing setting must have help text** — no empty `help=""` attributes
+
+| Concept | Convention |
+|---------|-----------|
+| Launch action | "When I open [addon]" |
+| Return after play | "Return to [addon] after playback" |
+| Countdown | "Countdown duration (seconds)" / "If countdown expires" |
+| Resume | "Seek to resume point for [content]" |
+| In-progress | "Start playlist with unfinished [content]" |
+| Debug logging | "Write detailed diagnostic information to a separate log file" |
+| Clone | "Create [addon] copy..." |
+| Theme help | "Choose the accent color theme for [addon] windows and dialogs" |
+| Playback notification | "Show a notification with title and details when a [content item] starts playing" |
+
 ## Logging
 
 See `LOGGING.md` for full documentation.
