@@ -1,0 +1,41 @@
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install kodistubs pyright pyflakes kodi-addon-checker pytest pytest-mock
+
+      - name: Syntax check
+        run: |
+          find . -name "*.py" -not -path "*/__pycache__/*" -exec python3 -m py_compile {} \;
+
+      - name: Pyflakes
+        run: |
+          pyflakes $(find . -name "*.py" -not -path "*/__pycache__/*")
+
+      - name: Pyright
+        run: pyright
+
+      - name: Kodi addon checker
+        run: kodi-addon-checker --branch omega .
+
+      - name: Tests
+        run: python3 -m pytest tests/ -v
