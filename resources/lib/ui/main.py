@@ -350,8 +350,9 @@ def _handle_version_mismatch(addon_version, addon_version_str, addon_id, script_
 
         log.warning("Clone addon out of date", event="clone.outdated",
                     clone_version=addon_version_str, service_version=service_version_str)
-        if show_confirm(script_name, lang(32110) + '\n' + lang(32111)):
-            import os
+        message = lang(32110) + '\n' + lang(32111) + '\n\n' + lang(32153)
+        if show_confirm(script_name, message,
+                        yes_label=lang(32109), no_label=lang(32734)):
             # Use main addon's update_clone.py, not the clone's old version
             # This ensures clones get the latest update logic (e.g., fixed settings replacement)
             service_path = window.getProperty(PROP_SERVICE_PATH)
@@ -360,7 +361,7 @@ def _handle_version_mismatch(addon_version, addon_version_str, addon_id, script_
                 f'RunScript({update_script},{service_path},'
                 f'{script_path},{addon_id},{script_name})'
             )
-            return False
+        return False
     return True
 
 

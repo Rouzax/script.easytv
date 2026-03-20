@@ -165,12 +165,20 @@ msgid "EasyTV Service has updated. Please restart to apply changes."
 msgstr ""
 
 #. Clone update messages
+msgctxt "#32109"
+msgid "Update"
+msgstr ""
+
 msgctxt "#32110"
-msgid "EasyTV has updated and this clone is now out of date."
+msgid "A new version of EasyTV is available."
 msgstr ""
 
 msgctxt "#32111"
-msgid "Would you like to update the clone now?"
+msgid "The clone needs to be updated before it can be used."
+msgstr ""
+
+msgctxt "#32153"
+msgid "Update now?"
 msgstr ""
 
 #. Time display labels
