@@ -7,7 +7,7 @@
 - **Addon ID:** `script.easytv`
 - **Repository:** https://github.com/Rouzax/script.easytv
 - **License:** GPL-3.0-only
-- **Original Author:** KODeKarnage (LazyTV)
+- **Origin:** Forked from [LazyTV](https://github.com/KODeKarnage/script.lazytv) (2013), fully rewritten
 
 ## ⚠️ IMPORTANT: Ask First, Code Later
 
