@@ -31,6 +31,9 @@ jobs:
         run: |
           pyflakes $(find . -name "*.py" -not -path "*/__pycache__/*")
 
+      - name: Clean __pycache__
+        run: find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+
       - name: Pyright
         run: pyright
 
