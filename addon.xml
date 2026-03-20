@@ -2,7 +2,7 @@
 <addon id="script.easytv"
        name="EasyTV"
        version="1.5.1~alpha1"
-       provider-name="Rouzax, KODeKarnage">
+       provider-name="Rouzax">
     <requires>
         <import addon="xbmc.python" version="3.0.1"/>
         <import addon="script.module.pymysql" version="1.1.0"/>

@@ -104,18 +104,9 @@ For detailed setup, see the [Multi-Instance Sync](https://github.com/Rouzax/scri
 
 ## Credits & License
 
-### Original Author
-**KODeKarnage** — Created LazyTV in 2013
-- Original repository: https://github.com/KODeKarnage/script.lazytv
-- Kodi forum thread: https://forum.kodi.tv/showthread.php?tid=170975
+EasyTV began in 2024 as a fork of [LazyTV](https://github.com/KODeKarnage/script.lazytv) by KODeKarnage (2013). It has since been completely rewritten.
 
-### Current Maintainer  
-**Rouzax** — Modernized for Kodi 21+ (2024-2026)
-- Repository: https://github.com/Rouzax/script.easytv
-- Kodi forum thread: https://forum.kodi.tv/showthread.php?tid=383902
-
-### License
-This project is licensed under the **GNU General Public License v3.0** (GPL-3.0-or-later).
+This project is licensed under the **GNU General Public License v3.0** (GPL-3.0-only).
 
 See [LICENSE.txt](LICENSE.txt) for the full license text.
 

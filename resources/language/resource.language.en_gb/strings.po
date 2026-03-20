@@ -1,7 +1,7 @@
 # Kodi Media Center language file
 # Addon Name: EasyTV
 # Addon id: script.easytv
-# Addon Provider: KODeKarnage, Rouzax
+# Addon Provider: Rouzax
 msgid ""
 msgstr ""
 "Project-Id-Version: Kodi Addons\n"
