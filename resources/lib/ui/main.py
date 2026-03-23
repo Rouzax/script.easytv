@@ -289,9 +289,14 @@ def _handle_special_modes(mode, addon, log, addon_name='EasyTV'):
 
     elif mode == 'dialog_preview':
         log.debug("Dialog preview mode")
-        from resources import dialog_preview
-        override = sys.argv[2] if len(sys.argv) > 2 else None
-        dialog_preview.Main(override)
+        try:
+            from resources import dialog_preview
+            override = sys.argv[2] if len(sys.argv) > 2 else None
+            dialog_preview.Main(override)
+        except Exception:
+            import traceback
+            xbmc.log("[EasyTV] dialog_preview error: %s" % traceback.format_exc(), xbmc.LOGERROR)
+            raise
 
 
 def _check_service_running(window, log):
