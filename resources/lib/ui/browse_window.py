@@ -86,7 +86,7 @@ class BrowseWindowConfig:
     Configuration for the BrowseWindow.
 
     Attributes:
-        skin: Skin style (0=CardList, 1=Posters, 2=BigScreen, 3=SplitView)
+        skin: Skin style (0=CardList, 1=Posters, 2=BigScreen, 3=SplitView, 4=Showcase)
         limit_shows: Whether to limit the number of shows displayed
         window_length: Maximum number of shows to display when limit_shows is True
         skin_return: Whether to return to the window after playback
@@ -637,7 +637,7 @@ def get_skin_xml_file(skin: int) -> str:
     Get the XML file name for the given skin style.
 
     Args:
-        skin: Skin style (0=CardList, 1=Posters, 2=BigScreen, 3=SplitView)
+        skin: Skin style (0=CardList, 1=Posters, 2=BigScreen, 3=SplitView, 4=Showcase)
 
     Returns:
         XML filename for the skin
@@ -646,6 +646,7 @@ def get_skin_xml_file(skin: int) -> str:
         0: "script-easytv-cardlist.xml",
         1: "script-easytv-main.xml",
         2: "script-easytv-BigScreenList.xml",
-        3: "script-easytv-splitlist.xml"
+        3: "script-easytv-splitlist.xml",
+        4: "script-easytv-postergrid.xml",
     }
     return skins.get(skin, "script-easytv-cardlist.xml")
