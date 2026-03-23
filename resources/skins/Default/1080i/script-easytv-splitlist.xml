@@ -209,12 +209,12 @@
                     <top>13</top>
                     <width>590</width>
 
-                    <!-- Show poster (centered, 190x285) -->
+                    <!-- Show poster (centered, 220x330) -->
                     <control type="image">
-                        <left>200</left>
-                        <top>20</top>
-                        <width>190</width>
-                        <height>285</height>
+                        <left>185</left>
+                        <top>68</top>
+                        <width>220</width>
+                        <height>330</height>
                         <texture background="true">$INFO[Container(655).ListItem.Art(thumb)]</texture>
                         <aspectratio>keep</aspectratio>
                     </control>
@@ -222,7 +222,7 @@
                     <!-- Separator -->
                     <control type="image">
                         <left>0</left>
-                        <top>320</top>
+                        <top>413</top>
                         <width>590</width>
                         <height>2</height>
                         <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">common/line_fade.png</texture>
@@ -231,7 +231,7 @@
                     <!-- Episode title -->
                     <control type="label">
                         <left>0</left>
-                        <top>332</top>
+                        <top>425</top>
                         <width>590</width>
                         <height>35</height>
                         <align>center</align>
@@ -243,7 +243,7 @@
                     <!-- Genre + Duration -->
                     <control type="label">
                         <left>0</left>
-                        <top>370</top>
+                        <top>458</top>
                         <width>590</width>
                         <height>28</height>
                         <align>center</align>
@@ -256,7 +256,7 @@
                     <!-- On Deck / Watched / Skipped counts -->
                     <control type="label">
                         <left>0</left>
-                        <top>398</top>
+                        <top>486</top>
                         <width>590</width>
                         <height>28</height>
                         <align>center</align>
@@ -268,7 +268,7 @@
                     <!-- Last watched + Progress -->
                     <control type="label">
                         <left>0</left>
-                        <top>426</top>
+                        <top>514</top>
                         <width>590</width>
                         <height>28</height>
                         <align>center</align>
@@ -280,7 +280,7 @@
                     <!-- Separator -->
                     <control type="image">
                         <left>0</left>
-                        <top>458</top>
+                        <top>546</top>
                         <width>590</width>
                         <height>2</height>
                         <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">common/line_fade.png</texture>
@@ -289,9 +289,9 @@
                     <!-- Plot -->
                     <control type="textbox">
                         <left>0</left>
-                        <top>470</top>
+                        <top>558</top>
                         <width>590</width>
-                        <height>250</height>
+                        <height>220</height>
                         <scroll>true</scroll>
                         <font>font10</font>
                         <textcolor>FFCCCCCC</textcolor>
