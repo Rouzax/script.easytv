@@ -243,7 +243,7 @@
                     <!-- Genre + Duration -->
                     <control type="label">
                         <left>0</left>
-                        <top>458</top>
+                        <top>462</top>
                         <width>590</width>
                         <height>28</height>
                         <align>center</align>
@@ -256,7 +256,7 @@
                     <!-- On Deck / Watched / Skipped counts -->
                     <control type="label">
                         <left>0</left>
-                        <top>486</top>
+                        <top>492</top>
                         <width>590</width>
                         <height>28</height>
                         <align>center</align>
@@ -268,7 +268,7 @@
                     <!-- Last watched + Progress -->
                     <control type="label">
                         <left>0</left>
-                        <top>514</top>
+                        <top>522</top>
                         <width>590</width>
                         <height>28</height>
                         <align>center</align>
@@ -280,7 +280,7 @@
                     <!-- Separator -->
                     <control type="image">
                         <left>0</left>
-                        <top>546</top>
+                        <top>558</top>
                         <width>590</width>
                         <height>2</height>
                         <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">common/line_fade.png</texture>
@@ -289,9 +289,9 @@
                     <!-- Plot -->
                     <control type="textbox">
                         <left>0</left>
-                        <top>558</top>
+                        <top>570</top>
                         <width>590</width>
-                        <height>220</height>
+                        <height>210</height>
                         <scroll>true</scroll>
                         <font>font10</font>
                         <textcolor>FFCCCCCC</textcolor>
