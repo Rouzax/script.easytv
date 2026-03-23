@@ -21,12 +21,46 @@
             <texture colordiffuse="ff000000">common/white.png</texture>
         </control>
 
-        <!-- Info bar at top -->
+        <!-- ==================== HEADER ==================== -->
+
+        <!-- Addon name heading -->
         <control type="label">
             <left>80</left>
-            <top>30</top>
+            <top>15</top>
+            <width>800</width>
+            <height>40</height>
+            <font>font14_title</font>
+            <textcolor>$INFO[Window.Property(EasyTV.Accent)]</textcolor>
+            <label>$INFO[Window.Property(EasyTV.AddonName)]</label>
+        </control>
+
+        <!-- Item count -->
+        <control type="label">
+            <left>80</left>
+            <top>20</top>
             <width>1760</width>
-            <height>35</height>
+            <height>30</height>
+            <align>right</align>
+            <font>font10</font>
+            <textcolor>FF888888</textcolor>
+            <label>$INFO[Container(655).CurrentItem] / $INFO[Container(655).NumItems]</label>
+        </control>
+
+        <!-- Accent line separator -->
+        <control type="image">
+            <left>80</left>
+            <top>60</top>
+            <width>1760</width>
+            <height>2</height>
+            <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">common/line_fade.png</texture>
+        </control>
+
+        <!-- Info bar (metadata for focused item) -->
+        <control type="label">
+            <left>80</left>
+            <top>72</top>
+            <width>1760</width>
+            <height>25</height>
             <font>font10</font>
             <textcolor>FFAAAAAA</textcolor>
             <label>[COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(episodeno)][/COLOR]  •  $ADDON[script.easytv 32222]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(percentplayed)][/COLOR]  •  $ADDON[script.easytv 32223] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numondeck)][/COLOR]  •  $ADDON[script.easytv 32224] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numwatched)][/COLOR]  •  $ADDON[script.easytv 32225] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numskipped)][/COLOR]  •  $ADDON[script.easytv 32065] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(lastwatched)][/COLOR]  •  $INFO[Container(655).ListItem.Property(genre),[, ]]$INFO[Container(655).ListItem.Property(duration),  •  ~,/ep]</label>
@@ -47,7 +81,7 @@
             <!-- ==================== LEFT SIDE: FANART WITH REFLECTION ==================== -->
             <control type="group">
                 <left>25</left>
-                <top>75</top>
+                <top>105</top>
                 <width>1200</width>
                 <height>950</height>
 
@@ -88,9 +122,9 @@
             <!-- ==================== RIGHT SIDE: EPISODE LIST ==================== -->
             <control type="fixedlist" id="655">
                 <left>1200</left>
-                <top>80</top>
+                <top>105</top>
                 <width>680</width>
-                <height>920</height>
+                <height>895</height>
                 <orientation>vertical</orientation>
                 <focusposition>4</focusposition>
                 <movement>1</movement>
