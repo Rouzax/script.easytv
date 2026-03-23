@@ -86,7 +86,7 @@
                     <control type="label">
                         <left>0</left>
                         <top>5</top>
-                        <width>730</width>
+                        <width>1340</width>
                         <height>30</height>
                         <align>right</align>
                         <font>font10</font>
