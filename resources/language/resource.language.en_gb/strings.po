@@ -1296,3 +1296,7 @@ msgstr ""
 msgctxt "#32746"
 msgid "Browse..."
 msgstr ""
+
+msgctxt "#32747"
+msgid "Showcase"
+msgstr ""

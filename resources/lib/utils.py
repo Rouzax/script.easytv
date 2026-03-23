@@ -343,7 +343,7 @@ class StructuredLogger:
             pairs = []
             for k, v in kwargs.items():
                 str_v = str(v)
-                if len(str_v) > LOG_MAX_VALUE_LENGTH:
+                if k != 'trace' and len(str_v) > LOG_MAX_VALUE_LENGTH:
                     str_v = str_v[:LOG_MAX_VALUE_LENGTH] + "..."
                 pairs.append(f"{k}={str_v}")
             return f"{base} | {', '.join(pairs)}"
