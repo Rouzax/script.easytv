@@ -202,6 +202,11 @@ def preview_browse() -> None:
     if choice < 0:
         return
 
+    # Fetch show art (posters/fanart) into window properties if not yet cached
+    from resources.lib.playback.browse_mode import _fetch_show_art
+    from resources.lib.utils import get_logger
+    _fetch_show_art(get_logger('browse'))
+
     skin_xml = get_skin_xml_file(choice)
     config = BrowseWindowConfig(skin=choice)
 
