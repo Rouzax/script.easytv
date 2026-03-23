@@ -382,10 +382,35 @@ class PlaybackMonitor(xbmc.Player):
             )
             
             # Show notification dialog
-            from resources.lib.ui.dialogs import show_confirm
-            msg = (lang(32161) % (showtitle, stored_seas, stored_epis)) + '\n' + lang(32162)
+            from resources.lib.ui.dialogs import CountdownDialog
+
             source_addon_id = self._window.getProperty(PROP_SOURCE_ADDON_ID) or None
-            dialog_result = show_confirm(lang(32160), msg, addon_id=source_addon_id)
+            source_addon = xbmcaddon.Addon(source_addon_id) if source_addon_id else xbmcaddon.Addon()
+            addon_path = source_addon.getAddonInfo('path')
+            heading = source_addon.getAddonInfo('name')
+
+            # Get show poster
+            poster = self._window.getProperty(
+                "EasyTV.%s.Art(tvshow.poster)" % show_id
+            )
+
+            msg = lang(32161) % (showtitle, stored_seas, stored_epis)
+            subtitle = lang(32162)
+
+            dlg = CountdownDialog(
+                'script-easytv-missedwarning.xml', addon_path, 'Default',
+                message=msg,
+                subtitle=subtitle,
+                yes_label=lang(32078),   # "Yes"
+                no_label=lang(32079),    # "No"
+                duration=0,              # No timer
+                heading=heading,
+                poster=poster,
+                addon_id=source_addon_id,
+            )
+            dlg.doModal()
+            dialog_result = dlg.result
+            del dlg
             self._log.debug("User dialog result", result=dialog_result)
 
             if not dialog_result:
