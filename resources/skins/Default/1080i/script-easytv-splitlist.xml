@@ -82,22 +82,34 @@
                         <label>$INFO[Window.Property(EasyTV.AddonName)]</label>
                     </control>
 
-                    <!-- Accent line separator -->
-                    <control type="image">
+                    <!-- Item count -->
+                    <control type="label">
                         <left>0</left>
-                        <top>46</top>
+                        <top>5</top>
                         <width>730</width>
-                        <height>2</height>
-                        <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">common/line_fade.png</texture>
+                        <height>30</height>
+                        <align>right</align>
+                        <font>font10</font>
+                        <textcolor>FF888888</textcolor>
+                        <label>$INFO[Container(655).CurrentItem] / $INFO[Container(655).NumItems]</label>
                     </control>
+                </control>
+
+                <!-- Full-width accent line separator -->
+                <control type="image">
+                    <left>30</left>
+                    <top>66</top>
+                    <width>1340</width>
+                    <height>2</height>
+                    <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">common/line_fade.png</texture>
                 </control>
 
                 <!-- Show list -->
                 <control type="list" id="655">
                     <left>30</left>
-                    <top>71</top>
+                    <top>82</top>
                     <width>730</width>
-                    <height>700</height>
+                    <height>688</height>
                     <orientation>vertical</orientation>
                     <scrolltime tween="sine" easing="out">200</scrolltime>
                     <onleft>655</onleft>
