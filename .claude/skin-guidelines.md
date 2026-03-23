@@ -48,6 +48,23 @@ Every dialog with a title uses this standardized layout:
 
 Content width = dialog width − (2 × 30).
 
+## Full-Screen Heading Area
+
+Full-screen browse views (Posters, BigScreen, PosterGrid) use a separate standard:
+
+| Property | Value | Notes |
+|----------|-------|-------|
+| Heading top | 15 | |
+| Heading height | 40 | Room for font14_title |
+| Count top | 20 | font10, right-aligned |
+| Accent line top | 60 | 5px below heading bottom |
+| Accent line height | 2 | |
+| Content top | 72 | 10px below line |
+| Side padding | 40 | BigScreen uses 80 for cinematic feel |
+| Accent width | full usable width | |
+
+Item count convention: `$INFO[Container(655).CurrentItem] / $INFO[Container(655).NumItems]`
+
 ## Typography
 
 | Role | Font | Size class | Usage |
