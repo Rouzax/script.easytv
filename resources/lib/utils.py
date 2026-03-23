@@ -712,7 +712,7 @@ def format_duration(seconds: Union[int, str]) -> str:
         seconds: Duration in seconds (int or string).
 
     Returns:
-        Formatted string like "43 min" or "1h 30min". Empty string if zero/invalid.
+        Formatted string like "43m" or "1h 30m". Empty string if zero/invalid.
     """
     try:
         total = int(seconds)
@@ -722,12 +722,12 @@ def format_duration(seconds: Union[int, str]) -> str:
         return ''
     minutes = round(total / 60)
     if minutes < 60:
-        return f"{minutes} min"
+        return f"{minutes}m"
     hours = minutes // 60
     remaining = minutes % 60
     if remaining == 0:
         return f"{hours}h"
-    return f"{hours}h {remaining}min"
+    return f"{hours}h {remaining}m"
 
 
 def get_playcount_minimum_percent() -> int:
@@ -973,15 +973,15 @@ def set_custom_icon(addon_id: Optional[str] = None) -> bool:
     addon_path = addon.getAddonInfo('path')
 
     # Build selection list: 4 presets + Browse
-    options: List[Union[str, xbmcgui.ListItem]] = [
+    options: List[str] = [
         lang(32722),  # Golden Hour
         lang(32723),  # Ultraviolet
         lang(32724),  # Ember
         lang(32725),  # Nightfall
         lang(32746),  # Browse...
     ]
-    dialog = xbmcgui.Dialog()
-    idx = dialog.select(lang(32745), options)  # "Choose icon"
+    from resources.lib.ui.dialogs import show_select
+    idx = show_select(lang(32745), options, addon_id=addon_id)
 
     if idx < 0:
         log.debug("Icon selection cancelled", event="icon.set_cancelled")
@@ -991,7 +991,7 @@ def set_custom_icon(addon_id: Optional[str] = None) -> bool:
     if idx < len(ICON_PRESETS):
         source = os.path.join(addon_path, 'resources', 'icons', ICON_PRESETS[idx])
     else:
-        image_path = cast(str, dialog.browse(
+        image_path = cast(str, xbmcgui.Dialog().browse(
             2, lang(32739), 'files', '.png|.jpg|.jpeg', False, False
         ))
         if not image_path:

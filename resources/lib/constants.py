@@ -69,6 +69,7 @@ SELECTOR_IGNORE_ALL = 11
 SELECTOR_LIST = 100
 SELECTOR_CANCEL = 20
 SELECTOR_SAVE = 21
+SELECTOR_COUNT = 30
 
 # =============================================================================
 # Kodi Window IDs
