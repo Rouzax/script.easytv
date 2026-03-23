@@ -328,7 +328,7 @@ def Main(override_addon_id: Optional[str] = None) -> None:
     """
     global addon_id, addon_name, script_path, _notify_title
 
-    addon = xbmcaddon.Addon(override_addon_id)  # type: ignore[arg-type]
+    addon = xbmcaddon.Addon(override_addon_id) if override_addon_id else xbmcaddon.Addon()
     addon_id = addon.getAddonInfo('id')
     addon_name = addon.getAddonInfo('name')
     script_path = addon.getAddonInfo('path')
