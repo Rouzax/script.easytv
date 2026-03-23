@@ -289,7 +289,25 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         info_tag.setEpisode(int(episode) if episode else 0)
         info_tag.setPlot(plot)
         info_tag.setTitle(eptitle)
-        
+
+        # Additional InfoTagVideo fields from service window properties
+        year_str = WINDOW.getProperty(f"{prop_prefix}.Year")
+        if year_str:
+            try:
+                info_tag.setYear(int(year_str))
+            except ValueError:
+                pass
+
+        genre_str = WINDOW.getProperty(f"{prop_prefix}.Genre")
+        if genre_str:
+            info_tag.setGenres([g.strip() for g in genre_str.split(',')])
+
+        if duration_secs:
+            try:
+                info_tag.setDuration(int(duration_secs))
+            except ValueError:
+                pass
+
         return list_item
 
     def _update_list_item(self, item: xbmcgui.ListItem, show_id: int) -> None:
@@ -340,6 +358,24 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         info_tag.setEpisode(int(episode) if episode else 0)
         info_tag.setPlot(plot)
         info_tag.setTitle(eptitle)
+
+        # Additional InfoTagVideo fields from service window properties
+        year_str = WINDOW.getProperty(f"{prop_prefix}.Year")
+        if year_str:
+            try:
+                info_tag.setYear(int(year_str))
+            except ValueError:
+                pass
+
+        genre_str = WINDOW.getProperty(f"{prop_prefix}.Genre")
+        if genre_str:
+            info_tag.setGenres([g.strip() for g in genre_str.split(',')])
+
+        if duration_secs:
+            try:
+                info_tag.setDuration(int(duration_secs))
+            except ValueError:
+                pass
 
     def onAction(self, action: xbmcgui.Action) -> None:
         """
