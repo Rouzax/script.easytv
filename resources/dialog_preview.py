@@ -16,7 +16,6 @@ that addon's name, theme, and skin path (useful for testing clones).
 """
 from __future__ import annotations
 
-import ast
 from typing import Dict, List, Optional, Tuple, Union, cast
 
 import xbmcgui
@@ -76,28 +75,21 @@ def _fetch_all_shows() -> List[Tuple[str, int, str]]:
 
 
 def _fetch_browse_data() -> Optional[List[list]]:
-    """Read browse window data from the service's window property.
+    """Fetch browse data using the same path as the real browse mode.
 
     Returns cached result on subsequent calls.
     Returns None if the service is not running or has no show data.
+    Each entry is [lastplayed_timestamp, showid, episodeid].
     """
     global _cached_browse_data
     if _cached_browse_data is not None:
         return _cached_browse_data
 
-    from resources.lib.constants import (
-        KODI_HOME_WINDOW_ID,
-        PROP_SHOWS_WITH_NEXT_EPISODES,
-    )
-
-    window = xbmcgui.Window(KODI_HOME_WINDOW_ID)
-    raw = window.getProperty(PROP_SHOWS_WITH_NEXT_EPISODES)
-    if not raw:
-        return None
+    from resources.lib.data.shows import fetch_unwatched_shows
 
     try:
-        data = ast.literal_eval(raw)
-    except (ValueError, SyntaxError):
+        data = fetch_unwatched_shows(sort_by=1, sort_reverse=False, language='English')
+    except SystemExit:
         return None
 
     if not data:
@@ -212,15 +204,6 @@ def preview_browse() -> None:
 
     skin_xml = get_skin_xml_file(choice)
     config = BrowseWindowConfig(skin=choice)
-
-    # Diagnostic: verify window properties are readable
-    from resources.lib.constants import KODI_HOME_WINDOW_ID
-    import xbmc
-    window = xbmcgui.Window(KODI_HOME_WINDOW_ID)
-    sample_id = data[0][1]
-    sample_title = window.getProperty("EasyTV.%s.TVshowTitle" % sample_id)
-    xbmc.log("[EasyTV Preview] data[0]=%s, show_id=%s, title='%s', skin_xml=%s, script_path=%s"
-             % (data[0], sample_id, sample_title, skin_xml, script_path), xbmc.LOGINFO)
 
     bw = BrowseWindow(
         skin_xml, script_path, 'Default',
