@@ -63,7 +63,7 @@
             <height>25</height>
             <font>font10</font>
             <textcolor>FFAAAAAA</textcolor>
-            <label>[COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(episodeno)][/COLOR]  •  $ADDON[script.easytv 32222]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(percentplayed)][/COLOR]  •  $ADDON[script.easytv 32223] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numondeck)][/COLOR]  •  $ADDON[script.easytv 32224] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numwatched)][/COLOR]  •  $ADDON[script.easytv 32225] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numskipped)][/COLOR]  •  $ADDON[script.easytv 32065] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(lastwatched)][/COLOR]  •  $INFO[Container(655).ListItem.Property(duration)]$INFO[Container(655).ListItem.Genre,  •  ]</label>
+            <label>[COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(episodeno)][/COLOR]  •  $ADDON[script.easytv 32222]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(percentplayed)][/COLOR]  •  $ADDON[script.easytv 32223] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numondeck)][/COLOR]  •  $ADDON[script.easytv 32224] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numwatched)][/COLOR]  •  $ADDON[script.easytv 32225] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numskipped)][/COLOR]  •  $ADDON[script.easytv 32065] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(lastwatched)][/COLOR]</label>
         </control>
 
         <!-- Main content group -->
@@ -138,7 +138,7 @@
                 <width>680</width>
                 <height>895</height>
                 <orientation>vertical</orientation>
-                <focusposition>3</focusposition>
+                <focusposition>4</focusposition>
                 <movement>1</movement>
                 <scrolltime tween="sine" easing="out">200</scrolltime>
                 <onleft>655</onleft>
@@ -148,33 +148,22 @@
                 <itemgap>8</itemgap>
 
                 <!-- Unfocused list item -->
-                <itemlayout width="680" height="90">
+                <itemlayout width="680" height="55">
                     <!-- Background -->
                     <control type="image">
                         <left>0</left>
                         <top>5</top>
                         <width>660</width>
-                        <height>80</height>
+                        <height>45</height>
                         <texture colordiffuse="0cffffff">common/white.png</texture>
-                    </control>
-
-                    <!-- Show poster -->
-                    <control type="image">
-                        <left>10</left>
-                        <top>5</top>
-                        <width>53</width>
-                        <height>80</height>
-                        <texture background="true">$INFO[ListItem.Art(thumb)]</texture>
-                        <aspectratio>keep</aspectratio>
                     </control>
 
                     <!-- Show title -->
                     <control type="label">
-                        <left>75</left>
-                        <top>10</top>
-                        <width>540</width>
+                        <left>15</left>
+                        <top>12</top>
+                        <width>610</width>
                         <height>30</height>
-                        <aligny>center</aligny>
                         <font>font12</font>
                         <textcolor>FFCCCCCC</textcolor>
                         <label>$INFO[ListItem.Label]</label>
@@ -183,7 +172,7 @@
                     <!-- Multiselect checkmark -->
                     <control type="image">
                         <left>630</left>
-                        <top>30</top>
+                        <top>17</top>
                         <width>20</width>
                         <height>20</height>
                         <texture>IconWatched.png</texture>
