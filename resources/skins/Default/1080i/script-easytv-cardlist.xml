@@ -76,6 +76,18 @@
                     <label>$INFO[Window.Property(EasyTV.AddonName)]</label>
                 </control>
 
+                <!-- Item count -->
+                <control type="label">
+                    <left>30</left>
+                    <top>18</top>
+                    <width>1340</width>
+                    <height>30</height>
+                    <align>right</align>
+                    <font>font10</font>
+                    <textcolor>FF888888</textcolor>
+                    <label>$INFO[Container(655).CurrentItem] / $INFO[Container(655).NumItems]</label>
+                </control>
+
                 <!-- Accent line separator -->
                 <control type="image">
                     <left>30</left>
