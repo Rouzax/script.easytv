@@ -213,6 +213,15 @@ def preview_browse() -> None:
     skin_xml = get_skin_xml_file(choice)
     config = BrowseWindowConfig(skin=choice)
 
+    # Diagnostic: verify window properties are readable
+    from resources.lib.constants import KODI_HOME_WINDOW_ID
+    import xbmc
+    window = xbmcgui.Window(KODI_HOME_WINDOW_ID)
+    sample_id = data[0][1]
+    sample_title = window.getProperty("EasyTV.%s.TVshowTitle" % sample_id)
+    xbmc.log("[EasyTV Preview] data[0]=%s, show_id=%s, title='%s', skin_xml=%s, script_path=%s"
+             % (data[0], sample_id, sample_title, skin_xml, script_path), xbmc.LOGINFO)
+
     bw = BrowseWindow(
         skin_xml, script_path, 'Default',
         data=data,
