@@ -290,7 +290,8 @@ def _handle_special_modes(mode, addon, log, addon_name='EasyTV'):
     elif mode == 'dialog_preview':
         log.debug("Dialog preview mode")
         from resources import dialog_preview
-        dialog_preview.Main()
+        override = sys.argv[2] if len(sys.argv) > 2 else None
+        dialog_preview.Main(override)
 
 
 def _check_service_running(window, log):
