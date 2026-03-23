@@ -408,6 +408,9 @@ LOG_MAX_VALUE_LENGTH = 200  # Truncate long values in log output
 # Default addon ID (fallback when context unavailable)
 DEFAULT_ADDON_ID = "script.easytv"
 
+# Icon persistence
+CUSTOM_ICON_BACKUP = "custom_icon.png"
+
 # =============================================================================
 # Playlist Continuation Window Properties
 # =============================================================================
