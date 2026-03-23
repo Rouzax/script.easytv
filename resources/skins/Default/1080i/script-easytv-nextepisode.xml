@@ -106,7 +106,7 @@
                 <align>left</align>
                 <aligny>center</aligny>
                 <textcolor>ffFFFFFF</textcolor>
-                <font>font14_title</font>
+                <font>font13</font>
                 <wrapmultiline>true</wrapmultiline>
                 <label>-</label>
             </control>
