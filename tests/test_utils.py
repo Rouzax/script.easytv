@@ -178,9 +178,7 @@ class TestSetCustomIcon:
             'path': '/addon', 'id': 'script.easytv', 'profile': '/profile'
         }[k]
         mocker.patch('resources.lib.utils.xbmcaddon.Addon', return_value=mock_addon)
-        mock_dialog = mocker.MagicMock()
-        mock_dialog.select.return_value = 2  # Ember
-        mocker.patch('resources.lib.utils.xbmcgui.Dialog', return_value=mock_dialog)
+        mocker.patch('resources.lib.ui.dialogs.show_select', return_value=2)  # Ember
         mock_copy = mocker.patch('resources.lib.utils.xbmcvfs.copy', return_value=True)
         mocker.patch('resources.lib.utils.xbmcvfs.exists', return_value=True)
         mocker.patch('resources.lib.utils.os.makedirs')
@@ -204,9 +202,7 @@ class TestSetCustomIcon:
             'path': '/addon', 'id': 'script.easytv', 'profile': '/profile'
         }[k]
         mocker.patch('resources.lib.utils.xbmcaddon.Addon', return_value=mock_addon)
-        mock_dialog = mocker.MagicMock()
-        mock_dialog.select.return_value = -1  # Cancelled
-        mocker.patch('resources.lib.utils.xbmcgui.Dialog', return_value=mock_dialog)
+        mocker.patch('resources.lib.ui.dialogs.show_select', return_value=-1)  # Cancelled
         mock_copy = mocker.patch('resources.lib.utils.xbmcvfs.copy')
         mocker.patch('resources.lib.utils.lang', side_effect=lambda x, **kw: str(x))
 
@@ -223,10 +219,10 @@ class TestSetCustomIcon:
             'path': '/addon', 'id': 'script.easytv', 'profile': '/profile'
         }[k]
         mocker.patch('resources.lib.utils.xbmcaddon.Addon', return_value=mock_addon)
-        mock_dialog = mocker.MagicMock()
-        mock_dialog.select.return_value = 4  # Browse...
-        mock_dialog.browse.return_value = '/custom/my_icon.png'
-        mocker.patch('resources.lib.utils.xbmcgui.Dialog', return_value=mock_dialog)
+        mocker.patch('resources.lib.ui.dialogs.show_select', return_value=4)  # Browse...
+        mock_browse_dialog = mocker.MagicMock()
+        mock_browse_dialog.browse.return_value = '/custom/my_icon.png'
+        mocker.patch('resources.lib.utils.xbmcgui.Dialog', return_value=mock_browse_dialog)
         mocker.patch('resources.lib.utils.xbmcvfs.copy', return_value=True)
         mocker.patch('resources.lib.utils.xbmcvfs.exists', return_value=True)
         mocker.patch('resources.lib.utils.os.makedirs')
@@ -236,4 +232,4 @@ class TestSetCustomIcon:
         result = set_custom_icon('script.easytv')
 
         assert result is True
-        mock_dialog.browse.assert_called_once()
+        mock_browse_dialog.browse.assert_called_once()

@@ -234,7 +234,7 @@
                 <height>28</height>
                 <font>font10</font>
                 <textcolor>FFAAAAAA</textcolor>
-                <label>$INFO[Container(655).ListItem.Property(genre),[, ]]$INFO[Container(655).ListItem.Property(duration),  &#8226;  ~,/ep]</label>
+                <label>$INFO[Container(655).ListItem.Property(duration)]$INFO[Container(655).ListItem.Genre,  &#8226;  ]</label>
             </control>
 
             <!-- On Deck / Watched / Skipped counts -->

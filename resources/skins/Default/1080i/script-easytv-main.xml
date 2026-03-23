@@ -125,7 +125,7 @@
                     <scroll>true</scroll>
                     <font>font10</font>
                     <textcolor>FFAAAAAA</textcolor>
-                    <label>$INFO[Container(655).ListItem.Property(genre),[, ]]$INFO[Container(655).ListItem.Property(duration),  •  ~,/ep]</label>
+                    <label>$INFO[Container(655).ListItem.Property(duration)]$INFO[Container(655).ListItem.Genre,  •  ]</label>
                 </control>
 
                 <!-- Episode number / Progress info (compact S01E01 notation) -->
@@ -179,7 +179,7 @@
                     <scroll>true</scroll>
                     <font>font10</font>
                     <textcolor>FFCCCCCC</textcolor>
-                    <label>[COLOR $INFO[Window.Property(EasyTV.Accent)]]$ADDON[script.easytv 32226]  [/COLOR]$INFO[Container(655).ListItem.Plot]</label>
+                    <label>$INFO[Container(655).ListItem.Plot]</label>
                 </control>
             </control>
 
