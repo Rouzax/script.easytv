@@ -103,7 +103,7 @@
             <!-- Subtitle Label (ID 4) — secondary, smaller + dimmer -->
             <control type="label" id="4">
                 <left>30</left>
-                <top>162</top>
+                <top>166</top>
                 <width>660</width>
                 <height>25</height>
                 <align>center</align>
@@ -115,7 +115,7 @@
             <!-- Button Row -->
             <control type="group">
                 <left>145</left>
-                <top>190</top>
+                <top>196</top>
                 <width>430</width>
                 <height>50</height>
 
@@ -159,9 +159,9 @@
             <!-- Timer Label (ID 3) — auto-close countdown -->
             <control type="label" id="3">
                 <left>30</left>
-                <top>255</top>
+                <top>256</top>
                 <width>660</width>
-                <height>30</height>
+                <height>25</height>
                 <align>center</align>
                 <font>font10</font>
                 <textcolor>FFAAAAAA</textcolor>
