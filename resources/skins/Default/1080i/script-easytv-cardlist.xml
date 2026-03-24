@@ -106,7 +106,7 @@
                     <align>center</align>
                     <font>font10</font>
                     <textcolor>FFAAAAAA</textcolor>
-                    <label>$INFO[Container(655).ListItem.Property(duration)]$INFO[Container(655).ListItem.Genre,  •  ]  •  $ADDON[script.easytv 32223] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numondeck)][/COLOR]  •  $ADDON[script.easytv 32224] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numwatched)][/COLOR]  •  $ADDON[script.easytv 32225] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numskipped)][/COLOR]</label>
+                    <label>$INFO[Container(655).ListItem.Property(duration)]$INFO[Container(655).ListItem.Genre,  ·  ]  ·  $ADDON[script.easytv 32223] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numondeck)][/COLOR]  ·  $ADDON[script.easytv 32224] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numwatched)][/COLOR]  ·  $ADDON[script.easytv 32225] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numskipped)][/COLOR]</label>
                 </control>
             </control>
 
