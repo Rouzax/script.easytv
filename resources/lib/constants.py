@@ -366,6 +366,10 @@ MOVIE_CANDIDATE_PREFIX = 'm'
 ACTION_PREVIOUS_MENU = 10
 ACTION_NAV_BACK = 92
 ACTION_CONTEXT_MENU = 117
+ACTION_TELETEXT_BLUE = 218
+
+# Theme names (for UI display, e.g. preview mode cycling)
+THEME_NAMES = ["Golden Hour", "Ultraviolet", "Ember", "Nightfall"]
 ACTION_SELECT_ITEM = 7
 
 # =============================================================================
