@@ -10,7 +10,8 @@
     "**/__pycache__",
     "**/node_modules",
     ".git",
-    ".worktrees"
+    ".worktrees",
+    "_temp"
   ],
   "ignore": [
     "**/test_*"

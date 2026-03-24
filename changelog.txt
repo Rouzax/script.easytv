@@ -1,14 +1,43 @@
 EasyTV Changelog
 ================
 
-v1.5.1~alpha1
+v1.5.1 (2026-03-24)
 --------------------------
-Changes:
-  - Added icon theme selection with 4 bundled icon styles (Golden Hour,
-    Ultraviolet, Ember, Nightfall) plus custom image browse option.
-  - Added Kodi texture cache invalidation for immediate icon updates after
-    changing icons — no more waiting 24 hours for the change to appear.
-  - Added icon_default.png for reliable icon reset.
+New Features:
+  - Showcase browse view: Fifth view style with horizontal poster filmstrip
+    layout. Shows watched badges on poster thumbnails.
+  - Heading areas on all five browse views: Each view now displays the addon
+    name, item count, and accent-line separator at the top.
+  - Icon theme selection: Choose from four bundled icon styles (Golden Hour,
+    Ultraviolet, Ember, Nightfall) or browse for a custom image. Kodi's texture
+    cache is automatically invalidated so icon changes appear immediately.
+    icon_default.png added for reliable icon reset. Custom icon choice persists
+    across addon upgrades.
+  - Dialog preview rewrite: Previews all eight dialog types using real library
+    data. Supports clone addon preview via third argument. Module-level data
+    caching for efficient "All Dialogs" cycling. Theme color picker menu before
+    main dialog menu.
+  - Missed episode warning upgraded to a poster-style dialog with show artwork,
+    matching the visual style of other EasyTV dialogs.
+
+Improvements:
+  - EasyMovie UI parity: Harmonized visual design across both addons. Genre
+    display switched to slash-separated format. Duration format shortened
+    (e.g., "43m" instead of "43 min"). Big Screen view redesigned with show
+    title, episode title, and plot replacing fanart reflection. Split View
+    poster resized to fit between accent lines. Show selector now displays
+    selection count. Synopsis prefix removed from plot display.
+  - Clone updates are now mandatory — version mismatch enforces Update or
+    Cancel with no Skip option.
+  - Settings help text reworded for five settings for improved clarity.
+  - Added year, genres, and duration fields to browse ListItems for richer
+    metadata display in all view styles.
+
+Internal:
+  - Added GitHub Actions CI validation workflow (syntax, pyflakes, pyright,
+    kodi-addon-checker, pytest).
+  - Simplified attribution to single-line historical acknowledgment.
+  - Added _temp to pyrightconfig.json exclude list.
 
 v1.5.0 (2026-03-18)
 --------------------------
