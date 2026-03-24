@@ -63,7 +63,7 @@
             <height>25</height>
             <font>font10</font>
             <textcolor>FFAAAAAA</textcolor>
-            <label>$ADDON[script.easytv 32222]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(percentplayed)][/COLOR]  •  $ADDON[script.easytv 32223] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numondeck)][/COLOR]  •  $ADDON[script.easytv 32224] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numwatched)][/COLOR]  •  $ADDON[script.easytv 32225] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numskipped)][/COLOR]  •  $ADDON[script.easytv 32065] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(lastwatched)][/COLOR]</label>
+            <label>$ADDON[script.easytv 32222]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(percentplayed)][/COLOR]  ·  $ADDON[script.easytv 32223] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numondeck)][/COLOR]  ·  $ADDON[script.easytv 32224] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numwatched)][/COLOR]  ·  $ADDON[script.easytv 32225] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numskipped)][/COLOR]  ·  $ADDON[script.easytv 32065] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(lastwatched)][/COLOR]</label>
         </control>
 
         <!-- Main content group -->
@@ -194,7 +194,7 @@
                     <!-- Show poster -->
                     <control type="image">
                         <left>10</left>
-                        <top>5</top>
+                        <top>8</top>
                         <width>73</width>
                         <height>110</height>
                         <texture background="true">$INFO[ListItem.Art(thumb)]</texture>
@@ -234,7 +234,7 @@
                         <aligny>center</aligny>
                         <font>font10</font>
                         <textcolor>ffFFFFFF</textcolor>
-                        <label>$INFO[ListItem.Property(duration)]$INFO[ListItem.Genre,  •  ]</label>
+                        <label>$INFO[ListItem.Property(duration)]$INFO[ListItem.Genre,  ·  ]</label>
                     </control>
 
                     <!-- Multiselect checkmark -->

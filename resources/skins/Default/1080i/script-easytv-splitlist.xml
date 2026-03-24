@@ -231,7 +231,7 @@
                     <!-- Episode title -->
                     <control type="label">
                         <left>0</left>
-                        <top>425</top>
+                        <top>421</top>
                         <width>590</width>
                         <height>35</height>
                         <align>center</align>
@@ -243,44 +243,44 @@
                     <!-- Genre + Duration -->
                     <control type="label">
                         <left>0</left>
-                        <top>462</top>
+                        <top>458</top>
                         <width>590</width>
                         <height>28</height>
                         <align>center</align>
                         <scroll>true</scroll>
                         <font>font10</font>
                         <textcolor>FFAAAAAA</textcolor>
-                        <label>$INFO[Container(655).ListItem.Property(duration)]$INFO[Container(655).ListItem.Genre,  •  ]</label>
+                        <label>$INFO[Container(655).ListItem.Property(duration)]$INFO[Container(655).ListItem.Genre,  ·  ]</label>
                     </control>
 
                     <!-- On Deck / Watched / Skipped counts -->
                     <control type="label">
                         <left>0</left>
-                        <top>492</top>
+                        <top>488</top>
                         <width>590</width>
                         <height>28</height>
                         <align>center</align>
                         <font>font10</font>
                         <textcolor>FFAAAAAA</textcolor>
-                        <label>$ADDON[script.easytv 32223] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numondeck)][/COLOR]  •  $ADDON[script.easytv 32224] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numwatched)][/COLOR]  •  $ADDON[script.easytv 32225] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numskipped)][/COLOR]</label>
+                        <label>$ADDON[script.easytv 32223] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numondeck)][/COLOR]  ·  $ADDON[script.easytv 32224] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numwatched)][/COLOR]  ·  $ADDON[script.easytv 32225] [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(numskipped)][/COLOR]</label>
                     </control>
 
                     <!-- Last watched + Progress -->
                     <control type="label">
                         <left>0</left>
-                        <top>522</top>
+                        <top>518</top>
                         <width>590</width>
                         <height>28</height>
                         <align>center</align>
                         <font>font10</font>
                         <textcolor>FFAAAAAA</textcolor>
-                        <label>$ADDON[script.easytv 32065]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(lastwatched)][/COLOR]  •  $ADDON[script.easytv 32222]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(percentplayed)][/COLOR]</label>
+                        <label>$ADDON[script.easytv 32065]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(lastwatched)][/COLOR]  ·  $ADDON[script.easytv 32222]  [COLOR $INFO[Window.Property(EasyTV.Accent)]]$INFO[Container(655).ListItem.Property(percentplayed)][/COLOR]</label>
                     </control>
 
                     <!-- Separator -->
                     <control type="image">
                         <left>0</left>
-                        <top>558</top>
+                        <top>554</top>
                         <width>590</width>
                         <height>2</height>
                         <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">common/line_fade.png</texture>
@@ -289,7 +289,7 @@
                     <!-- Plot -->
                     <control type="textbox">
                         <left>0</left>
-                        <top>570</top>
+                        <top>566</top>
                         <width>590</width>
                         <height>210</height>
                         <scroll>true</scroll>
