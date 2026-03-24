@@ -401,7 +401,10 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
             self._should_close = True
             self.close()
 
-        elif action_id == ACTION_TELETEXT_BLUE and self._preview_mode:
+        elif self._preview_mode and (
+            action_id == ACTION_TELETEXT_BLUE
+            or action.getButtonCode() == 0xF054
+        ):
             self._theme_index = (self._theme_index + 1) % len(THEME_COLORS)
             for prop, value in THEME_COLORS[str(self._theme_index)].items():
                 self.setProperty(prop, value)
