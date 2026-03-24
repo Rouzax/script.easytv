@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <addon id="script.easytv"
        name="EasyTV"
-       version="1.5.1~alpha1"
+       version="1.5.1"
        provider-name="Rouzax">
     <requires>
         <import addon="xbmc.python" version="3.0.1"/>
@@ -25,13 +25,13 @@
         <forum>https://forum.kodi.tv/showthread.php?tid=383902</forum>
         <website>https://rouzax.github.io/script.easytv/</website>
         <source>https://github.com/Rouzax/script.easytv</source>
-        <news>v1.5.0 (2026-03-18)
-- Four browse view styles: Card List, Posters, Big Screen, and Split View
-- Color themes: Golden Hour, Ultraviolet, Ember, and Nightfall
-- Custom addon icon selection for main addon and clones
-- Redesigned dialogs and show selector with inline search
-- Genre, duration info, and new sort options in browse views
-- 3-state premiere filter: Skip, Mix in, or Only</news>
+        <news>v1.5.1 (2026-03-24)
+- Showcase browse view: horizontal poster filmstrip (5th view style)
+- Heading areas with item counts on all five browse views
+- Icon theme selection with 4 bundled styles and instant cache refresh
+- Dialog preview rewrite with real library data and theme color picker
+- Visual harmonization with EasyMovie across all views and dialogs
+- Clone updates now mandatory when version mismatch detected</news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
