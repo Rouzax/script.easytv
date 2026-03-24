@@ -207,6 +207,9 @@ def preview_browse() -> None:
     from resources.lib.utils import get_logger
     _fetch_show_art(get_logger('browse'))
 
+    addon = xbmcaddon.Addon(addon_id)
+    theme_index = int(addon.getSetting('theme') or '0')
+
     skin_xml = get_skin_xml_file(choice)
     config = BrowseWindowConfig(skin=choice)
 
@@ -216,6 +219,7 @@ def preview_browse() -> None:
         config=config,
         script_path=script_path,
     )
+    bw.set_preview_mode(theme_index)
     bw.doModal()
     if bw.play_requested:
         dialog.notification(_notify_title, "Browse: play requested")

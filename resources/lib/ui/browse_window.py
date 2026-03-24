@@ -48,6 +48,7 @@ from resources.lib.constants import (
     ACTION_PREVIOUS_MENU,
     ACTION_NAV_BACK,
     ACTION_CONTEXT_MENU,
+    ACTION_TELETEXT_BLUE,
     CONTEXT_TOGGLE_MULTISELECT,
     CONTEXT_PLAY_SELECTION,
     CONTEXT_PLAY_FROM_HERE,
@@ -56,6 +57,8 @@ from resources.lib.constants import (
     CONTEXT_IGNORE_SHOW,
     CONTEXT_UPDATE_LIBRARY,
     CONTEXT_REFRESH,
+    THEME_COLORS,
+    THEME_NAMES,
 )
 from resources.lib.data.storage import get_storage
 from resources.lib.utils import get_logger, lang, json_query, format_duration
@@ -144,9 +147,16 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         self._play_requested: bool = False
         self._should_close: bool = False
         self._needs_refresh: bool = False
+        self._preview_mode: bool = False
+        self._theme_index: int = 0
 
         # Control references (set during onInit)
         self.name_list: Optional[xbmcgui.ControlList] = None
+
+    def set_preview_mode(self, theme_index: int) -> None:
+        """Enable preview mode with live theme cycling via blue button."""
+        self._preview_mode = True
+        self._theme_index = theme_index
 
     def onInit(self) -> None:
         """
@@ -390,7 +400,14 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
             self._log.debug("Window closing (back action)")
             self._should_close = True
             self.close()
-            
+
+        elif action_id == ACTION_TELETEXT_BLUE and self._preview_mode:
+            self._theme_index = (self._theme_index + 1) % len(THEME_COLORS)
+            for prop, value in THEME_COLORS[str(self._theme_index)].items():
+                self.setProperty(prop, value)
+            xbmcgui.Dialog().notification(
+                "Theme", THEME_NAMES[self._theme_index], time=1500)
+
         elif action_id == ACTION_CONTEXT_MENU:
             self._handle_context_menu()
     
