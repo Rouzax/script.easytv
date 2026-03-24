@@ -100,20 +100,10 @@
                         <texture background="true">$INFO[ListItem.Art(thumb)]</texture>
                     </control>
 
-                    <!-- Watched scrim (top-left gradient) -->
-                    <control type="image">
-                        <left>14</left>
-                        <top>258</top>
-                        <width>60</width>
-                        <height>60</height>
-                        <texture>common/scrim_topleft.png</texture>
-                        <visible>!String.IsEmpty(ListItem.Property(watched))</visible>
-                    </control>
-
                     <!-- Watched icon -->
                     <control type="image">
-                        <left>17</left>
-                        <top>261</top>
+                        <left>18</left>
+                        <top>262</top>
                         <width>24</width>
                         <height>24</height>
                         <texture colordiffuse="$INFO[Window.Property(EasyTV.Accent)]">IconWatched.png</texture>
@@ -158,16 +148,6 @@
                             <height>630</height>
                             <aspectratio aligny="top">scale</aspectratio>
                             <texture background="true">$INFO[ListItem.Art(thumb)]</texture>
-                        </control>
-
-                        <!-- Watched scrim (top-left gradient) -->
-                        <control type="image">
-                            <left>10</left>
-                            <top>80</top>
-                            <width>80</width>
-                            <height>80</height>
-                            <texture>common/scrim_topleft.png</texture>
-                            <visible>!String.IsEmpty(ListItem.Property(watched))</visible>
                         </control>
 
                         <!-- Watched icon -->
