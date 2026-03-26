@@ -401,9 +401,9 @@ def sync_show_list_from_shared_db(storage, logger=None):
 
     try:
         sync_result = storage.sync_tracked_shows(local_ids)
-    except Exception as e:
-        log_inner.warning("Show list sync failed",
-                          event="sync.error", error=str(e))
+    except Exception:
+        log_inner.exception("Show list sync failed",
+                            event="sync.error")
         return
 
     if not sync_result.added and not sync_result.removed:
@@ -424,14 +424,17 @@ def sync_show_list_from_shared_db(storage, logger=None):
                            event="sync.added",
                            show_ids=sorted(data.keys()),
                            count=len(data))
-        except Exception as e:
-            log_inner.warning("Failed to fetch added shows",
-                              event="sync.add_error", error=str(e))
+        except Exception:
+            log_inner.exception("Failed to fetch added shows",
+                                event="sync.add_error")
 
-    # Handle removals: clear window properties
+    # Handle removals: remove from list and clear key window property
     if sync_result.removed:
         for show_id in sync_result.removed:
             updated_ids.discard(show_id)
+            # Clear the EpisodeID property so the show can't be looked up
+            # (remaining props are harmless and cleared on next full refresh)
+            WINDOW.clearProperty("EasyTV.%s.EpisodeID" % show_id)
         log_inner.info("Shows removed per shared DB",
                        event="sync.removed",
                        show_ids=sorted(sync_result.removed),

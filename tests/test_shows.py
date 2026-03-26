@@ -268,7 +268,7 @@ class TestSyncShowListFromSharedDb:
 
     @patch('resources.lib.data.shows.WINDOW')
     def test_sync_error_is_handled(self, mock_window):
-        """Should log warning and return when sync_tracked_shows fails."""
+        """Should log exception and return when sync_tracked_shows fails."""
         mock_window.getProperty.return_value = '[10, 20]'
         storage = self._make_storage()
         storage.sync_tracked_shows.side_effect = RuntimeError("DB error")
@@ -276,7 +276,7 @@ class TestSyncShowListFromSharedDb:
 
         sync_show_list_from_shared_db(storage, logger)
 
-        logger.warning.assert_called_once()
+        logger.exception.assert_called_once()
         mock_window.setProperty.assert_not_called()
 
     @patch('resources.lib.data.shows.WINDOW')
