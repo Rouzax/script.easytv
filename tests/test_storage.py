@@ -5,6 +5,7 @@ import pytest
 
 from resources.lib.data.storage import (
     SharedDatabaseStorage,
+    SyncResult,
     WindowPropertyStorage,
     _build_property_key,
 )
@@ -158,3 +159,99 @@ class TestRefreshResumeState:
         percent_key = _build_property_key(42, "PercentPlayed")
         mock_window.setProperty.assert_any_call(resume_key, "false")
         mock_window.setProperty.assert_any_call(percent_key, "0%")
+
+
+class TestWindowPropertyStorageSyncTrackedShows:
+    """Tests for WindowPropertyStorage.sync_tracked_shows()."""
+
+    def test_returns_empty_sync_result(self):
+        storage = WindowPropertyStorage()
+
+        result = storage.sync_tracked_shows({1, 2, 3})
+
+        assert result.added == set()
+        assert result.removed == set()
+        assert result.revision == 0
+
+    def test_returns_sync_result_type(self):
+        storage = WindowPropertyStorage()
+
+        result = storage.sync_tracked_shows(set())
+
+        assert isinstance(result, SyncResult)
+
+
+class TestSharedDatabaseStorageSyncTrackedShows:
+    """Tests for SharedDatabaseStorage.sync_tracked_shows()."""
+
+    def _make_storage(self):
+        """Create a SharedDatabaseStorage with a mocked database."""
+        mock_db = MagicMock()
+        storage = SharedDatabaseStorage(mock_db)
+        return storage, mock_db
+
+    def test_discovers_additions(self):
+        """Shows in DB but not local are reported as added."""
+        storage, mock_db = self._make_storage()
+        mock_db.get_tracked_show_ids.return_value = ({10, 20, 30}, 5)
+
+        result = storage.sync_tracked_shows({10, 20})
+
+        assert result.added == {30}
+        assert result.removed == set()
+        assert result.revision == 5
+
+    def test_discovers_removals(self):
+        """Shows in local but not DB are reported as removed."""
+        storage, mock_db = self._make_storage()
+        mock_db.get_tracked_show_ids.return_value = ({10}, 7)
+
+        result = storage.sync_tracked_shows({10, 20, 30})
+
+        assert result.added == set()
+        assert result.removed == {20, 30}
+        assert result.revision == 7
+
+    def test_no_changes(self):
+        """No additions or removals when sets match."""
+        storage, mock_db = self._make_storage()
+        mock_db.get_tracked_show_ids.return_value = ({10, 20, 30}, 3)
+
+        result = storage.sync_tracked_shows({10, 20, 30})
+
+        assert result.added == set()
+        assert result.removed == set()
+        assert result.revision == 3
+
+    def test_both_additions_and_removals(self):
+        """Both additions and removals detected simultaneously."""
+        storage, mock_db = self._make_storage()
+        mock_db.get_tracked_show_ids.return_value = ({10, 40, 50}, 9)
+
+        result = storage.sync_tracked_shows({10, 20, 30})
+
+        assert result.added == {40, 50}
+        assert result.removed == {20, 30}
+        assert result.revision == 9
+
+    def test_empty_db_all_removed(self):
+        """All local shows reported as removed when DB is empty."""
+        storage, mock_db = self._make_storage()
+        mock_db.get_tracked_show_ids.return_value = (set(), 2)
+
+        result = storage.sync_tracked_shows({10, 20})
+
+        assert result.added == set()
+        assert result.removed == {10, 20}
+        assert result.revision == 2
+
+    def test_empty_local_all_added(self):
+        """All DB shows reported as added when local is empty."""
+        storage, mock_db = self._make_storage()
+        mock_db.get_tracked_show_ids.return_value = ({10, 20}, 4)
+
+        result = storage.sync_tracked_shows(set())
+
+        assert result.added == {10, 20}
+        assert result.removed == set()
+        assert result.revision == 4

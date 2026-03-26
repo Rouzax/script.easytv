@@ -43,6 +43,7 @@ from __future__ import annotations
 import ast
 import contextlib
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 import xbmcaddon
@@ -59,6 +60,15 @@ from resources.lib.utils import get_bool_setting, get_logger, json_query, lang
 from resources.lib.data.queries import build_episode_details_query
 
 log = get_logger('storage')
+
+
+@dataclass
+class SyncResult:
+    """Result of comparing shared DB tracked shows against local state."""
+    added: set      # Show IDs in shared DB but not local
+    removed: set    # Show IDs in local but not shared DB
+    revision: int   # DB revision at time of comparison
+
 
 # Window for storing properties
 WINDOW = xbmcgui.Window(KODI_HOME_WINDOW_ID)
@@ -237,6 +247,21 @@ class StorageBackend(ABC):
         """
         ...
 
+    @abstractmethod
+    def sync_tracked_shows(self, local_show_ids: set) -> SyncResult:
+        """
+        Compare shared DB tracked shows against local state.
+
+        Returns which shows were added or removed by other instances.
+
+        Args:
+            local_show_ids: Set of show IDs currently in PROP_SHOWS_WITH_NEXT_EPISODES
+
+        Returns:
+            SyncResult with added, removed, and revision.
+        """
+        ...
+
     @contextlib.contextmanager
     def batch_write(
         self, show_ids: List[int]
@@ -346,6 +371,10 @@ class WindowPropertyStorage(StorageBackend):
     def get_tracked_show_ids(self) -> Tuple[set, int]:
         """Single instance: no external tracked shows to discover."""
         return set(), 0
+
+    def sync_tracked_shows(self, local_show_ids: set) -> SyncResult:
+        """Single instance: no external changes to discover."""
+        return SyncResult(added=set(), removed=set(), revision=0)
 
     def _get_int_property(self, show_id: int, prop_name: str) -> int:
         """Get an integer property, defaulting to 0."""
@@ -518,6 +547,24 @@ class SharedDatabaseStorage(StorageBackend):
     def get_tracked_show_ids(self) -> Tuple[set, int]:
         """Get all tracked show IDs from shared database."""
         return self._db.get_tracked_show_ids()
+
+    def sync_tracked_shows(self, local_show_ids: set) -> SyncResult:
+        """Compare shared DB against local tracked show list."""
+        db_show_ids, revision = self._db.get_tracked_show_ids()
+
+        added = db_show_ids - local_show_ids
+        removed = local_show_ids - db_show_ids
+
+        if added:
+            log.debug("Shows added by other instance",
+                     event="storage.sync_added",
+                     show_ids=sorted(added), count=len(added))
+        if removed:
+            log.debug("Shows removed by other instance",
+                     event="storage.sync_removed",
+                     show_ids=sorted(removed), count=len(removed))
+
+        return SyncResult(added=added, removed=removed, revision=revision)
 
     @contextlib.contextmanager
     def batch_write(
