@@ -52,7 +52,7 @@ import re
 import socket
 import time
 import xml.etree.ElementTree as ET
-from typing import Any, Dict, Generator, List, Optional, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Generator, List, Optional, Set, Tuple, TYPE_CHECKING
 
 import xbmcgui
 import xbmcvfs
@@ -920,6 +920,47 @@ class SharedDatabase:
         finally:
             cursor.close()
     
+    def get_tracked_show_ids(self) -> Tuple[Set[int], int]:
+        """
+        Get all tracked show IDs with consistent revision snapshot.
+
+        Lightweight query returning only the set of show IDs currently
+        tracked in the shared database. Used by consumers to discover
+        shows added or removed by other instances.
+
+        Returns:
+            Tuple of (show_id_set, revision) where:
+                - show_id_set: Set of all tracked show IDs
+                - revision: The global_rev at time of read
+        """
+        conn = self._get_connection()
+        conn.commit()  # Fresh snapshot
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute(f"""
+                SELECT st.show_id, m.int_value AS current_rev
+                FROM {self._table('show_tracking')} st
+                CROSS JOIN (
+                    SELECT int_value FROM {self._table('sync_metadata')}
+                    WHERE key_name = 'global_rev'
+                ) m
+            """)
+
+            rows = cursor.fetchall()
+
+            if rows:
+                show_ids = {row[0] for row in rows}
+                revision = rows[0][1]
+            else:
+                show_ids = set()
+                revision = self.get_global_rev()
+
+            return show_ids, revision
+
+        finally:
+            cursor.close()
+
     def is_empty(self) -> bool:
         """
         Check if database has no show tracking data.
