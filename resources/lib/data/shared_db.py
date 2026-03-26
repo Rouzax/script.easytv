@@ -1248,7 +1248,7 @@ class SharedDatabase:
             for stored_id, (stored_title, stored_year) in stored_shows.items():
                 # Check if stored ID still exists with same title+year
                 if stored_id in current_shows:
-                    current_title, current_year = current_shows[stored_id]
+                    current_title, _current_year = current_shows[stored_id]
                     # Verify title matches (case-insensitive)
                     if (current_title and stored_title and 
                         current_title.lower() == stored_title.lower()):
