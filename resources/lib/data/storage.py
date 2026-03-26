@@ -217,12 +217,26 @@ class StorageBackend(ABC):
     def is_available(self) -> bool:
         """
         Check if storage backend is operational.
-        
+
         Returns:
             True if backend is available and can handle requests.
         """
         ...
-    
+
+    @abstractmethod
+    def get_tracked_show_ids(self) -> Tuple[set, int]:
+        """
+        Get all show IDs tracked in the storage backend.
+
+        Used to discover shows added or removed by other instances.
+
+        Returns:
+            Tuple of (show_id_set, revision) where:
+                - show_id_set: Set of tracked show IDs
+                - revision: Current revision (0 for single-instance)
+        """
+        ...
+
     @contextlib.contextmanager
     def batch_write(
         self, show_ids: List[int]
@@ -328,7 +342,11 @@ class WindowPropertyStorage(StorageBackend):
     def is_available(self) -> bool:
         """Always available."""
         return True
-    
+
+    def get_tracked_show_ids(self) -> Tuple[set, int]:
+        """Single instance: no external tracked shows to discover."""
+        return set(), 0
+
     def _get_int_property(self, show_id: int, prop_name: str) -> int:
         """Get an integer property, defaulting to 0."""
         value = WINDOW.getProperty(_build_property_key(show_id, prop_name))
@@ -491,7 +509,11 @@ class SharedDatabaseStorage(StorageBackend):
     def is_available(self) -> bool:
         """Check if database is available."""
         return self._db.is_available()
-    
+
+    def get_tracked_show_ids(self) -> Tuple[set, int]:
+        """Get all tracked show IDs from shared database."""
+        return self._db.get_tracked_show_ids()
+
     @contextlib.contextmanager
     def batch_write(
         self, show_ids: List[int]
