@@ -1,11 +1,12 @@
-"""Tests for resources/lib/data/storage.py — get_tracked_show_ids."""
-from unittest.mock import MagicMock
+"""Tests for resources/lib/data/storage.py."""
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from resources.lib.data.storage import (
     SharedDatabaseStorage,
     WindowPropertyStorage,
+    _build_property_key,
 )
 
 
@@ -63,3 +64,97 @@ class TestSharedDatabaseStorageGetTrackedShowIds:
 
         with pytest.raises(Exception, match="connection lost"):
             storage.get_tracked_show_ids()
+
+
+class TestRefreshResumeState:
+    """Tests for SharedDatabaseStorage._refresh_resume_state()."""
+
+    def _make_storage(self):
+        """Create a SharedDatabaseStorage with a mocked database."""
+        mock_db = MagicMock()
+        storage = SharedDatabaseStorage(mock_db)
+        return storage, mock_db
+
+    @patch('resources.lib.data.storage.WINDOW')
+    @patch('resources.lib.data.storage.json_query')
+    def test_updates_resume_properties_when_episode_has_resume(
+        self, mock_json_query, mock_window
+    ):
+        """Resume and PercentPlayed are set when episode has a resume point."""
+        storage, _ = self._make_storage()
+        mock_json_query.return_value = {
+            'episodedetails': {
+                'resume': {'position': 300.0, 'total': 1200.0}
+            }
+        }
+
+        storage._refresh_resume_state(show_id=42, episode_id=100)
+
+        resume_key = _build_property_key(42, "Resume")
+        percent_key = _build_property_key(42, "PercentPlayed")
+        mock_window.setProperty.assert_any_call(resume_key, "true")
+        mock_window.setProperty.assert_any_call(percent_key, "25%")
+
+    @patch('resources.lib.data.storage.WINDOW')
+    @patch('resources.lib.data.storage.json_query')
+    def test_sets_no_resume_when_position_is_zero(
+        self, mock_json_query, mock_window
+    ):
+        """Resume is false and PercentPlayed is 0% when no resume data."""
+        storage, _ = self._make_storage()
+        mock_json_query.return_value = {
+            'episodedetails': {
+                'resume': {'position': 0, 'total': 0}
+            }
+        }
+
+        storage._refresh_resume_state(show_id=42, episode_id=100)
+
+        resume_key = _build_property_key(42, "Resume")
+        percent_key = _build_property_key(42, "PercentPlayed")
+        mock_window.setProperty.assert_any_call(resume_key, "false")
+        mock_window.setProperty.assert_any_call(percent_key, "0%")
+
+    @patch('resources.lib.data.storage.WINDOW')
+    @patch('resources.lib.data.storage.json_query')
+    def test_no_update_when_query_fails(
+        self, mock_json_query, mock_window
+    ):
+        """Window properties are not touched when the Kodi query raises."""
+        storage, _ = self._make_storage()
+        mock_json_query.side_effect = Exception("JSON-RPC timeout")
+
+        storage._refresh_resume_state(show_id=42, episode_id=100)
+
+        mock_window.setProperty.assert_not_called()
+
+    @patch('resources.lib.data.storage.WINDOW')
+    @patch('resources.lib.data.storage.json_query')
+    def test_no_update_when_episodedetails_missing(
+        self, mock_json_query, mock_window
+    ):
+        """Window properties are not touched when response lacks episodedetails."""
+        storage, _ = self._make_storage()
+        mock_json_query.return_value = {}
+
+        storage._refresh_resume_state(show_id=42, episode_id=100)
+
+        mock_window.setProperty.assert_not_called()
+
+    @patch('resources.lib.data.storage.WINDOW')
+    @patch('resources.lib.data.storage.json_query')
+    def test_sets_no_resume_when_resume_dict_missing(
+        self, mock_json_query, mock_window
+    ):
+        """Resume is false when episodedetails has no resume key."""
+        storage, _ = self._make_storage()
+        mock_json_query.return_value = {
+            'episodedetails': {}
+        }
+
+        storage._refresh_resume_state(show_id=42, episode_id=100)
+
+        resume_key = _build_property_key(42, "Resume")
+        percent_key = _build_property_key(42, "PercentPlayed")
+        mock_window.setProperty.assert_any_call(resume_key, "false")
+        mock_window.setProperty.assert_any_call(percent_key, "0%")

@@ -436,11 +436,16 @@ class SharedDatabaseStorage(StorageBackend):
                     current_episode_id = None
                 
                 if db_episode_id and db_episode_id != current_episode_id:
-                    # Episode changed - fetch display properties from Kodi
+                    # Episode changed - full display refresh from Kodi
                     if self._fetch_and_set_display_properties(show_id, db_episode_id, show_data):
                         display_refreshed += 1
                         continue
                     # Kodi query failed - fall back to tracking properties only
+                else:
+                    # Same episode - still refresh resume state from Kodi
+                    # (user may have partially watched on another instance)
+                    if db_episode_id:
+                        self._refresh_resume_state(show_id, db_episode_id)
             
             # Default: just update tracking properties
             self._update_window_properties(show_id, show_data)
@@ -666,7 +671,42 @@ class SharedDatabaseStorage(StorageBackend):
             WINDOW.setProperty(_build_property_key(show_id, prop_name), value)
         
         return True
-    
+
+    def _refresh_resume_state(self, show_id: int, episode_id: int) -> None:
+        """
+        Refresh only the resume/progress window properties from Kodi.
+
+        Called when the ondeck episode hasn't changed but the resume point
+        may have been updated by another instance. Uses the shared Kodi
+        database (MariaDB) so the resume state is already current.
+
+        Args:
+            show_id: The TV show ID
+            episode_id: The ondeck episode ID to query resume for
+        """
+        try:
+            ep_result = json_query(build_episode_details_query(episode_id), True)
+        except Exception:
+            return  # Query failed, keep existing values
+
+        if 'episodedetails' not in ep_result:
+            return
+
+        resume_dict = ep_result['episodedetails'].get('resume', {})
+        resume_pos = resume_dict.get('position', 0)
+        resume_total = resume_dict.get('total', 0)
+
+        if resume_pos and resume_total:
+            resume = "true"
+            percent = int((float(resume_pos) / float(resume_total)) * PERCENT_MULTIPLIER)
+            percent_played = f"{percent}%"
+        else:
+            resume = "false"
+            percent_played = "0%"
+
+        WINDOW.setProperty(_build_property_key(show_id, "Resume"), resume)
+        WINDOW.setProperty(_build_property_key(show_id, "PercentPlayed"), percent_played)
+
     def _clear_window_properties(self, show_id: int) -> None:
         """
         Clear window properties for a show deleted on another instance.
