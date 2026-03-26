@@ -1,6 +1,21 @@
 EasyTV Changelog
 ================
 
+v1.5.2~alpha1 (2026-03-26)
+--------------------------
+Bug Fixes:
+  - Multi-instance sync: Shows that gain new episodes on another Kodi instance
+    now appear in Browse mode and random playlists without requiring a local
+    library scan. Previously, fully-watched shows that received a new episode
+    on another instance were invisible until the local Kodi triggered its own
+    library scan.
+  - Multi-instance sync: Shows fully watched on another instance are now
+    removed from the local Browse mode list, preventing ghost entries with
+    stale data.
+  - Multi-instance sync: Resume progress is now refreshed in Browse mode even
+    when the ondeck episode hasn't changed, fixing stale progress bars when
+    partially watching an episode on one instance and browsing on another.
+
 v1.5.1 (2026-03-24)
 --------------------------
 New Features:
