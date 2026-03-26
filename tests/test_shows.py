@@ -1,17 +1,22 @@
 """Tests for resources/lib/data/shows.py — show data logic."""
+from unittest.mock import MagicMock, patch
+
 from resources.lib.data.shows import (
     generate_sort_key,
     parse_season_episode_string,
     get_episode_sort_key,
     get_show_category,
     get_premiere_category,
+    sync_show_list_from_shared_db,
     _get_playlist_filename,
 )
+from resources.lib.data.storage import SyncResult
 from resources.lib.constants import (
     CATEGORY_START_FRESH,
     CATEGORY_CONTINUE_WATCHING,
     CATEGORY_SHOW_PREMIERE,
     CATEGORY_SEASON_PREMIERE,
+    PROP_SHOWS_WITH_NEXT_EPISODES,
 )
 
 
@@ -165,3 +170,159 @@ class TestGetPlaylistFilename:
         # os.path.basename handles platform-specific separators
         result = _get_playlist_filename("/some/path/file.avi")
         assert result == "file.avi"
+
+
+# ── sync_show_list_from_shared_db ──────────────────────────────────
+
+class TestSyncShowListFromSharedDb:
+    """Tests for sync_show_list_from_shared_db()."""
+
+    def _make_storage(self):
+        """Create a mock storage backend."""
+        return MagicMock()
+
+    def _make_logger(self):
+        """Create a mock logger."""
+        logger = MagicMock()
+        return logger
+
+    @patch('resources.lib.data.shows.WINDOW')
+    def test_noop_when_no_shows_property(self, mock_window):
+        """Should return early if PROP_SHOWS_WITH_NEXT_EPISODES is empty."""
+        mock_window.getProperty.return_value = ''
+        storage = self._make_storage()
+
+        sync_show_list_from_shared_db(storage)
+
+        storage.sync_tracked_shows.assert_not_called()
+
+    @patch('resources.lib.data.shows.WINDOW')
+    def test_noop_when_nothing_changed(self, mock_window):
+        """Should not update property when sync_tracked_shows reports no changes."""
+        mock_window.getProperty.return_value = '[10, 20, 30]'
+        storage = self._make_storage()
+        storage.sync_tracked_shows.return_value = SyncResult(
+            added=set(), removed=set(), revision=5
+        )
+
+        sync_show_list_from_shared_db(storage)
+
+        mock_window.setProperty.assert_not_called()
+
+    @patch('resources.lib.data.shows.WINDOW')
+    def test_adds_shows_from_shared_db(self, mock_window):
+        """Should add new shows discovered in shared DB."""
+        mock_window.getProperty.return_value = '[10, 20]'
+        storage = self._make_storage()
+        storage.sync_tracked_shows.return_value = SyncResult(
+            added={30, 40}, removed=set(), revision=5
+        )
+        # get_ondeck_bulk returns data for both added shows
+        storage.get_ondeck_bulk.return_value = ({30: {}, 40: {}}, 5)
+        logger = self._make_logger()
+
+        sync_show_list_from_shared_db(storage, logger)
+
+        storage.get_ondeck_bulk.assert_called_once_with(
+            list({30, 40}), refresh_display=True
+        )
+        # Verify property was updated with all 4 shows
+        call_args = mock_window.setProperty.call_args
+        assert call_args[0][0] == PROP_SHOWS_WITH_NEXT_EPISODES
+        updated_ids = eval(call_args[0][1])
+        assert set(updated_ids) == {10, 20, 30, 40}
+
+    @patch('resources.lib.data.shows.WINDOW')
+    def test_removes_shows_from_shared_db(self, mock_window):
+        """Should remove shows no longer in shared DB."""
+        mock_window.getProperty.return_value = '[10, 20, 30]'
+        storage = self._make_storage()
+        storage.sync_tracked_shows.return_value = SyncResult(
+            added=set(), removed={30}, revision=5
+        )
+        logger = self._make_logger()
+
+        sync_show_list_from_shared_db(storage, logger)
+
+        call_args = mock_window.setProperty.call_args
+        assert call_args[0][0] == PROP_SHOWS_WITH_NEXT_EPISODES
+        updated_ids = eval(call_args[0][1])
+        assert set(updated_ids) == {10, 20}
+
+    @patch('resources.lib.data.shows.WINDOW')
+    def test_adds_and_removes_combined(self, mock_window):
+        """Should handle simultaneous adds and removes."""
+        mock_window.getProperty.return_value = '[10, 20, 30]'
+        storage = self._make_storage()
+        storage.sync_tracked_shows.return_value = SyncResult(
+            added={40}, removed={20}, revision=5
+        )
+        storage.get_ondeck_bulk.return_value = ({40: {}}, 5)
+        logger = self._make_logger()
+
+        sync_show_list_from_shared_db(storage, logger)
+
+        call_args = mock_window.setProperty.call_args
+        updated_ids = eval(call_args[0][1])
+        assert set(updated_ids) == {10, 30, 40}
+
+    @patch('resources.lib.data.shows.WINDOW')
+    def test_sync_error_is_handled(self, mock_window):
+        """Should log warning and return when sync_tracked_shows fails."""
+        mock_window.getProperty.return_value = '[10, 20]'
+        storage = self._make_storage()
+        storage.sync_tracked_shows.side_effect = RuntimeError("DB error")
+        logger = self._make_logger()
+
+        sync_show_list_from_shared_db(storage, logger)
+
+        logger.warning.assert_called_once()
+        mock_window.setProperty.assert_not_called()
+
+    @patch('resources.lib.data.shows.WINDOW')
+    def test_add_fetch_failure_skips_add(self, mock_window):
+        """Should not add shows if get_ondeck_bulk fails."""
+        mock_window.getProperty.return_value = '[10, 20]'
+        storage = self._make_storage()
+        storage.sync_tracked_shows.return_value = SyncResult(
+            added={30}, removed=set(), revision=5
+        )
+        storage.get_ondeck_bulk.side_effect = RuntimeError("Fetch error")
+        logger = self._make_logger()
+
+        sync_show_list_from_shared_db(storage, logger)
+
+        # Property should still be updated (no adds, no removes = same set)
+        # Actually, since added failed and removed is empty, property IS written
+        # because sync_result.added was truthy
+        call_args = mock_window.setProperty.call_args
+        updated_ids = eval(call_args[0][1])
+        assert set(updated_ids) == {10, 20}
+
+    @patch('resources.lib.data.shows.WINDOW')
+    def test_only_adds_successfully_fetched_shows(self, mock_window):
+        """Should only add shows that get_ondeck_bulk returned data for."""
+        mock_window.getProperty.return_value = '[10]'
+        storage = self._make_storage()
+        storage.sync_tracked_shows.return_value = SyncResult(
+            added={20, 30}, removed=set(), revision=5
+        )
+        # Only show 20 was fetched successfully; 30 was missing
+        storage.get_ondeck_bulk.return_value = ({20: {}}, 5)
+        logger = self._make_logger()
+
+        sync_show_list_from_shared_db(storage, logger)
+
+        call_args = mock_window.setProperty.call_args
+        updated_ids = eval(call_args[0][1])
+        assert set(updated_ids) == {10, 20}
+
+    @patch('resources.lib.data.shows.WINDOW')
+    def test_invalid_property_value_returns_early(self, mock_window):
+        """Should return early if property value is not valid Python."""
+        mock_window.getProperty.return_value = 'not-a-list'
+        storage = self._make_storage()
+
+        sync_show_list_from_shared_db(storage)
+
+        storage.sync_tracked_shows.assert_not_called()

@@ -60,7 +60,7 @@ from resources.lib.ui.browse_window import (
 )
 from resources.lib.playback.browse_player import BrowseModePlayer
 from resources.lib.playback.random_player import filter_shows_by_population
-from resources.lib.data.shows import filter_shows_by_duration
+from resources.lib.data.shows import filter_shows_by_duration, sync_show_list_from_shared_db
 from resources.lib.data.storage import get_storage
 
 if TYPE_CHECKING:
@@ -271,15 +271,19 @@ def build_episode_list(
 
     # Show loading indicator during data fetching operations
     with busy_progress("Loading shows..."):
+        # Sync tracked shows from shared DB before fetching data
+        # This discovers shows added/removed by other instances
+        storage = get_storage()
+        if storage.needs_refresh():
+            sync_show_list_from_shared_db(storage, log)
+
         filtered_data = _fetch_data()
 
-        # Refresh from shared storage if stale (multi-instance sync)
-        # This ensures window properties are up-to-date before displaying
+        # Refresh episode data from shared storage for listed shows
         if filtered_data:
-            storage = get_storage()
             if storage.needs_refresh():
                 show_ids = [show[1] for show in filtered_data]
-                log.debug("Cache stale, refreshing before browse",
+                log.debug("Refreshing episode data before browse",
                          event="browse.refresh", show_count=len(show_ids))
                 try:
                     _, revision = storage.get_ondeck_bulk(show_ids, refresh_display=True)
