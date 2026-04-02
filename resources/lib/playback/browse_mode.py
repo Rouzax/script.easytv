@@ -237,6 +237,12 @@ def build_episode_list(
 
         is_premiere = (episode_num == 1)
 
+        # In-progress premieres are always included (user is actively watching)
+        if is_premiere:
+            resume = WINDOW.getProperty(f"EasyTV.{show_entry[1]}.Resume")
+            if resume == "true":
+                return True
+
         if only_mode:
             if not is_premiere:
                 return False
