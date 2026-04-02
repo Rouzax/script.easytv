@@ -65,6 +65,8 @@ from resources.lib.constants import (
     EASYTV_TABLE_PREFIX,
     KODI_DEFAULT_VIDEO_DB_NAME,
     KODI_HOME_WINDOW_ID,
+    PROP_SHARED_DB_NAME,
+    PROP_SHARED_DB_TABLE_PREFIX,
 )
 from resources.lib.utils import get_logger, log_timing
 
@@ -169,6 +171,7 @@ class SharedDatabase:
             SharedDatabase._last_failure_time = time.time()
             # Clear sync_rev so we force refresh when DB returns
             WINDOW.clearProperty("EasyTV.sync_rev")
+            SharedDatabase.clear_advertised_config(reason="db_unavailable")
             log.warning("Database unavailable, backing off",
                        event="shareddb.backoff",
                        backoff_seconds=EASYTV_DB_BACKOFF_SECONDS,
@@ -424,6 +427,7 @@ class SharedDatabase:
         if not self._schema_initialized:
             self._initialize_schema()
             self._schema_initialized = True
+            self.advertise_config()
             log.debug("Schema initialization complete, returning connection",
                      event="shareddb.connect_complete",
                      use_separate_db=self._use_separate_db,
@@ -637,6 +641,24 @@ class SharedDatabase:
             
             cursor.close()
     
+    def advertise_config(self) -> None:
+        """Advertise DB location via window properties for clone access."""
+        WINDOW.setProperty(PROP_SHARED_DB_NAME, self._easytv_db_name)
+        WINDOW.setProperty(PROP_SHARED_DB_TABLE_PREFIX, self._table_prefix)
+        log.info("Shared DB config advertised",
+                 event="shareddb.advertise",
+                 db_name=self._easytv_db_name,
+                 table_prefix=self._table_prefix or "(none)")
+
+    @staticmethod
+    def clear_advertised_config(reason: str = "unknown") -> None:
+        """Clear advertised DB config from window properties."""
+        WINDOW.clearProperty(PROP_SHARED_DB_NAME)
+        WINDOW.clearProperty(PROP_SHARED_DB_TABLE_PREFIX)
+        log.info("Shared DB config cleared",
+                 event="shareddb.advertise_clear",
+                 reason=reason)
+
     def _create_tables(self, cursor: Any) -> None:
         """
         Create the required tables for sync.
