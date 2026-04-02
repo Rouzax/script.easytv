@@ -270,7 +270,15 @@ def build_episode_list(
                 max_minutes=config.duration_max
             )
         if needs_premiere_filter:
+            before_count = len(show_data)
             show_data = [x for x in show_data if should_include(x)]
+            excluded = before_count - len(show_data)
+            if excluded:
+                log.debug("Premiere filter applied",
+                          event="browse.premiere_filter",
+                          before=before_count,
+                          after=len(show_data),
+                          excluded=excluded)
         if config.excl_random_order_shows and random_order_shows:
             return [x for x in show_data if x[1] not in random_order_shows]
         return show_data
@@ -282,6 +290,10 @@ def build_episode_list(
         storage = get_storage()
         if storage.needs_refresh():
             sync_show_list_from_shared_db(storage, log)
+        else:
+            log.debug("Skipping shared DB sync",
+                      event="browse.sync_skip",
+                      reason="not_stale" if hasattr(storage, '_db') else "local_storage")
 
         filtered_data = _fetch_data()
 

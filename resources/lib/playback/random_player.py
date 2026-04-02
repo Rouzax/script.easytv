@@ -1130,6 +1130,10 @@ def build_random_playlist(
                 storage = get_storage()
                 if storage.needs_refresh():
                     sync_show_list_from_shared_db(storage, log)
+                else:
+                    log.debug("Skipping shared DB sync",
+                              event="playlist.sync_skip",
+                              reason="not_stale" if hasattr(storage, '_db') else "local_storage")
 
                 # Get filtered show data based on episode selection mode
                 stored_data_filtered = filter_shows_by_population(
