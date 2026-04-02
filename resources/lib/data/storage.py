@@ -53,6 +53,8 @@ from resources.lib.constants import (
     DEFAULT_ADDON_ID,
     KODI_HOME_WINDOW_ID,
     PERCENT_MULTIPLIER,
+    PROP_SHARED_DB_NAME,
+    PROP_SHARED_DB_TABLE_PREFIX,
     PROP_SYNC_REV,
     SETTING_MULTI_INSTANCE_SYNC,
 )
@@ -797,10 +799,40 @@ def get_storage() -> StorageBackend:
     if _storage_instance is not None:
         return _storage_instance
     
-    # Check if multi-instance sync is enabled
+    # Check if multi-instance sync is enabled (main addon path)
     if not get_bool_setting(SETTING_MULTI_INSTANCE_SYNC):
+        # Clone fallback: check if main service advertised shared DB config
+        advertised_db = WINDOW.getProperty(PROP_SHARED_DB_NAME)
+        if not advertised_db:
+            _storage_instance = WindowPropertyStorage()
+            log.info("Shared DB not advertised, using window property storage",
+                     event="storage.init_local")
+            return _storage_instance
+
+        # Main service advertised DB config - connect using advancedsettings.xml
+        # credentials with advertised db_name and table_prefix
+        advertised_prefix = WINDOW.getProperty(PROP_SHARED_DB_TABLE_PREFIX)
+        try:
+            from resources.lib.data.shared_db import SharedDatabase
+            db = SharedDatabase()
+            db._easytv_db_name = advertised_db
+            db._table_prefix = advertised_prefix
+            db._use_separate_db = (advertised_prefix == "")
+            db._schema_initialized = True  # Skip schema init (main service owns this)
+            if db.is_available():
+                _storage_instance = SharedDatabaseStorage(db)
+                log.info("Using shared database storage via advertised config",
+                         event="storage.init_shared_clone",
+                         db_name=advertised_db)
+                return _storage_instance
+        except Exception as e:
+            log.warning("Failed to connect to advertised shared DB",
+                        event="storage.clone_connect_error",
+                        error=str(e))
+
         _storage_instance = WindowPropertyStorage()
-        log.info("Using window property storage", event="storage.init_local")
+        log.info("Advertised shared DB unavailable, using window property storage",
+                 event="storage.init_local")
         return _storage_instance
     
     # Try to import pymysql
