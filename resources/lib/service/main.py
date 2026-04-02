@@ -68,6 +68,10 @@ def main() -> None:
         daemon.initialize()
         daemon.run()
 
+        # Clear shared DB advertisement so clones fall back gracefully
+        from resources.lib.data.shared_db import SharedDatabase
+        SharedDatabase.clear_advertised_config(reason="shutdown")
+
         log.info(
             "Service stopped",
             event="service.stop",

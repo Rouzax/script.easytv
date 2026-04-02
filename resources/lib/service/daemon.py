@@ -1729,6 +1729,9 @@ class ServiceDaemon:
                 event="settings.sync_toggle",
                 enabled=new_sync_enabled
             )
+            if not new_sync_enabled:
+                from resources.lib.data.shared_db import SharedDatabase
+                SharedDatabase.clear_advertised_config(reason="setting_disabled")
             reset_storage()
             self._sync_enabled = new_sync_enabled
         
