@@ -504,6 +504,10 @@ EASYTV_MIGRATION_LOCK_TTL_MINUTES = 5
 # Default Kodi video database base name
 KODI_DEFAULT_VIDEO_DB_NAME = "MyVideos"
 
+# Advertised shared DB location (set by service, read by clones)
+PROP_SHARED_DB_NAME = "EasyTV.SharedDB.db_name"
+PROP_SHARED_DB_TABLE_PREFIX = "EasyTV.SharedDB.table_prefix"
+
 # =============================================================================
 # Theme Colors (set as window properties for skin XML $INFO references)
 # =============================================================================
