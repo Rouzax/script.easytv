@@ -1,6 +1,27 @@
 EasyTV Changelog
 ================
 
+v1.5.2~alpha2 (2026-04-02)
+--------------------------
+Bug Fixes:
+  - Multi-instance sync: Clone addons (e.g., "In Progress" clone) now connect to
+    the shared EasyTV database for cross-instance sync. Previously, the
+    sync-before-browse feature added in alpha1 was unreachable from clones because
+    they lack the multi_instance_sync service setting. The main service now
+    advertises its resolved DB location via window properties, and clones use that
+    to connect read-only.
+  - Browse mode premiere filter: Shows with an in-progress episode at E01 (e.g.,
+    The Pitt S02E01 with a resume point from another instance) are no longer
+    excluded by the "Skip premieres" filter. The filter now checks the Resume
+    window property before applying premiere exclusion, consistent with how smart
+    playlists already categorize partially-watched premieres.
+
+Internal:
+  - Added diagnostic logging for premiere filter (before/after counts), storage
+    backend selection in clones, and shared DB sync skip reasons.
+  - Service clears advertised DB config on shutdown, DB failure, and when
+    multi_instance_sync is disabled.
+
 v1.5.2~alpha1 (2026-03-26)
 --------------------------
 Bug Fixes:
