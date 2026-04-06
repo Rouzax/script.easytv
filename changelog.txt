@@ -1,6 +1,15 @@
 EasyTV Changelog
 ================
 
+v1.5.2~alpha3 (2026-04-06)
+--------------------------
+Bug Fixes:
+  - Multi-instance sync: Fixed duplicate primary key error during show ID
+    validation at service startup. When a stale database entry shared the same
+    title and year as an already-valid row, the migration attempted an UPDATE
+    that violated the primary key constraint. Stale duplicates are now correctly
+    identified and removed instead of migrated.
+
 v1.5.2~alpha2 (2026-04-02)
 --------------------------
 Bug Fixes:
