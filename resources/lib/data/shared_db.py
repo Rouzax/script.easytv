@@ -1263,31 +1263,44 @@ class SharedDatabase:
                 for show_id, (title, year) in current_shows.items()
             }
             
+            # Build set of stored IDs to detect duplicate-target scenarios
+            stored_ids = set(stored_shows.keys())
+
             valid_count = 0
             migrated_count = 0
             orphaned_ids: List[int] = []
-            
+
             for stored_id, (stored_title, stored_year) in stored_shows.items():
                 # Check if stored ID still exists with same title+year
                 if stored_id in current_shows:
                     current_title, _current_year = current_shows[stored_id]
                     # Verify title matches (case-insensitive)
-                    if (current_title and stored_title and 
+                    if (current_title and stored_title and
                         current_title.lower() == stored_title.lower()):
                         # Valid: same ID, same title
                         valid_count += 1
                         continue
-                
+
                 # ID doesn't match - try to find by title+year
                 lookup_key = (
                     stored_title.lower() if stored_title else '',
                     stored_year
                 )
                 new_id = title_year_to_new_id.get(lookup_key)
-                
+
                 if new_id is not None and new_id != stored_id:
-                    # Found match with different ID - migrate
-                    if self.migrate_show_id(stored_id, new_id, clear_episode_lists=True):
+                    # Check if target ID already has a row in the DB
+                    if new_id in stored_ids:
+                        # Target already exists (valid row) - this entry is
+                        # a stale duplicate, treat as orphan
+                        orphaned_ids.append(stored_id)
+                        log.info("Stale duplicate removed",
+                                event="shareddb.stale_duplicate",
+                                stale_id=stored_id,
+                                valid_id=new_id,
+                                title=stored_title)
+                    elif self.migrate_show_id(stored_id, new_id, clear_episode_lists=True):
+                        # Found match with different ID - migrate
                         migrated_count += 1
                         log.info("Show ID migrated via title+year",
                                 event="shareddb.id_recovered",
