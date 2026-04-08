@@ -179,7 +179,7 @@ class TestIsAvailableDoesNotMutateAdvertisedConfig:
     """
     Regression: clones share window properties with the main service.
     is_available() must never clear PROP_SHARED_DB_NAME / PROP_SHARED_DB_TABLE_PREFIX
-    on connection failure — those are owned by the main service, and clearing them
+    on connection failure; those are owned by the main service, and clearing them
     from a clone process permanently disables sync until the main service restarts.
     See RCA dated 2026-04-07.
     """
@@ -204,13 +204,8 @@ class TestIsAvailableDoesNotMutateAdvertisedConfig:
         from resources.lib.data import shared_db as shared_db_mod
         from resources.lib.data.shared_db import SharedDatabase
 
-        # Pre-set the advertisement (simulating the main service having advertised it)
+        # Capture clearProperty calls; getProperty is unused on the failure path
         mock_window = mocker.patch.object(shared_db_mod, 'WINDOW')
-        stored_props = {
-            PROP_SHARED_DB_NAME: 'easytv_mastervideo',
-            PROP_SHARED_DB_TABLE_PREFIX: '',
-        }
-        mock_window.getProperty.side_effect = lambda key: stored_props.get(key, '')
         cleared_keys = []
         mock_window.clearProperty.side_effect = lambda key: cleared_keys.append(key)
 
@@ -230,10 +225,10 @@ class TestIsAvailableDoesNotMutateAdvertisedConfig:
 
         assert result is False, "is_available should return False when pymysql missing"
         assert PROP_SHARED_DB_NAME not in cleared_keys, (
-            "is_available must not clear PROP_SHARED_DB_NAME — it's owned by main service"
+            "is_available must not clear PROP_SHARED_DB_NAME; it's owned by main service"
         )
         assert PROP_SHARED_DB_TABLE_PREFIX not in cleared_keys, (
-            "is_available must not clear PROP_SHARED_DB_TABLE_PREFIX — it's owned by main service"
+            "is_available must not clear PROP_SHARED_DB_TABLE_PREFIX; it's owned by main service"
         )
 
     def test_pymysql_import_error_does_not_clear_sync_rev(self, mocker):
@@ -258,5 +253,5 @@ class TestIsAvailableDoesNotMutateAdvertisedConfig:
                 sys.modules['pymysql'] = saved
 
         assert "EasyTV.sync_rev" not in cleared_keys, (
-            "is_available must not clear EasyTV.sync_rev — it's main-service-owned cache state"
+            "is_available must not clear EasyTV.sync_rev; it's main-service-owned cache state"
         )
