@@ -328,3 +328,70 @@ class TestGetStorageCloneFallback:
 
         result = get_storage()
         assert isinstance(result, WindowPropertyStorage)
+
+    def test_clone_falls_back_when_pymysql_import_fails(self, mocker):
+        """
+        Real ImportError path: clone reads valid advertisement but pymysql is missing.
+        Verifies fallback to WindowPropertyStorage AND that the advertisement is
+        preserved (regression for the 2026-04-07 RCA).
+        """
+        import sys
+        from resources.lib.constants import (
+            PROP_SHARED_DB_NAME,
+            PROP_SHARED_DB_TABLE_PREFIX,
+        )
+        from resources.lib.data import storage as storage_mod
+        from resources.lib.data.storage import (
+            get_storage,
+            reset_storage,
+            WindowPropertyStorage,
+        )
+        from resources.lib.data import shared_db as shared_db_mod
+        from resources.lib.data.shared_db import SharedDatabase
+
+        # Reset class-level backoff state and storage singleton
+        SharedDatabase._last_failure_time = 0
+        SharedDatabase._backoff_notified = False
+        reset_storage()
+
+        mocker.patch.object(storage_mod, 'get_bool_setting', return_value=False)
+
+        stored_props = {
+            PROP_SHARED_DB_NAME: 'easytv_mastervideo',
+            PROP_SHARED_DB_TABLE_PREFIX: '',
+        }
+        cleared_keys = []
+
+        def fake_get(key):
+            return stored_props.get(key, '')
+
+        # Patch WINDOW in BOTH modules; storage.py and shared_db.py both hold
+        # separate module-level references to xbmcgui.Window(10000).
+        for mod in (storage_mod, shared_db_mod):
+            mock_window = mocker.patch.object(mod, 'WINDOW')
+            mock_window.getProperty.side_effect = fake_get
+            mock_window.clearProperty.side_effect = lambda key: cleared_keys.append(key)
+
+        # Force ImportError on `import pymysql` inside SharedDatabase._connect()
+        saved = sys.modules.get('pymysql', 'NOT_PRESENT')
+        sys.modules['pymysql'] = None
+        try:
+            result = get_storage()
+        finally:
+            if saved == 'NOT_PRESENT':
+                sys.modules.pop('pymysql', None)
+            else:
+                sys.modules['pymysql'] = saved
+            reset_storage()
+            SharedDatabase._last_failure_time = 0
+            SharedDatabase._backoff_notified = False
+
+        assert isinstance(result, WindowPropertyStorage), (
+            "Clone must fall back to WindowPropertyStorage on pymysql ImportError"
+        )
+        assert PROP_SHARED_DB_NAME not in cleared_keys, (
+            "Clone must not clear PROP_SHARED_DB_NAME; owned by main service"
+        )
+        assert PROP_SHARED_DB_TABLE_PREFIX not in cleared_keys, (
+            "Clone must not clear PROP_SHARED_DB_TABLE_PREFIX; owned by main service"
+        )
