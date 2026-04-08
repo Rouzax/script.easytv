@@ -173,3 +173,90 @@ class TestValidateAndMigrateIds:
         assert orphaned == 0
         assert valid == 0
         db.migrate_show_id.assert_called_once_with(50, 75, clear_episode_lists=True)
+
+
+class TestIsAvailableDoesNotMutateAdvertisedConfig:
+    """
+    Regression: clones share window properties with the main service.
+    is_available() must never clear PROP_SHARED_DB_NAME / PROP_SHARED_DB_TABLE_PREFIX
+    on connection failure — those are owned by the main service, and clearing them
+    from a clone process permanently disables sync until the main service restarts.
+    See RCA dated 2026-04-07.
+    """
+
+    @pytest.fixture(autouse=True)
+    def _reset_backoff(self):
+        """Reset class-level backoff state so tests don't bleed into each other."""
+        from resources.lib.data.shared_db import SharedDatabase
+        SharedDatabase._last_failure_time = 0
+        SharedDatabase._backoff_notified = False
+        yield
+        SharedDatabase._last_failure_time = 0
+        SharedDatabase._backoff_notified = False
+
+    def test_pymysql_import_error_does_not_clear_advertised_config(self, mocker):
+        """Real ImportError path: clone tries to connect, pymysql missing, advertisement preserved."""
+        import sys
+        from resources.lib.constants import (
+            PROP_SHARED_DB_NAME,
+            PROP_SHARED_DB_TABLE_PREFIX,
+        )
+        from resources.lib.data import shared_db as shared_db_mod
+        from resources.lib.data.shared_db import SharedDatabase
+
+        # Pre-set the advertisement (simulating the main service having advertised it)
+        mock_window = mocker.patch.object(shared_db_mod, 'WINDOW')
+        stored_props = {
+            PROP_SHARED_DB_NAME: 'easytv_mastervideo',
+            PROP_SHARED_DB_TABLE_PREFIX: '',
+        }
+        mock_window.getProperty.side_effect = lambda key: stored_props.get(key, '')
+        cleared_keys = []
+        mock_window.clearProperty.side_effect = lambda key: cleared_keys.append(key)
+
+        # Force a real ImportError on `import pymysql` inside _connect()
+        saved = sys.modules.get('pymysql', 'NOT_PRESENT')
+        sys.modules['pymysql'] = None
+        try:
+            db = SharedDatabase()
+            db._easytv_db_name = 'easytv_mastervideo'
+            db._table_prefix = ''
+            result = db.is_available()
+        finally:
+            if saved == 'NOT_PRESENT':
+                sys.modules.pop('pymysql', None)
+            else:
+                sys.modules['pymysql'] = saved
+
+        assert result is False, "is_available should return False when pymysql missing"
+        assert PROP_SHARED_DB_NAME not in cleared_keys, (
+            "is_available must not clear PROP_SHARED_DB_NAME — it's owned by main service"
+        )
+        assert PROP_SHARED_DB_TABLE_PREFIX not in cleared_keys, (
+            "is_available must not clear PROP_SHARED_DB_TABLE_PREFIX — it's owned by main service"
+        )
+
+    def test_pymysql_import_error_does_not_clear_sync_rev(self, mocker):
+        """sync_rev is local cache state of the main service; clones must not clear it."""
+        import sys
+        from resources.lib.data import shared_db as shared_db_mod
+        from resources.lib.data.shared_db import SharedDatabase
+
+        mock_window = mocker.patch.object(shared_db_mod, 'WINDOW')
+        cleared_keys = []
+        mock_window.clearProperty.side_effect = lambda key: cleared_keys.append(key)
+
+        saved = sys.modules.get('pymysql', 'NOT_PRESENT')
+        sys.modules['pymysql'] = None
+        try:
+            db = SharedDatabase()
+            db.is_available()
+        finally:
+            if saved == 'NOT_PRESENT':
+                sys.modules.pop('pymysql', None)
+            else:
+                sys.modules['pymysql'] = saved
+
+        assert "EasyTV.sync_rev" not in cleared_keys, (
+            "is_available must not clear EasyTV.sync_rev — it's main-service-owned cache state"
+        )
