@@ -94,7 +94,8 @@ class SharedDatabase:
         - Persistent connection with ping/reconnect
         - 30-second backoff after connection failure
         - One-time notification per backoff cycle
-        - sync_rev cleared on failure to force refresh when DB returns
+        - Staleness on reconnect handled by revision comparison in
+          storage.needs_refresh(), not by clearing sync_rev
     
     Schema Strategy:
         1. Try to create namespaced database `easytv_{kodi_base_name}`
