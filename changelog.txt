@@ -1,6 +1,34 @@
 EasyTV Changelog
 ================
 
+v1.5.2~alpha4 (2026-04-08)
+--------------------------
+Bug Fixes:
+  - Multi-instance sync: Clone addons now correctly load pymysql for shared
+    database access. The alpha2 cross-instance sync feature was effectively
+    non-functional in practice: the clone addon template did not declare
+    script.module.pymysql as a dependency, so Kodi never added it to the
+    clone's Python path. Clones silently fell back to local window property
+    storage and showed stale ondeck data from the local instance. After
+    upgrading, existing clones must be updated (mandatory clone update will
+    prompt automatically). A Kodi restart may be needed if the clone's
+    Python environment does not pick up the new dependency immediately.
+  - Multi-instance sync: Clones can no longer accidentally clear the main
+    service's advertised database configuration. Previously, when a clone's
+    connection attempt failed for any reason, is_available() would clear
+    PROP_SHARED_DB_NAME and PROP_SHARED_DB_TABLE_PREFIX from window
+    properties. Those properties are owned by the main service, and clearing
+    them from a clone process permanently disabled shared DB sync until the
+    main service restarted. The clear-on-failure side effect has been
+    removed; the legitimate clear paths in service shutdown and
+    setting-disabled handlers are unchanged.
+
+Internal:
+  - Added new tests that exercise the real import-pymysql code path via
+    sys.modules manipulation. Existing clone-fallback tests mocked
+    SharedDatabase.is_available() directly, which hid both bugs above by
+    never executing the failing import or the state-clearing side effect.
+
 v1.5.2~alpha3 (2026-04-06)
 --------------------------
 Bug Fixes:
