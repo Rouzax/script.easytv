@@ -169,9 +169,6 @@ class SharedDatabase:
             return True
         except Exception as e:
             SharedDatabase._last_failure_time = time.time()
-            # Clear sync_rev so we force refresh when DB returns
-            WINDOW.clearProperty("EasyTV.sync_rev")
-            SharedDatabase.clear_advertised_config(reason="db_unavailable")
             log.warning("Database unavailable, backing off",
                        event="shareddb.backoff",
                        backoff_seconds=EASYTV_DB_BACKOFF_SECONDS,
