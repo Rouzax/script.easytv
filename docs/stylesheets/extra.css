@@ -1,0 +1,16 @@
+/* Structurally synced with script.easymovie/docs/stylesheets/extra.css. Keep parallel.
+ * Both addons default to the "Golden Hour" theme (FFF5A623 / #F5A623): this file
+ * is byte-identical across the two repos except for the path in this header. */
+:root {
+  --md-primary-fg-color: #F5A623;
+  --md-primary-fg-color--light: #F5C564;
+  --md-primary-fg-color--dark: #D4912A;
+  --md-accent-fg-color: #F5A623;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #F5A623;
+  --md-primary-fg-color--light: #F5C564;
+  --md-primary-fg-color--dark: #D4912A;
+  --md-accent-fg-color: #F5C564;
+}

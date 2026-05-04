@@ -24,6 +24,9 @@ desktop.ini
 _temp/
 .ruff_cache/
 
+# MkDocs build output
+build/
+
 # Implementation plans (development only)
 IMPLEMENTATION.md
 docs/plans/
