@@ -15,11 +15,27 @@
 
 ## Installation Methods
 
-### From GitHub (Recommended)
+### From the Kodi Add-on Repository (easiest)
+
+EasyTV is published in the official Kodi add-on repository, which is enabled by default in every Kodi install. No "Unknown sources" toggle needed, and Kodi handles updates for you.
+
+1. Open Kodi
+2. Go to **Settings → Add-ons → Install from repository**
+3. Choose **Kodi Add-on repository**
+4. Open **Program add-ons**
+5. Select **EasyTV** and click **Install**
+
+The background service starts automatically after install.
+
+> **Note:** The version in the Kodi repository may lag behind the latest GitHub release while a new version goes through review. If you want the newest features or fixes immediately, install from GitHub instead.
+
+### From GitHub (for the latest version)
+
+Use this if you want a release that hasn't reached the Kodi repository yet, or you want to test a pre-release build.
 
 1. **Download the latest release**
    - Go to [Releases](https://github.com/Rouzax/script.easytv/releases)
-   - Download the `.zip` file (e.g., `script.easytv-1.2.0.zip`)
+   - Download the `.zip` file (e.g., `script.easytv-1.5.2.zip`)
    - **Do not extract the zip.** Kodi needs the zip file directly.
 
 2. **Install in Kodi**
@@ -37,10 +53,6 @@
 4. **Confirmation**
    - You'll see a notification: "EasyTV Add-on installed"
    - The background service starts automatically
-
-### From Kodi Repository
-
-*(Coming soon. EasyTV will be submitted to the official Kodi addon repository.)*
 
 ---
 
@@ -92,8 +104,8 @@ EasyTV works out of the box with sensible defaults, but you may want to customiz
 
 | Setting | Location | Why Configure? |
 |---------|----------|----------------|
-| **When I open EasyTV** | Settings → EasyTV | Choose your preferred mode: Browse, Random, or Ask |
-| **Include series premieres** | Settings → Shows | Disable if you don't want shows you haven't started |
+| **When I open EasyTV** | Settings → EasyTV | Pick what happens on launch: Show episode list, Play random playlist, or Ask me |
+| **Series premieres** | Settings → Shows | Choose how to handle shows you haven't started: Skip, Mix in, or Only |
 | **Playlist content** | Settings → Random Playlist | Add movies to your random playlists |
 
 ### Accessing Settings
@@ -151,7 +163,7 @@ If you run Kodi on multiple devices with a shared MySQL/MariaDB video database, 
 
 ### Clone Updates
 
-If you've created [clones](advanced-features.md#clone-feature), they update automatically:
+If you've created [clones](advanced-features.md#clone-feature), they prompt you to update on next launch:
 
 1. Launch the clone after updating the main EasyTV addon
 2. EasyTV detects the version mismatch
