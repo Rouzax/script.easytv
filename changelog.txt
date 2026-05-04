@@ -1,6 +1,28 @@
 EasyTV Changelog
 ================
 
+v1.5.2~alpha5 (2026-05-04)
+--------------------------
+Bug Fixes:
+  - Browse view: Show posters and fanart no longer disappear permanently
+    when the first per-Kodi-session art fetch produces an empty or partial
+    JSON-RPC result. Previously _fetch_show_art() set the
+    "EasyTV.ArtFetched" session flag unconditionally at the end of the
+    function, even when the query returned zero shows or shows without
+    poster keys. Once latched, every subsequent browse open in that Kodi
+    session skipped the fetch, leaving the EasyTV.<showid>.Art(tvshow.poster)
+    window properties empty and the list items rendering with no images.
+    The flag is cleared only by library_monitor.onScanFinished, so a fresh
+    install that hit the bad path stayed broken until the next scrape.
+    Two changes together close the trap:
+      - The session flag is now set only when at least one show actually
+        had a non-empty poster; an empty fetch logs a warning and lets the
+        next browse open retry instead of poisoning the cache.
+      - The flag is also cleared at the start of every addon UI launch, so
+        a stale latch self-heals on the next open without depending on a
+        library scan.
+    Reported in https://github.com/Rouzax/script.easytv/issues/2.
+
 v1.5.2~alpha4 (2026-04-08)
 --------------------------
 Bug Fixes:
