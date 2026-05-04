@@ -59,8 +59,9 @@ body:
     attributes:
       label: Log output
       description: |
-        Enable Settings, Advanced, "Write debug log", reproduce the issue, then attach
-        `Kodi/userdata/addon_data/script.easytv/logs/easytv.log` or paste the relevant section here.
+        1. Settings → Advanced → enable "Write debug log"
+        2. Reproduce the issue
+        3. Attach `Kodi/userdata/addon_data/script.easytv/logs/easytv.log` or paste the relevant section below
       render: text
     validations:
       required: false
@@ -69,6 +70,9 @@ body:
     id: context
     attributes:
       label: Additional context
-      description: Did this work before? Any relevant settings? Anything else that might help?
+      value: |
+        Did this work in a previous version of EasyTV? If yes, which version did it last work in?
+        Are you using a clone, Browse Mode, or "Use selected shows only"? Any other relevant settings?
+        Anything else that might help us reproduce this?
     validations:
       required: false
