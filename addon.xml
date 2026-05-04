@@ -25,13 +25,11 @@
         <forum>https://forum.kodi.tv/showthread.php?tid=383902</forum>
         <website>https://rouzax.github.io/script.easytv/</website>
         <source>https://github.com/Rouzax/script.easytv</source>
-        <news>v1.5.1 (2026-03-24)
-- Showcase browse view: horizontal poster filmstrip (5th view style)
-- Heading areas with item counts on all five browse views
-- Icon theme selection with 4 bundled styles and instant cache refresh
-- Dialog preview rewrite with real library data and theme color picker
-- Visual harmonization with EasyMovie across all views and dialogs
-- Clone updates now mandatory when version mismatch detected</news>
+        <news>v1.5.2~alpha5 (2026-05-04)
+- Multi-instance sync now reflects new episodes, fully-watched shows, and resume progress without waiting for a local library scan
+- Clone addons now stay in sync with the main instance via the shared database (existing clones will prompt to update)
+- Browse mode premiere filter no longer hides in-progress episodes synced from other instances
+- Fixed missing show posters and fanart in Browse view; the art cache now self-heals on each addon launch</news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
