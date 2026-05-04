@@ -1,0 +1,32 @@
+# Structurally synced with script.easymovie/.github/workflows/deploy-docs.yml. Keep parallel.
+name: Deploy Docs
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install mkdocs-material
+      - name: Build MkDocs
+        run: mkdocs build -d build/docs
+      - name: Copy landing page to gh-pages root
+        run: |
+          cp -r site/* build/
+          touch build/.nojekyll
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build
