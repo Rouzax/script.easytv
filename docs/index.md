@@ -2,7 +2,7 @@
 
 **No scrolling. No deciding. Just watching.**
 
-EasyTV transforms your Kodi library into a personal TV channel. It tracks the next episode for every show and lets you dive right in — or creates randomized playlists for lean-back viewing. Think of it as your own FAST channel, but with content you actually want to watch.
+EasyTV transforms your Kodi library into a personal TV channel. It tracks the next episode for every show and lets you dive right in, or creates randomized playlists for lean-back viewing. Think of it as your own FAST channel, but with content you actually want to watch.
 
 ---
 
@@ -24,39 +24,39 @@ EasyTV maintains a list of the **next episode to watch** for every TV show in yo
 ## Quick Feature Overview
 
 ### 🎬 Core
-- **Smart Episode Tracking** — Always knows your next episode, even with gaps in watch history
-- **Instant Updates** — Lists refresh immediately when you finish watching
-- **Multiple View Styles** — Card List, Posters, Big Screen, and Split View with 4 accent color themes
+- **Smart Episode Tracking:** Always knows your next episode, even with gaps in watch history
+- **Instant Updates:** Lists refresh immediately when you finish watching
+- **Multiple View Styles:** Card List, Posters, Big Screen, and Split View with 4 accent color themes
 
 ### 🎲 Random Playlists
-- **Mix Content** — TV episodes, movies, or both
-- **Filter by Duration** — Only shows with episodes under 30 minutes? Done.
-- **Smart Playlist Filtering** — Use any Kodi smart playlist to filter what's included
-- **Partial Prioritization** — Unfinished content plays first
-- **Playlist Continuation** — Prompt for another playlist when one ends
+- **Mix Content:** TV episodes, movies, or both
+- **Filter by Duration:** Only shows with episodes under 30 minutes? Done.
+- **Smart Playlist Filtering:** Use any Kodi smart playlist to filter what's included
+- **Partial Prioritization:** Unfinished content plays first
+- **Playlist Continuation:** Prompt for another playlist when one ends
 
 ### ⚙️ Customization
-- **[Random-Order Shows](random-order-shows.md)** — Sitcoms, cartoons, and other shuffle-friendly content
-- **[Smart Playlist Integration](smart-playlist-integration.md)** — Endless filtering possibilities
-- **[Clone Feature](advanced-features.md#clone-feature)** — Multiple EasyTV instances with different configs
-- **[Multi-Instance Sync](multi-instance-sync.md)** — Share watch progress across multiple Kodi devices
-- **Positioned Specials** — Include TVDB-positioned specials in the watch order
-- **[Theme Selection](browse-mode.md#themes)** — Golden Hour, Ultraviolet, Ember, or Nightfall accent colors
-- **Custom Icon** — Set your own addon icon for EasyTV and clones
+- **[Random-Order Shows](random-order-shows.md):** Sitcoms, cartoons, and other shuffle-friendly content
+- **[Smart Playlist Integration](smart-playlist-integration.md):** Endless filtering possibilities
+- **[Clone Feature](advanced-features.md#clone-feature):** Multiple EasyTV instances with different configs
+- **[Multi-Instance Sync](multi-instance-sync.md):** Share watch progress across multiple Kodi devices
+- **Positioned Specials:** Include TVDB-positioned specials in the watch order
+- **[Theme Selection](browse-mode.md#themes):** Golden Hour, Ultraviolet, Ember, or Nightfall accent colors
+- **Custom Icon:** Set your own addon icon for EasyTV and clones
 
 ---
 
 ## Getting Started
 
-1. **[Install EasyTV](installation.md)** — Download from GitHub and install via zip
-2. **Launch EasyTV** — Find it in your Add-ons menu
-3. **Choose your mode** — Browse your shows or let EasyTV surprise you
+1. **[Install EasyTV](installation.md):** Download from GitHub and install via zip
+2. **Launch EasyTV:** Find it in your Add-ons menu
+3. **Choose your mode:** Browse your shows or let EasyTV surprise you
 
 That's it. EasyTV's background service handles everything automatically.
 
 ---
 
-## Wiki Navigation
+## Documentation Map
 
 | Page | Description |
 |------|-------------|
@@ -83,4 +83,4 @@ That's it. EasyTV's background service handles everything automatically.
 
 ---
 
-*EasyTV — Because your library should work for you, not the other way around.*
+*EasyTV: Because your library should work for you, not the other way around.*

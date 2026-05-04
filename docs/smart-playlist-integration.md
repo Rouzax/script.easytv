@@ -1,6 +1,6 @@
 # Smart Playlist Integration
 
-Smart playlists are one of Kodi's most powerful features, and EasyTV fully integrates with them. This unlocks endless filtering possibilities — watch only comedies, only shows from the 2000s, only highly-rated movies, or any combination you can imagine.
+Smart playlists are one of Kodi's most powerful features, and EasyTV fully integrates with them. This unlocks endless filtering possibilities: watch only comedies, only shows from the 2000s, only highly-rated movies, or any combination you can imagine.
 
 ---
 
@@ -9,9 +9,9 @@ Smart playlists are one of Kodi's most powerful features, and EasyTV fully integ
 Smart playlists are dynamic filters that automatically include content matching your criteria. Unlike regular playlists where you manually add items, smart playlists update themselves as your library changes.
 
 **Examples:**
-- "All Comedy Shows" — Automatically includes any show tagged as Comedy
-- "Movies from the 90s" — Includes movies released 1990-1999
-- "Recently Added" — Shows content added in the last 30 days
+- "All Comedy Shows" - Automatically includes any show tagged as Comedy
+- "Movies from the 90s" - Includes movies released 1990-1999
+- "Recently Added" - Shows content added in the last 30 days
 
 ---
 
@@ -35,8 +35,8 @@ EasyTV can filter content using smart playlists in three places:
 2. Enable **Use only selected shows**
 3. Set **Selection method** to **Use a smart playlist**
 4. Choose **Ask each time** or **Use default**:
-   - **Ask each time** — EasyTV prompts you to pick a playlist when you launch
-   - **Use default** — Uses the same playlist every time
+   - **Ask each time:** EasyTV prompts you to pick a playlist when you launch
+   - **Use default:** Uses the same playlist every time
 5. If using default, click **Choose playlist file...** to select your `.xsp` file
 
 ### What Gets Filtered
@@ -315,7 +315,7 @@ Using the wrong type will result in errors.
 
 ## Related Pages
 
-- **[Smart Playlist Examples](smart-playlist-examples.md)** — Ready-to-use playlist files
-- **[Settings Reference](settings-reference.md)** — All filtering settings
-- **[Advanced Features](advanced-features.md)** — Clone feature for multiple configs
-- **[Random-Order Shows](random-order-shows.md)** — Another way to customize content
+- **[Smart Playlist Examples](smart-playlist-examples.md):** Ready-to-use playlist files
+- **[Settings Reference](settings-reference.md):** All filtering settings
+- **[Advanced Features](advanced-features.md):** Clone feature for multiple configs
+- **[Random-Order Shows](random-order-shows.md):** Another way to customize content

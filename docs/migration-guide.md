@@ -4,17 +4,17 @@ Upgrade notes and breaking changes for major EasyTV releases. Check this page wh
 
 ---
 
-## v1.4.0 — Positioned Specials
+## v1.4.0: Positioned Specials
 
 *Released: 2026-02*
 
 ### What's New
 
-**Positioned specials support** — Some shows (like SpongeBob SquarePants) have specials that are plot-relevant and should be watched between specific episodes. TVDB provides positioning data for these specials, and Kodi stores it in episode metadata. EasyTV can now include these positioned specials in the watch order.
+**Positioned specials support:** Some shows (like SpongeBob SquarePants) have specials that are plot-relevant and should be watched between specific episodes. TVDB provides positioning data for these specials, and Kodi stores it in episode metadata. EasyTV can now include these positioned specials in the watch order.
 
 ### Action Required
 
-**None** — This is an opt-in feature with no breaking changes.
+**None.** This is an opt-in feature with no breaking changes.
 
 ### Optional Setup
 
@@ -32,17 +32,17 @@ To enable positioned specials:
 
 ---
 
-## v1.3.0 — Multi-Instance Sync
+## v1.3.0: Multi-Instance Sync
 
 *Released: 2026-01*
 
 ### What's New
 
-**Multi-instance sync** — Share watch progress across multiple Kodi devices using a shared MySQL/MariaDB database. See [Multi-Instance Sync](multi-instance-sync.md) for full documentation.
+**Multi-instance sync:** Share watch progress across multiple Kodi devices using a shared MySQL/MariaDB database. See [Multi-Instance Sync](multi-instance-sync.md) for full documentation.
 
 ### Action Required
 
-**None** — Sync is disabled by default. Your existing single-device setup continues to work unchanged.
+**None.** Sync is disabled by default. Your existing single-device setup continues to work unchanged.
 
 ### Optional Setup
 
@@ -60,15 +60,15 @@ If you have multiple Kodi devices with a shared MySQL/MariaDB video database:
 
 ---
 
-## v1.2.4 — Smart Playlist Overhaul
+## v1.2.4: Smart Playlist Overhaul
 
 *Released: 2026-01-25*
 
 ### What's New
 
-- **TVShow smart playlists** — Browse your next episodes by show (great for skin widgets)
-- **Show Premieres / Season Premieres** — Two new playlist categories
-- **Show filter for playlists** — Apply your show filter to auto-created playlists
+- **TVShow smart playlists:** Browse your next episodes by show (great for skin widgets)
+- **Show Premieres / Season Premieres:** Two new playlist categories
+- **Show filter for playlists:** Apply your show filter to auto-created playlists
 
 ### Breaking Change: Playlist Filenames
 
@@ -89,7 +89,7 @@ Old playlist files are automatically deleted on upgrade. Settings migrate automa
 1. Open your skin settings or PseudoTV Live configuration
 2. Find any references to old EasyTV playlist filenames
 3. Update them to the new filenames (see table above)
-4. If using TVShow playlists for widgets, configure those separately — they are a new feature
+4. If using TVShow playlists for widgets, configure those separately (they are a new feature)
 
 **If you don't use auto-created playlists**, no action is needed.
 
@@ -128,7 +128,7 @@ EasyTV maintains settings compatibility within major versions (1.x.x). New setti
 
 ## Related Pages
 
-- **[Installation](installation.md)** — Fresh installation guide
-- **[Multi-Instance Sync](multi-instance-sync.md)** — Full sync documentation
-- **[Advanced Features](advanced-features.md)** — Clone management, smart playlists
-- **[Settings Reference](settings-reference.md)** — All settings explained
+- **[Installation](installation.md):** Fresh installation guide
+- **[Multi-Instance Sync](multi-instance-sync.md):** Full sync documentation
+- **[Advanced Features](advanced-features.md):** Clone management, smart playlists
+- **[Settings Reference](settings-reference.md):** All settings explained

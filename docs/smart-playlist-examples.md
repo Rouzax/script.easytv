@@ -99,7 +99,7 @@ Content from specific streaming networks.
 
 ### TV Shows - Binge-Ready
 
-Shows with at least 10 episodes that you haven't fully watched — perfect for a marathon.
+Shows with at least 10 episodes that you haven't fully watched. Perfect for a marathon.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -161,7 +161,7 @@ Educational and documentary content.
 
 ### Movies - Kids
 
-Family content based on folder location. This playlist serves as a building block — other playlists can exclude it.
+Family content based on folder location. This playlist serves as a building block that other playlists can exclude.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -231,7 +231,7 @@ Movies with rating of 7 or higher.
 
 ### Movies - 4K UHD
 
-Movies in 4K resolution — show off your setup.
+Movies in 4K resolution. Show off your setup.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -250,7 +250,7 @@ Movies in 4K resolution — show off your setup.
 
 ### Movies - Quality Unwatched
 
-Highly rated movies you haven't seen — the best of your backlog.
+Highly rated movies you haven't seen. The best of your backlog.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -309,9 +309,9 @@ Seasonal content using custom tags.
 
 📥 **Download:** [Movies - Christmas.xsp](https://raw.githubusercontent.com/Rouzax/script.easytv/main/docs/smart-playlists/Movies%20-%20Christmas.xsp)
 
-> **Using tags:** This playlist requires you to add a "christmas" tag to your movies in Kodi. Edit a movie's info and add the tag manually. Tags are great for creating custom collections that don't fit standard metadata like genre or year — think "Halloween", "Summer", "Comfort Movies", etc.
+> **Using tags:** This playlist requires you to add a "christmas" tag to your movies in Kodi. Edit a movie's info and add the tag manually. Tags are great for creating custom collections that don't fit standard metadata like genre or year (think "Halloween", "Summer", "Comfort Movies", etc.).
 >
-> **Note:** Your library may already have scraper-added tags like "sequel", "based on novel or book", or "female protagonist". Check your library to see what's available — you might be able to create interesting playlists without any manual tagging.
+> **Note:** Your library may already have scraper-added tags like "sequel", "based on novel or book", or "female protagonist". Check your library to see what's available. You might be able to create interesting playlists without any manual tagging.
 
 ---
 
@@ -392,7 +392,7 @@ Genres depend on your scraper and library. These are typically available:
 
 **Less common:** Kids, News, Reality, Talk, TV Movie
 
-**Combined genres:** Some scrapers provide "Action & Adventure" or "Sci-Fi & Fantasy" — these are rare and library-dependent.
+**Combined genres:** Some scrapers provide "Action & Adventure" or "Sci-Fi & Fantasy". These are rare and library-dependent.
 
 > **Tip:** Check your own library's genres before creating playlists. In Kodi, go to Videos → Movies → Genres to see what's actually in your database.
 
@@ -414,22 +414,22 @@ Genres depend on your scraper and library. These are typically available:
 
 ## Tips for Creating Your Own
 
-1. **Check your library first** — Go to Videos → Movies → Genres (or Tags) to see what values actually exist in your database. Genres and tags are library-dependent.
+1. **Check your library first:** Go to Videos → Movies → Genres (or Tags) to see what values actually exist in your database. Genres and tags are library-dependent.
 
-2. **Start in the GUI** — Create playlists using Kodi's built-in editor first, then examine the `.xsp` file to learn the correct field names and syntax.
+2. **Start in the GUI:** Create playlists using Kodi's built-in editor first, then examine the `.xsp` file to learn the correct field names and syntax.
 
-3. **Use path filtering** — When metadata is inconsistent, filtering by folder path (`/Kids/`, `/4K/`, `/Documentaries/`) is reliable.
+3. **Use path filtering:** When metadata is inconsistent, filtering by folder path (`/Kids/`, `/4K/`, `/Documentaries/`) is reliable.
 
-4. **Leverage existing tags** — Your scraper may have already added useful tags like "sequel", "based on novel or book", etc. Check what's available before manually tagging.
+4. **Leverage existing tags:** Your scraper may have already added useful tags like "sequel", "based on novel or book", etc. Check what's available before manually tagging.
 
-5. **Build reusable playlists** — Create base playlists (like "Movies - Kids") that other playlists can reference or exclude.
+5. **Build reusable playlists:** Create base playlists (like "Movies - Kids") that other playlists can reference or exclude.
 
-6. **Combine with EasyTV** — Use playlists for broad filtering, then use EasyTV's duration and episode settings for fine-tuning.
+6. **Combine with EasyTV:** Use playlists for broad filtering, then use EasyTV's duration and episode settings for fine-tuning.
 
 ---
 
 ## Related Pages
 
-- **[Smart Playlist Integration](smart-playlist-integration.md)** — How filtering works with EasyTV
-- **[Settings Reference](settings-reference.md)** — All EasyTV settings
-- **[Random-Order Shows](random-order-shows.md)** — Shuffle-friendly content setup
+- **[Smart Playlist Integration](smart-playlist-integration.md):** How filtering works with EasyTV
+- **[Settings Reference](settings-reference.md):** All EasyTV settings
+- **[Random-Order Shows](random-order-shows.md):** Shuffle-friendly content setup

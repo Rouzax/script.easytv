@@ -1,17 +1,17 @@
 # Browse Mode
 
-Browse Mode displays all your TV shows with their next episode ready to play. You're in control — scan the list, pick what you're in the mood for, and start watching.
+Browse Mode displays all your TV shows with their next episode ready to play. You're in control: scan the list, pick what you're in the mood for, and start watching.
 
-![Card List view](wiki-images/view-card-list-golden-hour.png)
+![Card List view](assets/screenshots/view-card-list-golden-hour.png)
 
 ---
 
 ## How It Works
 
-1. **EasyTV scans your library** — The background service identifies the next episode for every show
-2. **Opens the episode list** — Shows appear sorted by your preference (default: last watched)
-3. **Select a show** — Click to immediately start playing that episode
-4. **List updates** — After watching, the list refreshes with your new next episode
+1. **EasyTV scans your library:** The background service identifies the next episode for every show
+2. **Opens the episode list:** Shows appear sorted by your preference (default: last watched)
+3. **Select a show:** Click to immediately start playing that episode
+4. **List updates:** After watching, the list refreshes with your new next episode
 
 ---
 
@@ -25,7 +25,7 @@ The default view with data-dense rows. Each row shows the show's poster, name, e
 
 Best for: Quick navigation with detailed information at a glance.
 
-![Card List - Golden Hour theme](wiki-images/view-card-list-golden-hour.png)
+![Card List - Golden Hour theme](assets/screenshots/view-card-list-golden-hour.png)
 
 ### Posters
 
@@ -33,7 +33,7 @@ A visual grid showing show poster artwork. The focused show displays episode det
 
 Best for: Visual browsing, recognizing shows by artwork.
 
-![Posters view](wiki-images/view-posters.png)
+![Posters view](assets/screenshots/view-posters.png)
 
 ### Big Screen
 
@@ -41,7 +41,7 @@ Large poster artwork on the left with episode details and a scrollable show list
 
 Best for: Living room viewing from a couch, remote control navigation.
 
-![Big Screen view](wiki-images/view-big-screen.png)
+![Big Screen view](assets/screenshots/view-big-screen.png)
 
 ### Split View
 
@@ -49,7 +49,7 @@ Two-column layout: a compact show list on the left and a detail panel on the rig
 
 Best for: Balanced browsing with details always visible.
 
-![Split View](wiki-images/view-split-golden-hour.png)
+![Split View](assets/screenshots/view-split-golden-hour.png)
 
 ---
 
@@ -66,8 +66,8 @@ All views and dialogs use your selected accent color theme. Change via **Setting
 
 | | |
 |---|---|
-| ![Golden Hour](wiki-images/view-split-golden-hour.png) | ![Ultraviolet](wiki-images/view-split-ultraviolet.png) |
-| ![Ember](wiki-images/view-split-ember.png) | ![Nightfall](wiki-images/view-split-nightfall.png) |
+| ![Golden Hour](assets/screenshots/view-split-golden-hour.png) | ![Ultraviolet](assets/screenshots/view-split-ultraviolet.png) |
+| ![Ember](assets/screenshots/view-split-ember.png) | ![Nightfall](assets/screenshots/view-split-nightfall.png) |
 
 ---
 
@@ -129,9 +129,9 @@ Multi-select lets you work with multiple episodes at once.
 
 ### Using Multi-Select
 
-- **Click an episode** — Toggles its selection (highlighted)
-- **Click again** — Deselects it
-- **Navigate** — Move through the list without changing selection
+- **Click an episode:** Toggles its selection (highlighted)
+- **Click again:** Deselects it
+- **Navigate:** Move through the list without changing selection
 
 ### Actions in Multi-Select
 
@@ -224,11 +224,11 @@ When either setting is **Only**, the entire browse list shows only premiere epis
 | Series premieres | Season premieres | What you see |
 |-----------------|-----------------|-------------|
 | Only | Mix in | All premieres (S01E01 + season premieres) |
-| Only | Skip | S01E01 only — discover completely new shows |
+| Only | Skip | S01E01 only, to discover completely new shows |
 | Mix in | Only | All premieres (S01E01 + season premieres) |
-| Skip | Only | Season premieres only — find new seasons of shows you've started |
+| Skip | Only | Season premieres only, to find new seasons of shows you've started |
 
-> **Example:** You finished Season 1 of Breaking Bad. With season premieres set to **Mix in**, S02E01 appears in your list. Set to **Skip**, Breaking Bad disappears until you manually watch S02E01. Set to **Only**, your list shows only premiere episodes — a quick way to see what's new.
+> **Example:** You finished Season 1 of Breaking Bad. With season premieres set to **Mix in**, S02E01 appears in your list. Set to **Skip**, Breaking Bad disappears until you manually watch S02E01. Set to **Only**, your list shows only premiere episodes, which is a quick way to see what's new.
 
 ---
 
@@ -296,7 +296,7 @@ This caps how many shows load in the list, improving responsiveness.
 
 ## Related Pages
 
-- **[Random Playlist Mode](random-playlist-mode.md)** — The other way to watch
-- **[Settings Reference](settings-reference.md)** — All Browse Mode settings
-- **[Smart Playlist Integration](smart-playlist-integration.md)** — Advanced filtering
-- **[Random-Order Shows](random-order-shows.md)** — Shuffle-friendly configuration
+- **[Random Playlist Mode](random-playlist-mode.md):** The other way to watch
+- **[Settings Reference](settings-reference.md):** All Browse Mode settings
+- **[Smart Playlist Integration](smart-playlist-integration.md):** Advanced filtering
+- **[Random-Order Shows](random-order-shows.md):** Shuffle-friendly configuration

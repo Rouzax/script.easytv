@@ -128,7 +128,7 @@ EasyTV is sluggish on your device.
 3. Use **Standard** view style (lighter than Posters/Big Screen)
 
 **For Random Playlist:**
-- Playlist building takes a few seconds — this is normal
+- Playlist building takes a few seconds. This is normal.
 - Larger libraries take longer
 - Partial prioritization adds some overhead
 
@@ -213,7 +213,7 @@ If you're using [multi-instance sync](multi-instance-sync.md), these are the mos
 **Solutions:**
 1. Confirm multi-instance sync is enabled on **all** devices
 2. Verify all devices connect to the **same** database server and database name
-3. Check logs on each device — look for `Using shared database storage`
+3. Check logs on each device. Look for `Using shared database storage`.
 4. Ensure random-order shows and positioned specials settings match across devices
 
 #### pymysql Missing
@@ -244,7 +244,7 @@ After updating from v1.2.3 or earlier, skin widgets that reference EasyTV playli
 | `EasyTV - Continue Watching.xsp` | `EasyTV - Episode - Continue Watching.xsp` |
 | `EasyTV - Start Fresh.xsp` | `EasyTV - Episode - Start Fresh.xsp` |
 
-See the [Migration Guide](migration-guide.md#v124--smart-playlist-overhaul) for full details.
+See the [Migration Guide](migration-guide.md#v124-smart-playlist-overhaul) for full details.
 
 ---
 
@@ -314,7 +314,7 @@ A: Yes! With [multi-instance sync](multi-instance-sync.md), your watch progress 
 A: Some shows have specials that belong between specific episodes (TVDB provides this positioning data). When enabled in Settings → Shows, these specials appear at their correct position in the watch order instead of being excluded.
 
 **Q: My skin widgets stopped showing EasyTV playlists after updating.**
-A: Playlist filenames changed in v1.2.4. See the [Migration Guide](migration-guide.md#v124--smart-playlist-overhaul) for the old-to-new filename mapping.
+A: Playlist filenames changed in v1.2.4. See the [Migration Guide](migration-guide.md#v124-smart-playlist-overhaul) for the old-to-new filename mapping.
 
 ---
 
@@ -401,7 +401,7 @@ A: Yes. Copy the `addon_data/script.easytv/` folder from your Kodi userdata dire
 |----------|------|
 | **GitHub Issues** | [Report a bug](https://github.com/Rouzax/script.easytv/issues) |
 | **Kodi Forum** | [EasyTV Thread](https://forum.kodi.tv/showthread.php?tid=383902) |
-| **Wiki** | You're here! |
+| **Documentation** | You're here! |
 
 ### When Asking for Help
 
@@ -417,7 +417,7 @@ Include:
 
 ## Related Pages
 
-- **[Installation](installation.md)** — Initial setup
-- **[Settings Reference](settings-reference.md)** — All settings explained
-- **[Advanced Features](advanced-features.md)** — Debug logging details
-- **[Smart Playlist Integration](smart-playlist-integration.md)** — Filtering troubleshooting
+- **[Installation](installation.md):** Initial setup
+- **[Settings Reference](settings-reference.md):** All settings explained
+- **[Advanced Features](advanced-features.md):** Debug logging details
+- **[Smart Playlist Integration](smart-playlist-integration.md):** Filtering troubleshooting
