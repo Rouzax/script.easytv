@@ -10,7 +10,7 @@ EasyTV transforms your Kodi library into a personal TV channel. It tracks the ne
 
 Ever opened Kodi, stared at 50+ TV shows, and thought *"I don't know what to watch"*? EasyTV solves that.
 
-EasyTV maintains a list of the **next episode to watch** for every TV show in your library. Not just the first unwatched episode, but the first unwatched episode *after the last one you watched*. If you watched S01E05 last week but never marked S01E01-E04 as watched, EasyTV correctly suggests S01E06.
+EasyTV maintains a list of the **next episode to watch** for every TV show with unwatched episodes. Not just the first unwatched episode, but the first unwatched episode *after the last one you watched*. If you watched S01E05 last week but never marked S01E01-E04 as watched, EasyTV correctly suggests S01E06.
 
 ### Two Ways to Watch
 
@@ -26,7 +26,7 @@ EasyTV maintains a list of the **next episode to watch** for every TV show in yo
 ### 🎬 Core
 - **Smart Episode Tracking:** Always knows your next episode, even with gaps in watch history
 - **Instant Updates:** Lists refresh immediately when you finish watching
-- **Multiple View Styles:** Card List, Posters, Big Screen, and Split View with 4 accent color themes
+- **Multiple View Styles:** Card List, Posters, Big Screen, Split View, and Showcase, with 4 accent color themes
 
 ### 🎲 Random Playlists
 - **Mix Content:** TV episodes, movies, or both
