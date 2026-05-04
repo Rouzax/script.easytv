@@ -1,0 +1,74 @@
+# Structurally synced with script.easymovie/.github/ISSUE_TEMPLATE/bug_report.yml. Keep parallel.
+name: Bug Report
+description: Report a bug or unexpected behavior in EasyTV
+labels: ["bug"]
+body:
+  - type: input
+    id: addon-version
+    attributes:
+      label: EasyTV version
+      description: Add-ons, then My Add-ons, then EasyTV
+      placeholder: e.g. 1.5.2
+    validations:
+      required: true
+
+  - type: input
+    id: kodi-version
+    attributes:
+      label: Kodi version
+      placeholder: e.g. 21.1 Omega
+    validations:
+      required: true
+
+  - type: input
+    id: platform
+    attributes:
+      label: Platform / OS
+      placeholder: e.g. Windows 11, LibreELEC 12, Android 14, macOS 14
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Clear description of the bug
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Log output
+      description: |
+        Enable Settings, Advanced, "Write debug log", reproduce the issue, then attach
+        `Kodi/userdata/addon_data/script.easytv/logs/easytv.log` or paste the relevant section here.
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Did this work before? Any relevant settings? Anything else that might help?
+    validations:
+      required: false
