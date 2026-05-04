@@ -37,6 +37,7 @@ from resources.lib.constants import (
     KODI_HOME_WINDOW_ID, ADDON_RESTART_DELAY_MS,
     SERVICE_POLL_SLEEP_MS, SERVICE_POLL_TIMEOUT_TICKS,
     PROP_SERVICE_RUNNING, PROP_VERSION, PROP_SERVICE_PATH,
+    PROP_ART_FETCHED,
 )
 from resources.lib.utils import (
     lang, get_logger, get_bool_setting, get_int_setting,
@@ -100,6 +101,12 @@ def main_entry(addon, log):
 
     # Track which addon (main or clone) started playback for service dialogs
     window.setProperty('EasyTV.SourceAddonId', addon.getAddonInfo('id'))
+
+    # Clear the art-cache session flag on every UI launch so a stale latch
+    # (e.g. an earlier empty/transient JSON-RPC result) self-heals without
+    # waiting for a video library scan. The actual fetch is gated to ~1s and
+    # only runs once per addon launch.
+    window.clearProperty(PROP_ART_FETCHED)
 
     # Load settings
     primary_function = addon.getSetting('primary_function')

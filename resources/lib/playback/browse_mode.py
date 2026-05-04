@@ -101,33 +101,47 @@ def _fetch_show_art(logger: 'StructuredLogger') -> None:
     if WINDOW.getProperty(PROP_ART_FETCHED) == 'true':
         logger.debug("Art already fetched this session, skipping")
         return
-    
+
     # Fetch art for all shows
+    populated = 0
     with log_timing(logger, "art_fetch") as timer:
         result = json_query(build_shows_art_query())
         timer.mark("query")
-        
+
         shows = result.get('tvshows', [])
-        
+
         # Cache art to window properties
         for show in shows:
             show_id = show.get('tvshowid')
             if show_id is None:
                 continue
-            
+
             art = show.get('art', {})
+            poster = art.get('poster', '')
+            fanart = art.get('fanart', '')
             prop_prefix = f"EasyTV.{show_id}"
-            
+
             # Map Kodi art keys to window property format
             # poster -> Art(tvshow.poster), fanart -> Art(tvshow.fanart)
-            WINDOW.setProperty(f"{prop_prefix}.Art(tvshow.poster)", art.get('poster', ''))
-            WINDOW.setProperty(f"{prop_prefix}.Art(tvshow.fanart)", art.get('fanart', ''))
-        
+            WINDOW.setProperty(f"{prop_prefix}.Art(tvshow.poster)", poster)
+            WINDOW.setProperty(f"{prop_prefix}.Art(tvshow.fanart)", fanart)
+
+            if poster:
+                populated += 1
+
         timer.mark("cache")
-    
-    # Set session flag
-    WINDOW.setProperty(PROP_ART_FETCHED, 'true')
-    logger.debug("Art fetched and cached", show_count=len(shows))
+
+    # Only latch the session flag if at least one show actually had art.
+    # Otherwise leave it unset so the next browse open retries (e.g. when an
+    # empty/transient JSON-RPC result or an unscraped library would otherwise
+    # poison the cache for the rest of the Kodi session).
+    if populated > 0:
+        WINDOW.setProperty(PROP_ART_FETCHED, 'true')
+        logger.debug("Art fetched and cached",
+                     show_count=len(shows), populated=populated)
+    else:
+        logger.warning("Art fetch produced no posters, will retry on next open",
+                       event="art.fetch_empty", show_count=len(shows))
 
 
 
