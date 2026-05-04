@@ -2,9 +2,9 @@
 
 **No scrolling. No deciding. Just watching.**
 
-EasyTV transforms your Kodi library into a personal TV channel. It tracks the next episode for every TV show and lets you dive right in — or creates randomized playlists for lean-back viewing.
+EasyTV transforms your Kodi library into a personal TV channel. It tracks the next episode for every TV show and lets you dive right in, or creates randomized playlists for lean-back viewing.
 
-![EasyTV Split View](https://raw.githubusercontent.com/wiki/Rouzax/script.easytv/images/view-split-golden-hour.png)
+![EasyTV Split View](docs/wiki-images/view-split-golden-hour.png)
 
 Built for Kodi 21+ (Omega and newer).
 
@@ -61,7 +61,7 @@ If you run Kodi on multiple devices (living room, bedroom, etc.) with a **shared
 
 > **Note:** Some settings affect episode ordering and must match across all synced devices: **Random-order shows** and **Include positioned specials**. Mismatched settings will cause each device to calculate different "next episodes."
 
-For detailed setup, see the [Multi-Instance Sync](https://github.com/Rouzax/script.easytv/wiki/Multi-Instance-Sync) wiki page.
+For detailed setup, see the [Multi-Instance Sync](https://rouzax.github.io/script.easytv/docs/multi-instance-sync/) documentation.
 
 ---
 
@@ -77,20 +77,20 @@ For detailed setup, see the [Multi-Instance Sync](https://github.com/Rouzax/scri
 
 ## 📖 Documentation
 
-**Full documentation is available on the [Wiki](https://github.com/Rouzax/script.easytv/wiki):**
+**Full documentation is available on the [docs site](https://rouzax.github.io/script.easytv/docs/):**
 
 | Page | Description |
 |------|-------------|
-| [Installation](https://github.com/Rouzax/script.easytv/wiki/Installation) | Setup and first run |
-| [Browse Mode](https://github.com/Rouzax/script.easytv/wiki/Browse-Mode) | Episode list guide |
-| [Random Playlist Mode](https://github.com/Rouzax/script.easytv/wiki/Random-Playlist-Mode) | Shuffled playlists |
-| [Settings Reference](https://github.com/Rouzax/script.easytv/wiki/Settings-Reference) | All settings explained |
-| [Smart Playlist Integration](https://github.com/Rouzax/script.easytv/wiki/Smart-Playlist-Integration) | Advanced filtering |
-| [Smart Playlist Examples](https://github.com/Rouzax/script.easytv/wiki/Smart-Playlist-Examples) | Ready-to-use playlist files |
-| [Random-Order Shows](https://github.com/Rouzax/script.easytv/wiki/Random-Order-Shows) | Shuffle-friendly content |
-| [Multi-Instance Sync](https://github.com/Rouzax/script.easytv/wiki/Multi-Instance-Sync) | Share progress across devices |
-| [Advanced Features](https://github.com/Rouzax/script.easytv/wiki/Advanced-Features) | Clones, exporter, more |
-| [Troubleshooting & FAQ](https://github.com/Rouzax/script.easytv/wiki/Troubleshooting-and-FAQ) | Common issues |
+| [Installation](https://rouzax.github.io/script.easytv/docs/installation/) | Setup and first run |
+| [Browse Mode](https://rouzax.github.io/script.easytv/docs/browse-mode/) | Episode list guide |
+| [Random Playlist Mode](https://rouzax.github.io/script.easytv/docs/random-playlist-mode/) | Shuffled playlists |
+| [Settings Reference](https://rouzax.github.io/script.easytv/docs/settings-reference/) | All settings explained |
+| [Smart Playlist Integration](https://rouzax.github.io/script.easytv/docs/smart-playlist-integration/) | Advanced filtering |
+| [Smart Playlist Examples](https://rouzax.github.io/script.easytv/docs/smart-playlist-examples/) | Ready-to-use playlist files |
+| [Random-Order Shows](https://rouzax.github.io/script.easytv/docs/random-order-shows/) | Shuffle-friendly content |
+| [Multi-Instance Sync](https://rouzax.github.io/script.easytv/docs/multi-instance-sync/) | Share progress across devices |
+| [Advanced Features](https://rouzax.github.io/script.easytv/docs/advanced-features/) | Clones, exporter, more |
+| [Troubleshooting & FAQ](https://rouzax.github.io/script.easytv/docs/troubleshooting-and-faq/) | Common issues |
 
 ---
 
