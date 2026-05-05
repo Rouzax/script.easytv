@@ -38,7 +38,7 @@ EasyTV maintains a list of the **next episode to watch** for every TV show with 
 ### ⚙️ Customization
 - **[Random-Order Shows](random-order-shows.md):** Sitcoms, cartoons, and other shuffle-friendly content
 - **[Smart Playlist Integration](smart-playlist-integration.md):** Endless filtering possibilities
-- **[Clone Feature](advanced-features.md#clone-feature):** Multiple EasyTV instances with different configs
+- **[Clone Feature](clones.md):** Multiple EasyTV instances with different configs
 - **[Multi-Instance Sync](multi-instance-sync.md):** Share watch progress across multiple Kodi devices
 - **Positioned Specials:** Include TVDB-positioned specials in the watch order
 - **[Theme Selection](browse-mode.md#themes):** Golden Hour, Ultraviolet, Ember, or Nightfall accent colors

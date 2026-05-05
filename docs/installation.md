@@ -163,7 +163,7 @@ If you run Kodi on multiple devices with a shared MySQL/MariaDB video database, 
 
 ### Clone Updates
 
-If you've created [clones](advanced-features.md#clone-feature), they prompt you to update on next launch:
+If you've created [clones](clones.md), they prompt you to update on next launch:
 
 1. Launch the clone after updating the main EasyTV addon
 2. EasyTV detects the version mismatch

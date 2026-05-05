@@ -56,7 +56,7 @@ EasyTV organizes settings into six categories:
 | **Ember** | Red tones |
 | **Nightfall** | Blue tones |
 
-**Custom icons:** Changes may require a Kodi restart to appear everywhere. Each [clone](advanced-features.md#clone-feature) can have its own icon.
+**Custom icons:** Changes may require a Kodi restart to appear everywhere. Each [clone](clones.md) can have its own icon.
 
 ---
 

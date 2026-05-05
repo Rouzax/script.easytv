@@ -194,7 +194,7 @@ This deletes all show tracking data from the shared database and resets the revi
 
 | Limitation | Details |
 |------------|---------|
-| **Clones don't sync** | [Clones](advanced-features.md#clone-feature) use the main addon's background service data locally. They don't participate in multi-instance sync. |
+| **Clones don't sync** | [Clones](clones.md) use the main addon's background service data locally. They don't participate in multi-instance sync. |
 | **Settings must match** | Random-order shows and positioned specials must be configured identically on all devices for consistent results. |
 | **Requires shared MySQL/MariaDB** | SQLite (Kodi's default) doesn't support multi-device access. |
 | **pymysql required** | The `script.module.pymysql` addon must be available. It's bundled with EasyTV but must be importable. |
