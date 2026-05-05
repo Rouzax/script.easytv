@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="tvshows">
-    <n>TV Shows - Documentary</n>
+    <name>TV Shows - Documentary</name>
     <match>all</match>
     <rule field="genre" operator="is">
         <value>Documentary</value>

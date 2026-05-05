@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="tvshows">
-    <n>TV Shows - Drama and Thriller</n>
+    <name>TV Shows - Drama and Thriller</name>
     <match>one</match>
     <rule field="genre" operator="is">
         <value>Drama</value>
