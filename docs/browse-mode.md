@@ -57,9 +57,7 @@ A horizontal poster filmstrip with a fixed focus position. The focused poster zo
 
 Best for: Cinematic, gallery-style browsing where the focused poster is the centerpiece.
 
-<!-- Drop view-showcase-golden-hour.png into docs/assets/screenshots/ then uncomment:
 ![Showcase view](assets/screenshots/view-showcase-golden-hour.png)
--->
 
 ---
 
