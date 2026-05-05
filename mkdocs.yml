@@ -83,6 +83,7 @@ nav:
   - Advanced:
       - Advanced Features: advanced-features.md
       - Clones: clones.md
+      - Episode Export: episode-export.md
       - Multi-Instance Sync: multi-instance-sync.md
       - Migration Guide: migration-guide.md
   - Troubleshooting & FAQ: troubleshooting-and-faq.md
