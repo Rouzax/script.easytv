@@ -303,7 +303,11 @@ The dialog itself always offers both **Generate** and **Stop** buttons. The **If
 |---------|---------|---------|-------------|
 | **Warn about earlier unwatched episodes** | On / Off | On | Alert if skipping an unwatched episode |
 
-When enabled, if you're about to play S02E05 but S02E03 is unwatched, EasyTV asks if you want to watch the earlier episode instead.
+When enabled, if you're about to play S02E05 but S02E03 is unwatched, EasyTV asks if you want to watch the earlier episode instead. The dialog shows the show + episode number and asks whether to switch to the library version:
+
+![Missed episode warning](assets/screenshots/dialog-missed-warning.png)
+
+Click **Yes** to stop the current playback and play the earlier library episode instead. Click **No** to continue with what you started.
 
 ---
 
