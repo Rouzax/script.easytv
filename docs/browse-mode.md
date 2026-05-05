@@ -17,7 +17,7 @@ Browse Mode displays all your TV shows with their next episode ready to play. Yo
 
 ## View Styles
 
-EasyTV offers four visual layouts. Change via **Settings > Browse Mode > Appearance > View style**.
+EasyTV offers five visual layouts. Change via **Settings → Browse Mode → Appearance → View style**.
 
 ### Card List (Default)
 
@@ -51,11 +51,19 @@ Best for: Balanced browsing with details always visible.
 
 ![Split View](assets/screenshots/view-split-golden-hour.png)
 
+### Showcase
+
+A horizontal poster filmstrip with a fixed focus position. The focused poster zooms in (420 x 630) with a smooth animation, and an info panel below shows the show title, next episode, metadata, stats, and plot.
+
+Best for: Cinematic, gallery-style browsing where the focused poster is the centerpiece.
+
+![Showcase view](assets/screenshots/view-showcase-golden-hour.png)
+
 ---
 
 ## Themes
 
-All views and dialogs use your selected accent color theme. Change via **Settings > EasyTV > Appearance > Theme**.
+All views and dialogs use your selected accent color theme. Change via **Settings → EasyTV → Appearance → Theme**.
 
 | Theme | Accent Color |
 |-------|-------------|
@@ -73,15 +81,17 @@ All views and dialogs use your selected accent color theme. Change via **Setting
 
 ## Sorting Options
 
-Control how shows are ordered. Change via **Settings > Browse Mode > Sorting**.
+Control how shows are ordered. Change via **Settings → Browse Mode → Sorting**.
 
 | Sort Method | Description | Use Case |
 |-------------|-------------|----------|
-| **Last Watched** | Most recently watched shows first | Continue what you were watching |
 | **Show Name** | Alphabetical order | Finding a specific show |
+| **Last Watched** (default) | Most recently watched shows first | Continue what you were watching |
 | **# Unwatched Episodes** | Shows with most unwatched episodes first | Binge-worthy shows |
 | **# Watched Episodes** | Shows you've watched most first | Your favorites |
 | **Season** | Grouped by which season you're on | See progress across shows |
+| **Random** | Shuffled order | Surprise yourself with what shows up first |
+| **Avg Episode Duration** | Shows ordered by typical episode length | Pick something that fits your time slot |
 
 ### Reverse Sort Order
 
@@ -89,6 +99,9 @@ Enable **Reverse sort order** to flip the direction:
 - Last Watched: Oldest first instead of newest
 - Show Name: Z-A instead of A-Z
 - Episode counts: Fewest first instead of most
+- Avg Episode Duration: Shortest first instead of longest
+
+(Random has no meaningful reverse.)
 
 ### Article Handling
 
@@ -108,12 +121,14 @@ Press `C` on keyboard or the menu button on your remote to open the context menu
 | Action | Description |
 |--------|-------------|
 | **Multi-Select (on/off)** | Toggle selection mode for batch operations |
-| **Play Selection** | Play all selected episodes (or current if none selected) |
+| **Play Episode** / **Play Selection** | Plays the focused episode (single mode) or every selected episode (multi-select mode) |
 | **Play From Here** | Play current episode and all below it |
-| **Export Selection** | Copy selected episode files to a folder |
+| **Export Episode** / **Export Selection** | Copies the focused episode (single mode) or every selected episode (multi-select mode) to a folder |
 | **Mark as Watched** | Mark selected episodes as watched |
 | **Update Library** | Trigger a Kodi library scan |
 | **Refresh List** | Reload the episode list from the service |
+
+The Play and Export labels switch between "Episode" and "Selection" automatically depending on whether multi-select is on.
 
 ---
 
@@ -157,7 +172,7 @@ A quick way to play everything from your current position to the end of the list
 
 **How it works:**
 1. Navigate to a show in the list
-2. Open context menu > **Play From Here**
+2. Open context menu → **Play From Here**
 3. EasyTV creates a playlist starting with that episode
 4. All episodes below it in the list are added
 
@@ -169,7 +184,7 @@ A quick way to play everything from your current position to the end of the list
 
 By default, EasyTV returns to the episode list after you finish watching. This lets you quickly pick your next show.
 
-**To disable:** Settings > Browse Mode > Appearance > **Return to EasyTV after playback** > Off
+**To disable:** Settings → Browse Mode → Appearance → **Return to EasyTV after playback** → Off
 
 When disabled, playback ends at your previous Kodi location (home screen, etc.).
 
@@ -181,7 +196,7 @@ Control which shows appear in Browse Mode.
 
 ### Using the Show Filter
 
-1. Go to **Settings > Shows > Show Filter**
+1. Go to **Settings → Shows → Show Filter**
 2. Enable **Use only selected shows**
 3. Choose your **Selection method**:
 
@@ -236,7 +251,7 @@ When either setting is **Only**, the entire browse list shows only premiere epis
 
 Filter shows by typical episode length.
 
-1. Go to **Settings > Shows > Episode Duration**
+1. Go to **Settings → Shows → Episode Duration**
 2. Enable **Enable duration filter**
 3. Set **Minimum episode length** (0 = no minimum)
 4. Set **Maximum episode length** (0 = no maximum)
@@ -254,7 +269,7 @@ Filter shows by typical episode length.
 
 If you've configured [Random-Order Shows](random-order-shows.md), you can hide them from Browse Mode.
 
-**Settings > Browse Mode > Appearance > Hide random-order shows**
+**Settings → Browse Mode → Appearance → Hide random-order shows**
 
 When enabled:
 - Random-order shows don't appear in the episode list
@@ -269,7 +284,7 @@ For large libraries or low-power devices:
 
 ### Limit Shows Displayed
 
-1. Go to **Settings > Browse Mode > Performance**
+1. Go to **Settings → Browse Mode → Performance**
 2. Enable **Limit shows displayed**
 3. Set **Maximum shows** (1-30)
 

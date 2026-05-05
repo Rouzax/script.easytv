@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="movies">
-    <n>Movies - Date Night</n>
+    <name>Movies - Date Night</name>
     <match>all</match>
     <rule field="genre" operator="is">
         <value>Romance</value>

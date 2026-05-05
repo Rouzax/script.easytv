@@ -38,7 +38,7 @@ Filter to comedy content.
 ```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="tvshows">
-    <n>TV Shows - Comedy</n>
+    <name>TV Shows - Comedy</name>
     <match>all</match>
     <rule field="genre" operator="is">
         <value>Comedy</value>
@@ -57,7 +57,7 @@ Serious content for focused viewing.
 ```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="tvshows">
-    <n>TV Shows - Drama and Thriller</n>
+    <name>TV Shows - Drama and Thriller</name>
     <match>one</match>
     <rule field="genre" operator="is">
         <value>Drama</value>
@@ -82,7 +82,7 @@ Content from specific streaming networks.
 ```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="tvshows">
-    <n>TV Shows - HBO and Netflix</n>
+    <name>TV Shows - HBO and Netflix</name>
     <match>one</match>
     <rule field="studio" operator="contains">
         <value>HBO</value>
@@ -104,7 +104,7 @@ Shows with at least 10 episodes that you haven't fully watched. Perfect for a ma
 ```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="tvshows">
-    <n>TV Shows - Binge-Ready</n>
+    <name>TV Shows - Binge-Ready</name>
     <match>all</match>
     <rule field="numberofepisodes" operator="greaterthan">
         <value>10</value>
@@ -126,7 +126,7 @@ All animated content. Works great with EasyTV's random-order shows feature.
 ```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="tvshows">
-    <n>TV Shows - Animation</n>
+    <name>TV Shows - Animation</name>
     <match>all</match>
     <rule field="genre" operator="is">
         <value>Animation</value>
@@ -145,7 +145,7 @@ Educational and documentary content.
 ```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="tvshows">
-    <n>TV Shows - Documentary</n>
+    <name>TV Shows - Documentary</name>
     <match>all</match>
     <rule field="genre" operator="is">
         <value>Documentary</value>
@@ -166,7 +166,7 @@ Family content based on folder location. This playlist serves as a building bloc
 ```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="movies">
-    <n>Movies - Kids</n>
+    <name>Movies - Kids</name>
     <match>all</match>
     <rule field="path" operator="contains">
         <value>/Kids/</value>
@@ -187,7 +187,7 @@ Nostalgic content from two classic decades, excluding kids content by referencin
 ```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="movies">
-    <n>Movies - 80s and 90s</n>
+    <name>Movies - 80s and 90s</name>
     <match>all</match>
     <rule field="year" operator="greaterthan">
         <value>1979</value>
@@ -217,7 +217,7 @@ Movies with rating of 7 or higher.
 ```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="movies">
-    <n>Movies - Highly Rated</n>
+    <name>Movies - Highly Rated</name>
     <match>all</match>
     <rule field="rating" operator="greaterthan">
         <value>6.9</value>
@@ -236,7 +236,7 @@ Movies in 4K resolution. Show off your setup.
 ```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="movies">
-    <n>Movies - 4K UHD</n>
+    <name>Movies - 4K UHD</name>
     <match>all</match>
     <rule field="videoresolution" operator="greaterthan">
         <value>1080</value>
@@ -255,7 +255,7 @@ Highly rated movies you haven't seen. The best of your backlog.
 ```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="movies">
-    <n>Movies - Quality Unwatched</n>
+    <name>Movies - Quality Unwatched</name>
     <match>all</match>
     <rule field="playcount" operator="is">
         <value>0</value>
@@ -277,7 +277,7 @@ Romantic movies that are actually good.
 ```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="movies">
-    <n>Movies - Date Night</n>
+    <name>Movies - Date Night</name>
     <match>all</match>
     <rule field="genre" operator="is">
         <value>Romance</value>
@@ -299,7 +299,7 @@ Seasonal content using custom tags.
 ```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="movies">
-    <n>Movies - Christmas</n>
+    <name>Movies - Christmas</name>
     <match>all</match>
     <rule field="tag" operator="is">
         <value>christmas</value>
@@ -322,7 +322,7 @@ Movies under 100 minutes for when time is limited.
 ```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="movies">
-    <n>Movies - Short</n>
+    <name>Movies - Short</name>
     <match>all</match>
     <rule field="time" operator="lessthan">
         <value>100</value>

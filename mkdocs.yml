@@ -75,13 +75,14 @@ nav:
   - Core Features:
       - Browse Mode: browse-mode.md
       - Random Playlist Mode: random-playlist-mode.md
+      - Random Order Shows: random-order-shows.md
   - Configuration:
       - Settings Reference: settings-reference.md
       - Smart Playlist Integration: smart-playlist-integration.md
       - Smart Playlist Examples: smart-playlist-examples.md
-      - Random Order Shows: random-order-shows.md
   - Advanced:
-      - Advanced Features: advanced-features.md
+      - Clones: clones.md
+      - Episode Export: episode-export.md
+      - Auto-Generated Playlists: auto-generated-playlists.md
       - Multi-Instance Sync: multi-instance-sync.md
-      - Migration Guide: migration-guide.md
   - Troubleshooting & FAQ: troubleshooting-and-faq.md

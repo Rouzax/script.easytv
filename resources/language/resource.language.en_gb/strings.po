@@ -516,7 +516,7 @@ msgid "After an episode ends, show a dialog asking if you want to watch the next
 msgstr ""
 
 msgctxt "#32426"
-msgid "How long the prompt stays on screen. Maximum (60) waits indefinitely."
+msgid "How long the prompt stays on screen. Set to 0 for no automatic dismissal."
 msgstr ""
 
 msgctxt "#32427"

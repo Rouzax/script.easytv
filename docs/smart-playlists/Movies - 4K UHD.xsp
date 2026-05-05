@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="movies">
-    <n>Movies - 4K UHD</n>
+    <name>Movies - 4K UHD</name>
     <match>all</match>
     <rule field="videoresolution" operator="greaterthan">
         <value>1080</value>

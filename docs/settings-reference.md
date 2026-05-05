@@ -56,7 +56,7 @@ EasyTV organizes settings into six categories:
 | **Ember** | Red tones |
 | **Nightfall** | Blue tones |
 
-**Custom icons:** Changes may require a Kodi restart to appear everywhere. Each [clone](advanced-features.md#clone-feature) can have its own icon.
+**Custom icons:** Changes may require a Kodi restart to appear everywhere. Each [clone](clones.md) can have its own icon.
 
 ---
 
@@ -143,7 +143,7 @@ When either setting is **Only**, the entire list becomes premieres-only. The oth
 | Skip | Only | Premieres only: season premieres only (no S01E01) |
 | Only | Only | Premieres only: both types |
 
-**Positioned specials:** Some shows have specials that TVDB marks as belonging between specific episodes (e.g., a special that should be watched between S10E55 and S10E56). When enabled, these specials appear at their designated position in the watch order. Specials without TVDB positioning data remain excluded. *(Added in v1.4.0)*
+**Positioned specials:** Some shows have specials that TVDB marks as belonging between specific episodes (e.g., a special that should be watched between S10E55 and S10E56). When enabled, these specials appear at their designated position in the watch order. Specials without TVDB positioning data remain excluded.
 
 > **Multi-instance sync users:** Configure this setting identically on all devices. Different values will cause devices to disagree on the next episode. See [Multi-Instance Sync](multi-instance-sync.md#consistent-settings).
 
@@ -157,7 +157,7 @@ When either setting is **Only**, the entire list becomes premieres-only. The oth
 
 | Setting | Options | Default | Description |
 |---------|---------|---------|-------------|
-| **View style** | Card List / Posters / Big Screen / Split View | Card List | Visual layout for the episode list |
+| **View style** | Card List / Posters / Big Screen / Split View / Showcase | Card List | Visual layout for the episode list |
 | **Return to EasyTV after playback** | On / Off | On | Come back to episode list after watching |
 | **Hide random-order shows** | On / Off | Off | Don't show random-order shows in the list |
 
@@ -169,12 +169,13 @@ When either setting is **Only**, the entire list becomes premieres-only. The oth
 | **Posters** | Visual grid with show artwork and episode details |
 | **Big Screen** | Large artwork optimized for 10-foot viewing |
 | **Split View** | Two-column layout: show list on the left, detail panel on the right |
+| **Showcase** | Horizontal poster filmstrip with a fixed focus position; the focused poster zooms in with an info panel below |
 
 ### Sorting
 
 | Setting | Options | Default | Description |
 |---------|---------|---------|-------------|
-| **Sort by** | Show Name / Last Watched / # Unwatched Episodes / # Watched Episodes / Season | Last Watched | How to order shows in the list |
+| **Sort by** | Show Name / Last Watched / # Unwatched Episodes / # Watched Episodes / Season / Random / Avg Episode Duration | Last Watched | How to order shows in the list |
 | **Reverse sort order** | On / Off | Off | Flip the sort direction |
 
 **Sort methods:**
@@ -186,6 +187,8 @@ When either setting is **Only**, the entire list becomes premieres-only. The oth
 | **# Unwatched** | Most unwatched first | Fewest first |
 | **# Watched** | Most watched first | Fewest first |
 | **Season** | Highest season first | Lowest first |
+| **Random** | Shuffled | (no meaningful reverse) |
+| **Avg Episode Duration** | Longest typical episode first | Shortest first |
 
 ### Performance
 
@@ -225,7 +228,7 @@ Settings that depend on your **Playlist content** selection:
 | **Episode selection** | Unwatched only / Watched only / Both | Unwatched only | Which episodes to include |
 | **Unwatched episode chance** | 0-100% (slider) | 50% | In "Both" mode, how often to pick unwatched |
 | **Start playlist with unfinished episodes** | On / Off | On | Prioritize partially watched episodes |
-| **Seek to resume point for episodes**        | Auto-skip to where you left off in partial episodes (seeks 10 seconds before) | On             | TV episodes included      |
+| **Seek to resume point for episodes** | On / Off | On | Auto-skip to where you left off in partial episodes (seeks 10 seconds before your last position) |
 
 #### Movie Settings
 
@@ -235,7 +238,7 @@ Settings that depend on your **Playlist content** selection:
 |---------|---------|---------|-------------|
 | **Movie selection** | Unwatched only / Watched only / Both | Unwatched only | Which movies to include |
 | **Start playlist with unfinished movies** | On / Off | On | Prioritize partially watched movies |
-| **Seek to resume point for movies**          | Auto-skip to where you left off in partial movies (seeks 10 seconds before)   | On             | Movies included           |
+| **Seek to resume point for movies** | On / Off | On | Auto-skip to where you left off in partial movies (seeks 10 seconds before your last position) |
 | **Start watched movies at random point** | On / Off | Off | Start 5-75% through watched movies |
 | **Filter movies by playlist...** | (button) | All movies | Limit movies using a smart playlist |
 
@@ -264,13 +267,14 @@ Settings that depend on your **Playlist content** selection:
 | Setting | Options | Default | Description |
 |---------|---------|---------|-------------|
 | **Prompt to continue playlist** | On / Off | Off | Ask to generate another playlist when finished |
-| **Countdown duration** | 0-60 seconds (slider) | 20 | Seconds before prompt auto-dismisses |
+| **Countdown duration (seconds)** | 0-60 (slider) | 20 | Seconds before the prompt auto-acts |
+| **If countdown expires** | Stop / Generate new playlist | Stop | Which button fires when the countdown reaches zero with no input |
 
 **Countdown values:**
 - **0** = Wait indefinitely (no auto-dismiss)
-- **1-60** = Auto-dismiss after this many seconds
+- **1-60** = Auto-act after this many seconds
 
-Default action when countdown expires: Stop (don't generate).
+The dialog itself always offers both **Generate** and **Stop** buttons. The **If countdown expires** setting only controls which one fires on timeout.
 
 ---
 
@@ -288,8 +292,10 @@ Default action when countdown expires: Stop (don't generate).
 | **Also prompt during random playlists** | On / Off | Off | Show prompt even during EasyTV playlists |
 
 **Timeout values:**
-- **0-59** = Auto-act after this many seconds
-- **60** = Wait indefinitely
+- **0** = Wait indefinitely (no auto-dismiss)
+- **1-60** = Auto-act after this many seconds
+
+![Next episode prompt](assets/screenshots/dialog-next-up.png)
 
 ### Warnings
 
@@ -297,7 +303,11 @@ Default action when countdown expires: Stop (don't generate).
 |---------|---------|---------|-------------|
 | **Warn about earlier unwatched episodes** | On / Off | On | Alert if skipping an unwatched episode |
 
-When enabled, if you're about to play S02E05 but S02E03 is unwatched, EasyTV asks if you want to watch the earlier episode instead.
+When enabled, if you're about to play S02E05 but S02E03 is unwatched, EasyTV asks if you want to watch the earlier episode instead. The dialog shows the show + episode number and asks whether to switch to the library version:
+
+![Missed episode warning](assets/screenshots/dialog-missed-warning.png)
+
+Click **Yes** to stop the current playback and play the earlier library episode instead. Click **No** to continue with what you started.
 
 ---
 
@@ -327,20 +337,20 @@ When enabled, EasyTV maintains ten `.xsp` files (five Episode, five TVShow):
 - Show Premieres (S01E01, brand new shows)
 - Season Premieres (S02E01+, new seasons)
 
-See [Advanced Features](advanced-features.md#auto-created-smart-playlists) for details.
+See [Advanced Features](auto-generated-playlists.md) for details.
 
 ### Multi-Instance Sync
 
 | Setting | Options | Default | Description |
 |---------|---------|---------|-------------|
-| **Multi-instance sync** | On / Off | Off | Share watch progress across multiple Kodi devices via shared MySQL/MariaDB |
-| **Clear sync data** | (button) | (none) | Delete all shared sync data and reset revision counter |
+| **Enable multi-instance sync** | On / Off | Off | Share watch progress across multiple Kodi devices via shared MySQL/MariaDB |
+| **Clear sync data...** | (button) | (none) | Delete all shared sync data and reset revision counter |
 
-**Visibility:** "Clear sync data" only appears when "Multi-instance sync" is On.
+**Visibility:** "Clear sync data..." only appears when "Enable multi-instance sync" is On.
 
 **Requirements:** A shared MySQL/MariaDB video database (configured in `advancedsettings.xml`) and the `script.module.pymysql` addon.
 
-See [Multi-Instance Sync](multi-instance-sync.md) for full setup and usage documentation. *(Added in v1.3.0)*
+See [Multi-Instance Sync](multi-instance-sync.md) for full setup and usage documentation.
 
 ### Debugging
 
@@ -359,7 +369,7 @@ See [Troubleshooting](troubleshooting-and-faq.md#debug-logging) for log file pat
 | **Create EasyTV copy...** | (button) | (none) | Create a clone with separate settings |
 | **Export episodes to folder...** | (button) | (none) | Copy next episodes for offline viewing |
 
-See [Advanced Features](advanced-features.md) for details on these tools.
+See [Clones](clones.md) and [Episode Export](episode-export.md) for details on these tools.
 
 ---
 
@@ -381,7 +391,7 @@ Some settings only appear based on other settings:
 | Maximum shows | "Limit shows displayed" is On |
 | Duration min/max | "Enable duration filter" is On |
 | Apply show filter to smart playlists | Episode or TVShow playlists enabled |
-| Clear sync data | "Multi-instance sync" is On |
+| Clear sync data... | "Enable multi-instance sync" is On |
 
 ---
 
@@ -390,5 +400,7 @@ Some settings only appear based on other settings:
 - **[Browse Mode](browse-mode.md):** How browse settings work in practice
 - **[Random Playlist Mode](random-playlist-mode.md):** How playlist settings work in practice
 - **[Smart Playlist Integration](smart-playlist-integration.md):** Using smart playlists for filtering
-- **[Advanced Features](advanced-features.md):** Clone and exporter details
+- **[Clones](clones.md):** Multiple EasyTV instances with independent settings
+- **[Episode Export](episode-export.md):** Copy your "next episode" files to another location
+- **[Auto-Generated Playlists](auto-generated-playlists.md):** Smart playlists for skin widgets and channel surfing
 - **[Troubleshooting](troubleshooting-and-faq.md):** Debug logging explained

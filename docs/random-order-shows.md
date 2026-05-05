@@ -1,5 +1,7 @@
 # Random-Order Shows
 
+> **Configured under** **Settings → Shows → Random Episode Order → Select shows for random order...**
+
 Some TV shows don't need to be watched in order. Sitcoms, cartoons, sketch comedy, anthology series: these are "shuffle-friendly" shows where any episode works.
 
 EasyTV lets you mark these shows for random episode selection instead of sequential viewing.
@@ -40,6 +42,8 @@ For **random-order shows**, EasyTV picks any available episode:
 3. A selection dialog opens with all your TV shows
 4. Check the shows you want to randomize
 5. Click **Save**
+
+![Show selection dialog](assets/screenshots/dialog-show-selector.png)
 
 ### Removing Shows from Random Order
 
@@ -91,7 +95,7 @@ The **Episode selection** setting (Unwatched/Watched/Both) affects random-order 
 | Next episode in order (S02E06) | Random unwatched episode |
 | Progress advances linearly | Progress is scattered |
 
-Both only pick from unwatched episodes. The difference is *which* unwatched episode.
+Both kinds of shows draw only from unwatched episodes. The difference is *which* unwatched episode is picked.
 
 ### Watched Only
 

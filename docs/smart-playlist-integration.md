@@ -217,7 +217,7 @@ You can:
 
 ## Apply Show Filter to Smart Playlists
 
-If you use a show filter (Settings → Shows → Show Filter) and also generate auto-created smart playlists, you can connect them: enable **Apply show filter to smart playlists** in Settings → Advanced → Background Service. When enabled, only shows matching your filter will appear in the auto-created Episode and TVShow playlists. This is especially useful when combined with the [Power User Pattern](advanced-features.md#power-user-pattern-main-as-service-clones-as-entry-points) of using the main addon as a service and clones as entry points. *(Added in v1.2.4)*
+If you use a show filter (Settings → Shows → Show Filter) and also generate auto-created smart playlists, you can connect them: enable **Apply show filter to smart playlists** in Settings → Advanced → Background Service. When enabled, only shows matching your filter will appear in the auto-created Episode and TVShow playlists. This is especially useful when combined with the [Power User Pattern](clones.md#power-user-pattern-main-as-service-clones-as-entry-points) of using the main addon as a service and clones as entry points.
 
 ---
 
@@ -255,7 +255,7 @@ Final Result
 
 ### Scenario 1: Multiple "Channels"
 
-Create different EasyTV experiences using [clones](advanced-features.md#clone-feature):
+Create different EasyTV experiences using [clones](clones.md):
 
 | Clone | Smart Playlist | Use Case |
 |-------|----------------|----------|
@@ -305,11 +305,11 @@ Smart playlist: "User rating > 7"
 
 ### Wrong Content Type
 
-EasyTV checks playlist type:
+EasyTV requires the right playlist type for each slot:
 - TV show filter requires `type="tvshows"`
 - Movie filter requires `type="movies"`
 
-Using the wrong type will result in errors.
+The selection dialog filters available playlists to the correct type before showing them, so picking the wrong one through the UI is normally not possible. If a TV filter slot has no entries to choose from, the dialog displays "No TV show playlists found" (and the same for movies). The mismatch can only occur if a `.xsp` path was edited manually in Kodi's settings file, or if a playlist's `type` attribute was changed after EasyTV stored its path.
 
 ---
 
@@ -317,5 +317,5 @@ Using the wrong type will result in errors.
 
 - **[Smart Playlist Examples](smart-playlist-examples.md):** Ready-to-use playlist files
 - **[Settings Reference](settings-reference.md):** All filtering settings
-- **[Advanced Features](advanced-features.md):** Clone feature for multiple configs
+- **[Clones](clones.md):** Multiple EasyTV instances for different filter configs
 - **[Random-Order Shows](random-order-shows.md):** Another way to customize content

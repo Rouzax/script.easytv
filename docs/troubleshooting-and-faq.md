@@ -125,7 +125,7 @@ EasyTV is sluggish on your device.
 **For Browse Mode:**
 1. Enable **Settings → Browse Mode → Performance → Limit shows displayed**
 2. Set **Maximum shows** to 10-15
-3. Use **Standard** view style (lighter than Posters/Big Screen)
+3. Use **Card List** view style. Posters, Big Screen, Split View, and Showcase pull and render more artwork per item.
 
 **For Random Playlist:**
 - Playlist building takes a few seconds. This is normal.
@@ -222,30 +222,6 @@ If you're using [multi-instance sync](multi-instance-sync.md), these are the mos
 
 **Solution:** Install `script.module.pymysql` from the Kodi addon repository. It's normally installed as an EasyTV dependency, but may be missing if you installed EasyTV manually.
 
-#### Service Stops After Overnight Idle
-
-**Symptoms:** EasyTV stops tracking and shows stale data after being idle overnight. Requires Kodi restart.
-
-**Solution:** Update to EasyTV v1.4.0 or later. Earlier versions had a bug where MariaDB connections going idle overnight caused an unhandled exception that silently killed the background service.
-
----
-
-### Smart Playlist Names Changed
-
-After updating from v1.2.3 or earlier, skin widgets that reference EasyTV playlists may break.
-
-**Cause:** v1.2.4 renamed all auto-created playlist files to include a type prefix (`Episode` or `TVShow`).
-
-**Solution:** Update your skin widget or PseudoTV Live configuration with the new filenames:
-
-| Old Filename | New Filename |
-|-------------|-------------|
-| `EasyTV - All Shows.xsp` | `EasyTV - Episode - All Shows.xsp` |
-| `EasyTV - Continue Watching.xsp` | `EasyTV - Episode - Continue Watching.xsp` |
-| `EasyTV - Start Fresh.xsp` | `EasyTV - Episode - Start Fresh.xsp` |
-
-See the [Migration Guide](migration-guide.md#v124-smart-playlist-overhaul) for full details.
-
 ---
 
 ## Debug Logging
@@ -269,12 +245,31 @@ For diagnosing complex issues, enable detailed logging.
 | **LibreELEC** | `/storage/.kodi/userdata/addon_data/script.easytv/logs/easytv.log` |
 | **OSMC** | `/home/osmc/.kodi/userdata/addon_data/script.easytv/logs/easytv.log` |
 
+### What Gets Logged
+
+| Level | Content | Where it lands |
+|-------|---------|----------------|
+| **ERROR** | Operation failures, exceptions | Kodi log + `easytv.log` |
+| **WARNING** | Recoverable issues | Kodi log + `easytv.log` |
+| **INFO** | Lifecycle events (service start, scans, playback) | Kodi log + `easytv.log` |
+| **DEBUG** | Detailed diagnostics | `easytv.log` only, and only when debug logging is enabled |
+
+### Log Format
+
+```
+2026-04-12 12:34:56 [EasyTV.daemon] INFO: Service started, version=1.5.2
+2026-04-12 12:34:57 [EasyTV.data] DEBUG: Fetching shows, count=47
+2026-04-12 12:34:58 [EasyTV.playback] INFO: Playlist created, items=5
+```
+
+Each line includes a timestamp, the module name (e.g. `daemon`, `data`, `playback`, `ui`), the level, and a message with structured key=value context.
+
 ### What to Look For
 
-- **ERROR** entries indicate failures
-- **WARNING** entries indicate recoverable issues
-- Timestamps help correlate with when problems occurred
-- Module names (service, data, playback, ui) indicate where issues happen
+- **ERROR** entries indicate failures.
+- **WARNING** entries indicate recoverable issues.
+- Timestamps help correlate with when problems occurred.
+- Module names indicate where issues happen.
 
 ### Reporting Bugs
 
@@ -312,9 +307,6 @@ A: Yes! With [multi-instance sync](multi-instance-sync.md), your watch progress 
 
 **Q: What are "positioned specials"?**
 A: Some shows have specials that belong between specific episodes (TVDB provides this positioning data). When enabled in Settings → Shows, these specials appear at their correct position in the watch order instead of being excluded.
-
-**Q: My skin widgets stopped showing EasyTV playlists after updating.**
-A: Playlist filenames changed in v1.2.4. See the [Migration Guide](migration-guide.md#v124-smart-playlist-overhaul) for the old-to-new filename mapping.
 
 ---
 
@@ -419,5 +411,5 @@ Include:
 
 - **[Installation](installation.md):** Initial setup
 - **[Settings Reference](settings-reference.md):** All settings explained
-- **[Advanced Features](advanced-features.md):** Debug logging details
 - **[Smart Playlist Integration](smart-playlist-integration.md):** Filtering troubleshooting
+- **[Multi-Instance Sync](multi-instance-sync.md):** Sync setup and recovery

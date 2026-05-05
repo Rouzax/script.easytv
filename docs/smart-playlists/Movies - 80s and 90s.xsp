@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <smartplaylist type="movies">
-    <n>Movies - 80s and 90s</n>
+    <name>Movies - 80s and 90s</name>
     <match>all</match>
     <rule field="year" operator="greaterthan">
         <value>1979</value>
