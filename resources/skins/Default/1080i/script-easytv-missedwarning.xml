@@ -8,7 +8,7 @@
 
     Control IDs:
         1  - Heading label
-        2  - Message label (primary — show/episode info, up to 5 lines)
+        2  - Message label (primary - show/episode info, up to 5 lines)
         4  - Subtitle label (centered question)
         10 - Yes/primary button (play stored episode)
         11 - No/secondary button (continue current)
@@ -99,7 +99,7 @@
                 <texture background="true">-</texture>
             </control>
 
-            <!-- Message (ID 2) — show/episode info, up to 5 lines -->
+            <!-- Message (ID 2) - show/episode info, up to 5 lines -->
             <control type="label" id="2">
                 <left>210</left>
                 <top>85</top>
@@ -112,7 +112,7 @@
                 <label>-</label>
             </control>
 
-            <!-- Subtitle (ID 4) — centered question -->
+            <!-- Subtitle (ID 4) - centered question -->
             <control type="label" id="4">
                 <left>30</left>
                 <top>340</top>

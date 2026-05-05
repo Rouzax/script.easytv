@@ -156,6 +156,10 @@ class PlaybackMonitor(xbmc.Player):
         self._playing_showid: Union[int, bool] = False
         self._playing_epid: Union[int, bool] = False
         self._last_playing_showid: Union[int, bool] = False
+        self._last_playing_seas: Union[int, bool] = False
+        self._last_playing_epis: Union[int, bool] = False
+        self._last_playing_show_title: str = ''
+        self._last_playing_ep_title: str = ''
         self._nextprompt_trigger: bool = False
         self._nextprompt_trigger_override: bool = True
         
@@ -334,6 +338,17 @@ class PlaybackMonitor(xbmc.Player):
         self._playing_epid = now_playing_episode_id
         self._playing_showid = now_playing_show_id
         self._last_playing_showid = now_playing_show_id
+        # Capture just-played episode metadata for the next-episode prompt's
+        # "You just watched..." line. Pulled from the same JSON-RPC payload
+        # the previous-episode check already used.
+        try:
+            self._last_playing_seas = int(season_np)
+            self._last_playing_epis = int(episode_np)
+        except (TypeError, ValueError):
+            self._last_playing_seas = False
+            self._last_playing_epis = False
+        self._last_playing_show_title = showtitle or ''
+        self._last_playing_ep_title = self._ep_details.get('item', {}).get('title', '') or ''
         self._log.debug(
             "PlaybackMonitor detected episode",
             show_id=self._playing_showid,
@@ -394,7 +409,12 @@ class PlaybackMonitor(xbmc.Player):
                 "EasyTV.%s.Art(tvshow.poster)" % show_id
             )
 
-            msg = lang(32161) % (showtitle, stored_seas, stored_epis)
+            # Two-line message:
+            #   [B]Showtitle SxxEyy[/B]
+            #   is in your library and unwatched.
+            # 32161 is the bolded identifier line, 32169 is the explanatory tail.
+            identifier = lang(32161) % (showtitle, stored_seas, stored_epis)
+            msg = '[B]%s[/B][CR]%s' % (identifier, lang(32169))
             subtitle = lang(32162)
 
             dlg = CountdownDialog(
@@ -513,9 +533,13 @@ class PlaybackMonitor(xbmc.Player):
         """
         self._log.debug("Playback ended", user_stopped=user_stopped)
 
-        # Capture ended-episode state BEFORE sleep — onPlayBackStarted for
+        # Capture ended-episode state BEFORE sleep - onPlayBackStarted for
         # the next playlist item may fire during the delay and overwrite these
         ended_showid = self._last_playing_showid
+        ended_show_title = self._last_playing_show_title
+        ended_seas = self._last_playing_seas
+        ended_epis = self._last_playing_epis
+        ended_ep_title = self._last_playing_ep_title
         ended_trigger = self._nextprompt_trigger
         ended_override = self._nextprompt_trigger_override
         ended_prompt_info = self._get_nextprompt_info()
@@ -539,7 +563,7 @@ class PlaybackMonitor(xbmc.Player):
             PlaylistSession.clear()
 
             if not self._on_last_playlist_item:
-                # Stopped mid-playlist — clear config
+                # Stopped mid-playlist - clear config
                 self._window.clearProperty(PROP_PLAYLIST_CONFIG)
                 self._log.debug("Playlist ended mid-playlist, clearing config")
             else:
@@ -602,7 +626,11 @@ class PlaybackMonitor(xbmc.Player):
             if ended_trigger and ended_override:
                 self._show_next_episode_prompt(
                     now_name, pre_seas, pre_ep, pre_title, pre_epid, settings,
-                    ended_showid, pre_ep_title
+                    ended_showid, pre_ep_title,
+                    finished_show_title=ended_show_title,
+                    finished_seas=ended_seas,
+                    finished_epis=ended_epis,
+                    finished_ep_title=ended_ep_title,
                 )
 
             self._set_nextprompt_info({})
@@ -614,9 +642,9 @@ class PlaybackMonitor(xbmc.Player):
         """Get (path, name, addon_id) of the addon that started playback.
 
         Checks multiple sources in priority order:
-        1. PROP_PLAYLIST_CONFIG — has addon_id for playlist mode (set by
+        1. PROP_PLAYLIST_CONFIG - has addon_id for playlist mode (set by
            random_player.py in the clone's process, works without clone update)
-        2. PROP_SOURCE_ADDON_ID — window property set by default.py entry point
+        2. PROP_SOURCE_ADDON_ID - window property set by default.py entry point
            (for browse mode, requires clone to have updated code)
         3. Fallback to main addon
 
@@ -669,6 +697,10 @@ class PlaybackMonitor(xbmc.Player):
         settings: PlaybackSettings,
         ended_showid: Union[int, bool] = False,
         pre_ep_title: str = '',
+        finished_show_title: str = '',
+        finished_seas: Union[int, bool] = False,
+        finished_epis: Union[int, bool] = False,
+        finished_ep_title: str = '',
     ) -> None:
         """
         Show the next episode prompt dialog.
@@ -677,11 +709,15 @@ class PlaybackMonitor(xbmc.Player):
             now_name: Currently playing show name (empty if nothing playing).
             pre_seas: Season number of next episode.
             pre_ep: Episode number of next episode.
-            pre_title: Show title.
+            pre_title: Show title (next episode).
             pre_epid: Episode ID of next episode.
             settings: Current playback settings.
             ended_showid: Show ID of the ended episode (for poster lookup).
-            pre_ep_title: Episode title (e.g., "I See You").
+            pre_ep_title: Next episode's title (e.g., "Door of No Return").
+            finished_show_title: Show title of the just-played episode.
+            finished_seas: Season number of the just-played episode.
+            finished_epis: Episode number of the just-played episode.
+            finished_ep_title: Title of the just-played episode.
         """
         from resources.lib.ui.dialogs import CountdownDialog
 
@@ -698,20 +734,32 @@ class PlaybackMonitor(xbmc.Player):
 
         self._nextprompt_trigger = False
 
-        SE = 'S%02dE%02d' % (int(pre_seas), int(pre_ep))
+        next_se = 'S%02dE%02d' % (int(pre_seas), int(pre_ep))
 
         self._log.debug("Prompt default action", action=settings.promptdefaultaction)
 
-        # Always: Yes="Play", No="Don't Play"
+        # Always: Yes="Watch Next", No="Skip"
         # default_yes determines what happens on timeout
         default_yes = (settings.promptdefaultaction != 1)
 
-        # Primary message: just the show title
-        msg = pre_title
-        # Subtitle: SE code + episode title (shown in smaller, dimmer font)
-        subtitle = SE
+        # Primary message: "You just watched" + show + S/E (+ episode title)
+        # of just-finished. Falls back to simpler forms when finished-episode
+        # info is missing (e.g., this is the first prompt of the session).
+        finished_show_label = finished_show_title or pre_title
+        if finished_seas is not False and finished_epis is not False:
+            finished_se = 'S%02dE%02d' % (int(finished_seas), int(finished_epis))
+            head = '[B]%s %s[/B]' % (finished_show_label, finished_se)
+            if finished_ep_title:
+                head += ' ' + finished_ep_title
+            msg = '%s[CR]%s' % (lang(32164), head)
+        else:
+            msg = '%s[CR][B]%s[/B]' % (lang(32164), finished_show_label)
+
+        # Subtitle: "Up next" + S/E + episode title of next-to-play
         if pre_ep_title:
-            subtitle += ' \u2014 ' + pre_ep_title
+            subtitle = '%s[CR][B]%s[/B] %s' % (lang(32165), next_se, pre_ep_title)
+        else:
+            subtitle = '%s[CR][B]%s[/B]' % (lang(32165), next_se)
         addon_path, addon_name, addon_id = self._get_source_addon_info()
 
         # Get show poster from cached window property
@@ -726,8 +774,8 @@ class PlaybackMonitor(xbmc.Player):
             'script-easytv-nextepisode.xml', addon_path, 'Default',
             message=msg,
             subtitle=subtitle,
-            yes_label=lang(32092),   # "Play"
-            no_label=lang(32091),    # "Don't Play"
+            yes_label=lang(32166),   # "Watch Next"
+            no_label=lang(32168),    # "Skip"
             duration=settings.promptduration,
             heading=addon_name,
             timer_template=lang(32167),  # "(auto-closing in %s seconds)"
@@ -743,7 +791,7 @@ class PlaybackMonitor(xbmc.Player):
         self._log.debug("Next episode prompt result", play=play)
 
         if play:
-            # Clear playlist config — this replacement episode is not a
+            # Clear playlist config - this replacement episode is not a
             # continuation-eligible playlist, so prevent the continuation
             # prompt from showing when it ends.
             self._window.clearProperty(PROP_PLAYLIST_CONFIG)
