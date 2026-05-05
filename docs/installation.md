@@ -15,9 +15,29 @@
 
 ## Installation Methods
 
-### From the Kodi Add-on Repository (easiest)
+There are three ways to install EasyTV. Pick the one that fits how you like to receive updates.
 
-EasyTV is published in the official Kodi add-on repository, which is enabled by default in every Kodi install. No "Unknown sources" toggle needed, and Kodi handles updates for you.
+| Method | Auto-updates? | Latest stable? | Setup |
+|--------|--------------|----------------|-------|
+| **Rouzax Repository** | Yes (via Kodi) | Yes, immediately | One-time repo install |
+| **Official Kodi Repository** | Yes (via Kodi) | After Kodi review (can lag) | Already enabled in Kodi |
+| **GitHub release zip** | No (manual) | Yes, plus pre-releases | Per-release zip install |
+
+### From the Rouzax Repository (recommended)
+
+The Rouzax repository auto-updates EasyTV (and the other Rouzax addons) every time a new stable release ships, without waiting for the official Kodi repo review cycle. One-time setup, then Kodi handles updates for you.
+
+1. Download the latest `repository.rouzax-X.Y.Z.zip` from [Rouzax Repository releases](https://github.com/Rouzax/repository.rouzax/releases)
+2. In Kodi, go to **Settings → Add-ons → Install from zip file**
+3. Select the downloaded zip. (Kodi may prompt you to enable "Unknown sources" first; see the GitHub method below for the toggle path.)
+4. After the repository installs, go to **Settings → Add-ons → Install from repository → Rouzax Repository → Program add-ons**
+5. Select **EasyTV** and click **Install**
+
+Future EasyTV updates arrive automatically through Kodi's add-on update cycle.
+
+### From the Official Kodi Add-on Repository
+
+EasyTV is also published in the official Kodi add-on repository, which is enabled by default in every Kodi install. No extra repo install needed.
 
 1. Open Kodi
 2. Go to **Settings → Add-ons → Install from repository**
@@ -27,9 +47,9 @@ EasyTV is published in the official Kodi add-on repository, which is enabled by 
 
 The background service starts automatically after install.
 
-> **Note:** The version in the Kodi repository may lag behind the latest GitHub release while a new version goes through review. If you want the newest features or fixes immediately, install from GitHub instead.
+> **Note:** The version here can lag behind the Rouzax repository and GitHub releases while a new version goes through Kodi's review process. Use the Rouzax repository if you want new releases as soon as they ship.
 
-### From GitHub (for the latest version)
+### From GitHub (for the latest version, including pre-releases)
 
 Use this if you want a release that hasn't reached the Kodi repository yet, or you want to test a pre-release build.
 
