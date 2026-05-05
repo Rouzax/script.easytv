@@ -17,7 +17,7 @@ Browse Mode displays all your TV shows with their next episode ready to play. Yo
 
 ## View Styles
 
-EasyTV offers four visual layouts. Change via **Settings > Browse Mode > Appearance > View style**.
+EasyTV offers five visual layouts. Change via **Settings > Browse Mode > Appearance > View style**.
 
 ### Card List (Default)
 
@@ -51,6 +51,12 @@ Best for: Balanced browsing with details always visible.
 
 ![Split View](assets/screenshots/view-split-golden-hour.png)
 
+### Showcase
+
+A horizontal poster filmstrip with a fixed focus position. The focused poster zooms in (420 x 630) with a smooth animation, and an info panel below shows the show title, next episode, metadata, stats, and plot.
+
+Best for: Cinematic, gallery-style browsing where the focused poster is the centerpiece.
+
 ---
 
 ## Themes
@@ -77,11 +83,13 @@ Control how shows are ordered. Change via **Settings > Browse Mode > Sorting**.
 
 | Sort Method | Description | Use Case |
 |-------------|-------------|----------|
-| **Last Watched** | Most recently watched shows first | Continue what you were watching |
 | **Show Name** | Alphabetical order | Finding a specific show |
+| **Last Watched** (default) | Most recently watched shows first | Continue what you were watching |
 | **# Unwatched Episodes** | Shows with most unwatched episodes first | Binge-worthy shows |
 | **# Watched Episodes** | Shows you've watched most first | Your favorites |
 | **Season** | Grouped by which season you're on | See progress across shows |
+| **Random** | Shuffled order | Surprise yourself with what shows up first |
+| **Avg Episode Duration** | Shows ordered by typical episode length | Pick something that fits your time slot |
 
 ### Reverse Sort Order
 
@@ -89,6 +97,9 @@ Enable **Reverse sort order** to flip the direction:
 - Last Watched: Oldest first instead of newest
 - Show Name: Z-A instead of A-Z
 - Episode counts: Fewest first instead of most
+- Avg Episode Duration: Shortest first instead of longest
+
+(Random has no meaningful reverse.)
 
 ### Article Handling
 
@@ -108,12 +119,14 @@ Press `C` on keyboard or the menu button on your remote to open the context menu
 | Action | Description |
 |--------|-------------|
 | **Multi-Select (on/off)** | Toggle selection mode for batch operations |
-| **Play Selection** | Play all selected episodes (or current if none selected) |
+| **Play Episode** / **Play Selection** | Plays the focused episode (single mode) or every selected episode (multi-select mode) |
 | **Play From Here** | Play current episode and all below it |
-| **Export Selection** | Copy selected episode files to a folder |
+| **Export Episode** / **Export Selection** | Copies the focused episode (single mode) or every selected episode (multi-select mode) to a folder |
 | **Mark as Watched** | Mark selected episodes as watched |
 | **Update Library** | Trigger a Kodi library scan |
 | **Refresh List** | Reload the episode list from the service |
+
+The Play and Export labels switch between "Episode" and "Selection" automatically depending on whether multi-select is on.
 
 ---
 
