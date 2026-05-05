@@ -125,7 +125,7 @@ EasyTV is sluggish on your device.
 **For Browse Mode:**
 1. Enable **Settings → Browse Mode → Performance → Limit shows displayed**
 2. Set **Maximum shows** to 10-15
-3. Use **Standard** view style (lighter than Posters/Big Screen)
+3. Use **Card List** view style. Posters, Big Screen, Split View, and Showcase pull and render more artwork per item.
 
 **For Random Playlist:**
 - Playlist building takes a few seconds. This is normal.
@@ -224,24 +224,6 @@ If you're using [multi-instance sync](multi-instance-sync.md), these are the mos
 
 ---
 
-### Smart Playlist Names Changed
-
-After updating from v1.2.3 or earlier, skin widgets that reference EasyTV playlists may break.
-
-**Cause:** v1.2.4 renamed all auto-created playlist files to include a type prefix (`Episode` or `TVShow`).
-
-**Solution:** Update your skin widget or PseudoTV Live configuration with the new filenames:
-
-| Old Filename | New Filename |
-|-------------|-------------|
-| `EasyTV - All Shows.xsp` | `EasyTV - Episode - All Shows.xsp` |
-| `EasyTV - Continue Watching.xsp` | `EasyTV - Episode - Continue Watching.xsp` |
-| `EasyTV - Start Fresh.xsp` | `EasyTV - Episode - Start Fresh.xsp` |
-
-See the [Migration Guide](migration-guide.md#v124-smart-playlist-overhaul) for full details.
-
----
-
 ## Debug Logging
 
 For diagnosing complex issues, enable detailed logging.
@@ -306,9 +288,6 @@ A: Yes! With [multi-instance sync](multi-instance-sync.md), your watch progress 
 
 **Q: What are "positioned specials"?**
 A: Some shows have specials that belong between specific episodes (TVDB provides this positioning data). When enabled in Settings → Shows, these specials appear at their correct position in the watch order instead of being excluded.
-
-**Q: My skin widgets stopped showing EasyTV playlists after updating.**
-A: Playlist filenames changed in v1.2.4. See the [Migration Guide](migration-guide.md#v124-smart-playlist-overhaul) for the old-to-new filename mapping.
 
 ---
 
@@ -413,5 +392,5 @@ Include:
 
 - **[Installation](installation.md):** Initial setup
 - **[Settings Reference](settings-reference.md):** All settings explained
-- **[Advanced Features](advanced-features.md):** Debug logging details
 - **[Smart Playlist Integration](smart-playlist-integration.md):** Filtering troubleshooting
+- **[Multi-Instance Sync](multi-instance-sync.md):** Sync setup and recovery
