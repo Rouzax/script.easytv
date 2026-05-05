@@ -141,5 +141,5 @@ For advanced setups, you can use the main EasyTV addon purely as a background se
 
 - **[Settings Reference](settings-reference.md):** All EasyTV settings
 - **[Multi-Instance Sync](multi-instance-sync.md):** Why clones don't participate in sync
-- **[Auto-Created Smart Playlists](advanced-features.md#auto-created-smart-playlists):** Apply show filter to smart playlists for the Power User Pattern
+- **[Auto-Created Smart Playlists](auto-generated-playlists.md):** Apply show filter to smart playlists for the Power User Pattern
 - **[Smart Playlist Integration](smart-playlist-integration.md):** Filter strategies that pair with clones

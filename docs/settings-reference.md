@@ -331,7 +331,7 @@ When enabled, EasyTV maintains ten `.xsp` files (five Episode, five TVShow):
 - Show Premieres (S01E01, brand new shows)
 - Season Premieres (S02E01+, new seasons)
 
-See [Advanced Features](advanced-features.md#auto-created-smart-playlists) for details.
+See [Advanced Features](auto-generated-playlists.md) for details.
 
 ### Multi-Instance Sync
 
