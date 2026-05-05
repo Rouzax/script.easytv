@@ -25,15 +25,15 @@ EasyTV maintains a list of the **next episode to watch** for every TV show in yo
 
 ## Key Features
 
-- **Smart Episode Tracking** — Always knows your next episode, even with gaps in watch history
-- **Multi-Instance Sync** — Share watch progress across multiple Kodi devices
-- **Mix in Movies** — Add movies to your random playlists
-- **Smart Playlist Filtering** — Use Kodi smart playlists to filter content
-- **Duration Filtering** — Only shows with episodes under 30 minutes? Done.
-- **Random-Order Shows** — Shuffle-friendly content like sitcoms and cartoons
-- **Positioned Specials** — Include TVDB-positioned specials in the watch order
-- **Partial Prioritization** — Unfinished content plays first
-- **Clone Support** — Multiple EasyTV instances with different configurations
+- **Smart Episode Tracking**: Always knows your next episode, even with gaps in watch history
+- **Multi-Instance Sync**: Share watch progress across multiple Kodi devices
+- **Mix in Movies**: Add movies to your random playlists
+- **Smart Playlist Filtering**: Use Kodi smart playlists to filter content
+- **Duration Filtering**: Only shows with episodes under 30 minutes? Done.
+- **Random-Order Shows**: Shuffle-friendly content like sitcoms and cartoons
+- **Positioned Specials**: Include TVDB-positioned specials in the watch order
+- **Partial Prioritization**: Unfinished content plays first
+- **Clone Support**: Multiple EasyTV instances with different configurations
 
 ---
 
@@ -52,12 +52,11 @@ If you run Kodi on multiple devices (living room, bedroom, etc.) with a **shared
 
 **Requirements:**
 - Kodi configured with a shared MySQL/MariaDB video database
-- The `pymysql` Python library (install via: `pip install pymysql`)
+- `script.module.pymysql` Kodi addon (Kodi installs it automatically as an EasyTV dependency)
 
 **Quick Setup:**
-1. Install pymysql on all Kodi devices
-2. Enable **"Multi-instance sync"** in EasyTV Settings → Advanced
-3. That's it — EasyTV auto-detects your database from `advancedsettings.xml`
+1. Enable **"Enable multi-instance sync"** in **Settings → Advanced → Multi-Instance Sync** on every device
+2. That's it: EasyTV auto-detects your database from `advancedsettings.xml`
 
 > **Note:** Some settings affect episode ordering and must match across all synced devices: **Random-order shows** and **Include positioned specials**. Mismatched settings will cause each device to calculate different "next episodes."
 
@@ -67,11 +66,15 @@ For detailed setup, see the [Multi-Instance Sync](https://rouzax.github.io/scrip
 
 ## Installation
 
-1. Download the latest release from [Releases](https://github.com/Rouzax/script.easytv/releases)
-2. In Kodi: **Settings → Add-ons → Install from zip file**
-3. Select the downloaded zip file
-4. Wait for the "Database analysis complete" notification
-5. Launch EasyTV from **Add-ons → Program add-ons**
+Three ways to install. Pick whichever fits how you want updates delivered:
+
+- **[Rouzax Repository](https://github.com/Rouzax/repository.rouzax/releases)** *(recommended)*: install the repository zip once; Kodi auto-updates EasyTV (and the other Rouzax addons) on every stable release.
+- **Official Kodi Add-on Repository**: pre-enabled in every Kodi install. **Settings → Add-ons → Install from repository → Kodi Add-on repository → Program add-ons → EasyTV**. Versions can lag while a release goes through Kodi review.
+- **[GitHub releases](https://github.com/Rouzax/script.easytv/releases)** (latest, manual): download the `script.easytv-vX.Y.Z.zip`, then **Settings → Add-ons → Install from zip file**. Use this for pre-releases (alpha/beta) or to grab a release before it reaches the repositories.
+
+After install, wait for the "Database analysis complete" notification, then launch EasyTV from **Add-ons → Program add-ons**.
+
+See the [Installation page in the docs](https://rouzax.github.io/script.easytv/docs/installation/) for full step-by-step instructions, requirements, and first-run tips.
 
 ---
 
@@ -88,8 +91,10 @@ For detailed setup, see the [Multi-Instance Sync](https://rouzax.github.io/scrip
 | [Smart Playlist Integration](https://rouzax.github.io/script.easytv/docs/smart-playlist-integration/) | Advanced filtering |
 | [Smart Playlist Examples](https://rouzax.github.io/script.easytv/docs/smart-playlist-examples/) | Ready-to-use playlist files |
 | [Random-Order Shows](https://rouzax.github.io/script.easytv/docs/random-order-shows/) | Shuffle-friendly content |
+| [Clones](https://rouzax.github.io/script.easytv/docs/clones/) | Multiple EasyTV instances with independent settings |
+| [Episode Export](https://rouzax.github.io/script.easytv/docs/episode-export/) | Copy next episodes for offline viewing |
+| [Auto-Generated Playlists](https://rouzax.github.io/script.easytv/docs/auto-generated-playlists/) | Smart playlists for skin widgets and channel surfing |
 | [Multi-Instance Sync](https://rouzax.github.io/script.easytv/docs/multi-instance-sync/) | Share progress across devices |
-| [Advanced Features](https://rouzax.github.io/script.easytv/docs/advanced-features/) | Clones, exporter, more |
 | [Troubleshooting & FAQ](https://rouzax.github.io/script.easytv/docs/troubleshooting-and-faq/) | Common issues |
 
 ---
@@ -112,4 +117,4 @@ See [LICENSE.txt](LICENSE.txt) for the full license text.
 
 ---
 
-*EasyTV — Because your library should work for you, not the other way around.*
+*EasyTV: Because your library should work for you, not the other way around.*
