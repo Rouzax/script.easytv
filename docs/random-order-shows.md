@@ -43,6 +43,8 @@ For **random-order shows**, EasyTV picks any available episode:
 4. Check the shows you want to randomize
 5. Click **Save**
 
+![Show selection dialog](assets/screenshots/dialog-show-selector.png)
+
 ### Removing Shows from Random Order
 
 1. Same path: **Settings → Shows → Random Episode Order**

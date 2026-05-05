@@ -295,6 +295,8 @@ The dialog itself always offers both **Generate** and **Stop** buttons. The **If
 - **0** = Wait indefinitely (no auto-dismiss)
 - **1-60** = Auto-act after this many seconds
 
+![Next episode prompt](assets/screenshots/dialog-next-up.png)
+
 ### Warnings
 
 | Setting | Options | Default | Description |
@@ -363,7 +365,7 @@ See [Troubleshooting](troubleshooting-and-faq.md#debug-logging) for log file pat
 | **Create EasyTV copy...** | (button) | (none) | Create a clone with separate settings |
 | **Export episodes to folder...** | (button) | (none) | Copy next episodes for offline viewing |
 
-See [Advanced Features](advanced-features.md) for details on these tools.
+See [Clones](clones.md) and [Episode Export](episode-export.md) for details on these tools.
 
 ---
 
@@ -394,5 +396,7 @@ Some settings only appear based on other settings:
 - **[Browse Mode](browse-mode.md):** How browse settings work in practice
 - **[Random Playlist Mode](random-playlist-mode.md):** How playlist settings work in practice
 - **[Smart Playlist Integration](smart-playlist-integration.md):** Using smart playlists for filtering
-- **[Advanced Features](advanced-features.md):** Clone and exporter details
+- **[Clones](clones.md):** Multiple EasyTV instances with independent settings
+- **[Episode Export](episode-export.md):** Copy your "next episode" files to another location
+- **[Auto-Generated Playlists](auto-generated-playlists.md):** Smart playlists for skin widgets and channel surfing
 - **[Troubleshooting](troubleshooting-and-faq.md):** Debug logging explained

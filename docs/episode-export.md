@@ -68,4 +68,5 @@ Copy your "next episode" files to another location. Useful for offline viewing o
 
 - **[Browse Mode](browse-mode.md):** Where Multi-Select and Export Selection live
 - **[Settings Reference](settings-reference.md):** All EasyTV settings
-- **[Advanced Features](advanced-features.md):** Other power-user tools
+- **[Clones](clones.md):** Multiple EasyTV instances with independent settings
+- **[Auto-Generated Playlists](auto-generated-playlists.md):** Smart playlists for skin widgets

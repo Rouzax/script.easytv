@@ -245,12 +245,31 @@ For diagnosing complex issues, enable detailed logging.
 | **LibreELEC** | `/storage/.kodi/userdata/addon_data/script.easytv/logs/easytv.log` |
 | **OSMC** | `/home/osmc/.kodi/userdata/addon_data/script.easytv/logs/easytv.log` |
 
+### What Gets Logged
+
+| Level | Content | Where it lands |
+|-------|---------|----------------|
+| **ERROR** | Operation failures, exceptions | Kodi log + `easytv.log` |
+| **WARNING** | Recoverable issues | Kodi log + `easytv.log` |
+| **INFO** | Lifecycle events (service start, scans, playback) | Kodi log + `easytv.log` |
+| **DEBUG** | Detailed diagnostics | `easytv.log` only, and only when debug logging is enabled |
+
+### Log Format
+
+```
+2026-04-12 12:34:56 [EasyTV.daemon] INFO: Service started, version=1.5.2
+2026-04-12 12:34:57 [EasyTV.data] DEBUG: Fetching shows, count=47
+2026-04-12 12:34:58 [EasyTV.playback] INFO: Playlist created, items=5
+```
+
+Each line includes a timestamp, the module name (e.g. `daemon`, `data`, `playback`, `ui`), the level, and a message with structured key=value context.
+
 ### What to Look For
 
-- **ERROR** entries indicate failures
-- **WARNING** entries indicate recoverable issues
-- Timestamps help correlate with when problems occurred
-- Module names (service, data, playback, ui) indicate where issues happen
+- **ERROR** entries indicate failures.
+- **WARNING** entries indicate recoverable issues.
+- Timestamps help correlate with when problems occurred.
+- Module names indicate where issues happen.
 
 ### Reporting Bugs
 

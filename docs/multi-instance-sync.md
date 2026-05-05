@@ -93,6 +93,12 @@ On **each** Kodi device:
 2. Toggle on **Enable multi-instance sync**
 3. Restart Kodi (recommended for first-time setup)
 
+<!-- Capture the Settings -> Advanced -> Multi-Instance Sync panel and drop in as multi-instance-sync-settings.png, then uncomment:
+![Multi-instance sync settings](assets/screenshots/multi-instance-sync-settings.png)
+-->
+
+
+
 ### Verify It's Working
 
 After enabling sync and restarting:
@@ -252,6 +258,6 @@ Devices show different next episodes for the same show.
 
 - **[Installation](installation.md):** Setting up EasyTV
 - **[Settings Reference](settings-reference.md):** Multi-instance sync settings
-- **[Advanced Features](advanced-features.md):** Clone limitations with sync
+- **[Clones](clones.md):** Why clones don't participate in sync
 - **[Random-Order Shows](random-order-shows.md):** Must match across devices
 - **[Troubleshooting](troubleshooting-and-faq.md):** More troubleshooting tips

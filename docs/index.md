@@ -38,7 +38,7 @@ EasyTV maintains a list of the **next episode to watch** for every TV show with 
 ### ⚙️ Customization
 - **[Random-Order Shows](random-order-shows.md):** Sitcoms, cartoons, and other shuffle-friendly content
 - **[Smart Playlist Integration](smart-playlist-integration.md):** Endless filtering possibilities
-- **[Clone Feature](clones.md):** Multiple EasyTV instances with different configs
+- **[Clones](clones.md):** Multiple EasyTV instances with different configs
 - **[Multi-Instance Sync](multi-instance-sync.md):** Share watch progress across multiple Kodi devices
 - **Positioned Specials:** Include TVDB-positioned specials in the watch order
 - **[Theme Selection](browse-mode.md#themes):** Golden Hour, Ultraviolet, Ember, or Nightfall accent colors
@@ -63,13 +63,14 @@ That's it. EasyTV's background service handles everything automatically.
 | **[Installation](installation.md)** | Requirements, installation steps, first run |
 | **[Browse Mode](browse-mode.md)** | Complete guide to the episode list |
 | **[Random Playlist Mode](random-playlist-mode.md)** | Complete guide to shuffled playlists |
+| **[Random-Order Shows](random-order-shows.md)** | Shuffle-friendly shows explained |
 | **[Settings Reference](settings-reference.md)** | Every setting explained |
 | **[Smart Playlist Integration](smart-playlist-integration.md)** | How to filter content with Kodi playlists |
 | **[Smart Playlist Examples](smart-playlist-examples.md)** | Ready-to-use playlist files |
-| **[Random-Order Shows](random-order-shows.md)** | Shuffle-friendly shows explained |
-| **[Advanced Features](advanced-features.md)** | Clones, exporter, auto-playlists |
+| **[Clones](clones.md)** | Multiple EasyTV instances with independent settings |
+| **[Episode Export](episode-export.md)** | Copy next episodes for offline viewing |
+| **[Auto-Generated Playlists](auto-generated-playlists.md)** | Smart playlists for skin widgets and channel surfing |
 | **[Multi-Instance Sync](multi-instance-sync.md)** | Share progress across Kodi devices |
-| **[Migration Guide](migration-guide.md)** | Upgrade notes and breaking changes |
 | **[Troubleshooting & FAQ](troubleshooting-and-faq.md)** | Common issues and solutions |
 
 ---

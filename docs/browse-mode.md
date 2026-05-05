@@ -17,7 +17,7 @@ Browse Mode displays all your TV shows with their next episode ready to play. Yo
 
 ## View Styles
 
-EasyTV offers five visual layouts. Change via **Settings > Browse Mode > Appearance > View style**.
+EasyTV offers five visual layouts. Change via **Settings → Browse Mode → Appearance → View style**.
 
 ### Card List (Default)
 
@@ -57,11 +57,15 @@ A horizontal poster filmstrip with a fixed focus position. The focused poster zo
 
 Best for: Cinematic, gallery-style browsing where the focused poster is the centerpiece.
 
+<!-- Drop view-showcase-golden-hour.png into docs/assets/screenshots/ then uncomment:
+![Showcase view](assets/screenshots/view-showcase-golden-hour.png)
+-->
+
 ---
 
 ## Themes
 
-All views and dialogs use your selected accent color theme. Change via **Settings > EasyTV > Appearance > Theme**.
+All views and dialogs use your selected accent color theme. Change via **Settings → EasyTV → Appearance → Theme**.
 
 | Theme | Accent Color |
 |-------|-------------|
@@ -79,7 +83,7 @@ All views and dialogs use your selected accent color theme. Change via **Setting
 
 ## Sorting Options
 
-Control how shows are ordered. Change via **Settings > Browse Mode > Sorting**.
+Control how shows are ordered. Change via **Settings → Browse Mode → Sorting**.
 
 | Sort Method | Description | Use Case |
 |-------------|-------------|----------|
@@ -170,7 +174,7 @@ A quick way to play everything from your current position to the end of the list
 
 **How it works:**
 1. Navigate to a show in the list
-2. Open context menu > **Play From Here**
+2. Open context menu → **Play From Here**
 3. EasyTV creates a playlist starting with that episode
 4. All episodes below it in the list are added
 
@@ -182,7 +186,7 @@ A quick way to play everything from your current position to the end of the list
 
 By default, EasyTV returns to the episode list after you finish watching. This lets you quickly pick your next show.
 
-**To disable:** Settings > Browse Mode > Appearance > **Return to EasyTV after playback** > Off
+**To disable:** Settings → Browse Mode → Appearance → **Return to EasyTV after playback** → Off
 
 When disabled, playback ends at your previous Kodi location (home screen, etc.).
 
@@ -194,7 +198,7 @@ Control which shows appear in Browse Mode.
 
 ### Using the Show Filter
 
-1. Go to **Settings > Shows > Show Filter**
+1. Go to **Settings → Shows → Show Filter**
 2. Enable **Use only selected shows**
 3. Choose your **Selection method**:
 
@@ -249,7 +253,7 @@ When either setting is **Only**, the entire browse list shows only premiere epis
 
 Filter shows by typical episode length.
 
-1. Go to **Settings > Shows > Episode Duration**
+1. Go to **Settings → Shows → Episode Duration**
 2. Enable **Enable duration filter**
 3. Set **Minimum episode length** (0 = no minimum)
 4. Set **Maximum episode length** (0 = no maximum)
@@ -267,7 +271,7 @@ Filter shows by typical episode length.
 
 If you've configured [Random-Order Shows](random-order-shows.md), you can hide them from Browse Mode.
 
-**Settings > Browse Mode > Appearance > Hide random-order shows**
+**Settings → Browse Mode → Appearance → Hide random-order shows**
 
 When enabled:
 - Random-order shows don't appear in the episode list
@@ -282,7 +286,7 @@ For large libraries or low-power devices:
 
 ### Limit Shows Displayed
 
-1. Go to **Settings > Browse Mode > Performance**
+1. Go to **Settings → Browse Mode → Performance**
 2. Enable **Limit shows displayed**
 3. Set **Maximum shows** (1-30)
 

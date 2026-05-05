@@ -153,8 +153,6 @@ If you run Kodi on multiple devices with a shared MySQL/MariaDB video database, 
 
 ## Updating EasyTV
 
-> **Tip:** When upgrading across major feature releases, check the [Migration Guide](migration-guide.md) for any breaking changes or required actions.
-
 ### Manual Update
 
 1. Download the new version from [Releases](https://github.com/Rouzax/script.easytv/releases)

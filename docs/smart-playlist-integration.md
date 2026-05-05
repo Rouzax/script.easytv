@@ -317,5 +317,5 @@ The selection dialog filters available playlists to the correct type before show
 
 - **[Smart Playlist Examples](smart-playlist-examples.md):** Ready-to-use playlist files
 - **[Settings Reference](settings-reference.md):** All filtering settings
-- **[Advanced Features](advanced-features.md):** Clone feature for multiple configs
+- **[Clones](clones.md):** Multiple EasyTV instances for different filter configs
 - **[Random-Order Shows](random-order-shows.md):** Another way to customize content
