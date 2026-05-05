@@ -1,8 +1,8 @@
 # Multi-Instance Sync
 
-Share your watch progress across multiple Kodi devices. When you watch Episode 5 on one device, all other devices know to queue Episode 6.
+> **Configured under** **Settings → Advanced → Multi-Instance Sync → Enable multi-instance sync**
 
-*Added in v1.3.0*
+Share your watch progress across multiple Kodi devices. When you watch Episode 5 on one device, all other devices know to queue Episode 6.
 
 ---
 
@@ -33,7 +33,7 @@ With multi-instance sync enabled, all your Kodi instances share a single databas
 | **Kodi** | 21 (Omega) or later on all devices |
 | **Shared Database** | MySQL or MariaDB configured as Kodi's video database |
 | **pymysql Addon** | `script.module.pymysql` (bundled with EasyTV) |
-| **EasyTV** | v1.3.0 or later on all devices |
+| **EasyTV** | The same version on all devices |
 
 > **Important:** Multi-instance sync only works when Kodi is configured with a shared MySQL/MariaDB video database via `advancedsettings.xml`. If you're using Kodi's default SQLite database, this feature is not available.
 
@@ -83,14 +83,14 @@ Each write increments a global revision counter. Before showing data, each insta
 
 1. **Verify your shared database is working.** In Kodi, go to Settings and confirm your TV shows are loaded from the shared MySQL/MariaDB database. If you can see your library, the database is working.
 
-2. **Ensure EasyTV is installed on all devices.** All instances should be running v1.3.0 or later.
+2. **Ensure EasyTV is installed on all devices.** Run the same EasyTV version on every device so they agree on tracking format.
 
 ### Enable Sync
 
 On **each** Kodi device:
 
 1. Go to **Settings → Advanced → Multi-Instance Sync**
-2. Enable **Multi-instance sync**
+2. Toggle on **Enable multi-instance sync**
 3. Restart Kodi (recommended for first-time setup)
 
 ### Verify It's Working
@@ -165,7 +165,7 @@ If the database becomes temporarily unavailable:
 3. After the backoff, EasyTV retries the connection
 4. When the connection is restored, a full refresh occurs
 
-If the database connection drops during overnight idle (common with MariaDB), EasyTV automatically re-establishes the connection and re-selects the database. *(Fixed in v1.4.0-alpha2)*
+If the database connection drops during overnight idle (common with MariaDB), EasyTV automatically re-establishes the connection and re-selects the database.
 
 ---
 
@@ -174,7 +174,7 @@ If the database connection drops during overnight idle (common with MariaDB), Ea
 You can clear all shared sync data if you need a fresh start:
 
 1. Go to **Settings → Advanced → Multi-Instance Sync**
-2. Click **Clear sync data**
+2. Click **Clear sync data...**
 3. Confirm the action
 
 This deletes all show tracking data from the shared database and resets the revision counter. The next service restart will repopulate the data.
@@ -234,14 +234,14 @@ One device updates but others don't reflect the change.
 **Check:**
 1. Multi-instance sync is enabled on **all** devices
 2. All devices point to the **same** MySQL/MariaDB server and database
-3. All devices are running EasyTV v1.3.0 or later
+3. All devices are running the same EasyTV version
 4. Check logs on each device for `Using shared database storage` (should appear) vs `Using window property storage` (means sync isn't active)
 
 ### Silent Service Crash During Overnight Scans
 
 The background service stops working after being idle overnight.
 
-**Solution:** Update to EasyTV v1.4.0 or later. This version fixes a bug where MariaDB connections going idle overnight caused unhandled exceptions that silently killed the service.
+**Solution:** Update EasyTV. Older versions had a bug where MariaDB connections going idle overnight caused unhandled exceptions that silently killed the service. The current release recovers from idle disconnects automatically.
 
 ### "Next Episode" Differs Between Devices
 
