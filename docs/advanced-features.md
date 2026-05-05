@@ -65,7 +65,7 @@ Clones share:
 
 Clones do NOT:
 - Affect each other's settings or the main addon's settings
-- Participate in [multi-instance sync](multi-instance-sync.md) — clones use the main addon's local data only
+- Participate in [multi-instance sync](multi-instance-sync.md). Clones use the main addon's local data only.
 
 ### Updating Clones
 
@@ -121,7 +121,7 @@ For advanced setups, you can use the main EasyTV addon purely as a background se
 
 ## Episode Exporter
 
-Copy your "next episode" files to another location — perfect for offline viewing on trips, transferring to a portable device, or backup.
+Copy your "next episode" files to another location. Perfect for offline viewing on trips, transferring to a portable device, or backup.
 
 ### How It Works
 
@@ -173,7 +173,7 @@ Copy your "next episode" files to another location — perfect for offline viewi
 
 ## Auto-Created Smart Playlists
 
-> **Upgraded from v1.2.3 or earlier?** Playlist filenames changed in v1.2.4. If your skin widgets or PseudoTV Live channels reference old EasyTV playlist names, see the [Migration Guide](migration-guide.md#v124--smart-playlist-overhaul) for the filename mapping.
+> **Upgraded from v1.2.3 or earlier?** Playlist filenames changed in v1.2.4. If your skin widgets or PseudoTV Live channels reference old EasyTV playlist names, see the [Migration Guide](migration-guide.md#v124-smart-playlist-overhaul) for the filename mapping.
 
 EasyTV can automatically maintain smart playlists for use by other addons or skin widgets. There are two types of playlists: **Episode playlists** for channel surfing and **TVShow playlists** for skin widgets.
 
@@ -194,9 +194,9 @@ EasyTV creates two parallel sets of playlists with the same categories but diffe
 | **Episode** | Channel surfing, random playback | Random | The specific episode file to play |
 | **TVShow** | Skin widgets, browsing | Alphabetical by title | The show itself (navigate to episode from there) |
 
-**Episode playlists** are ideal when you want Kodi to play content directly — each entry points to a specific episode file.
+**Episode playlists** are ideal when you want Kodi to play content directly. Each entry points to a specific episode file.
 
-**TVShow playlists** are ideal for home screen widgets where you want to browse shows visually — each entry is a TV show, and selecting it takes you to that show's page where you can see the next episode.
+**TVShow playlists** are ideal for home screen widgets where you want to browse shows visually. Each entry is a TV show, and selecting it takes you to that show's page where you can see the next episode.
 
 ### Created Playlists
 
@@ -236,7 +236,7 @@ If you use a show filter (Settings → Shows → Show Filter), you can apply tha
 
 When enabled, only shows matching your TV show playlist filter will appear in the generated smart playlists. This is useful when you want your skin widgets to show the same filtered content as your EasyTV experience.
 
-**Important:** This setting only works on the **main EasyTV addon**, not on clones. Clones don't maintain smart playlists — they rely on the main addon's background service for playlist generation. If you want filtered playlists, configure the filter and this setting on the main addon.
+**Important:** This setting only works on the **main EasyTV addon**, not on clones. Clones don't maintain smart playlists. They rely on the main addon's background service for playlist generation. If you want filtered playlists, configure the filter and this setting on the main addon.
 
 ### How Categorization Works
 
@@ -249,8 +249,8 @@ Shows are categorized by their **next episode**:
 | S01E02, S01E03, S02E05... | All Shows, **Continue Watching** |
 
 The premiere playlists help you find:
-- **Show Premieres** — Brand new shows you haven't started yet
-- **Season Premieres** — New seasons of shows you've already watched
+- **Show Premieres:** Brand new shows you haven't started yet
+- **Season Premieres:** New seasons of shows you've already watched
 
 ### Automatic Updates
 
@@ -275,11 +275,11 @@ Most Kodi skins support widgets on the home screen. For the best experience:
 1. Enable **Export TVShow smart playlists** in EasyTV settings
 2. Configure your skin's widget to use an EasyTV TVShow playlist as its source
 3. Choose the category that fits your widget's purpose:
-   - **Continue Watching** — Shows you're in the middle of
-   - **Start Fresh** — Shows ready to start a new season
-   - **Show Premieres** — Brand new shows to discover
-   - **Season Premieres** — New seasons waiting for you
-   - **All Shows** — Everything EasyTV is tracking
+   - **Continue Watching:** Shows you're in the middle of
+   - **Start Fresh:** Shows ready to start a new season
+   - **Show Premieres:** Brand new shows to discover
+   - **Season Premieres:** New seasons waiting for you
+   - **All Shows:** Everything EasyTV is tracking
 
 TVShow playlists display show artwork and metadata, making them ideal for visual widgets.
 
@@ -333,7 +333,7 @@ EasyTV's auto-playlists work with plugin-based libraries like **Jellyfin**, **Em
 <!--42--><rule field="filename" operator="is"><value>plugin://plugin.video.jellyfin/...</value></rule>
 ```
 
-This happens automatically — no configuration needed.
+This happens automatically. No configuration needed.
 
 ### Special Characters
 
@@ -422,9 +422,9 @@ Each line includes:
 
 ## Related Pages
 
-- **[Installation](installation.md)** — Initial setup
-- **[Settings Reference](settings-reference.md)** — All settings explained
-- **[Multi-Instance Sync](multi-instance-sync.md)** — Share progress across devices
-- **[Troubleshooting](troubleshooting-and-faq.md)** — Common issues
-- **[Smart Playlist Integration](smart-playlist-integration.md)** — Using playlists for filtering
-- **[Migration Guide](migration-guide.md)** — Upgrade notes and breaking changes
+- **[Installation](installation.md):** Initial setup
+- **[Settings Reference](settings-reference.md):** All settings explained
+- **[Multi-Instance Sync](multi-instance-sync.md):** Share progress across devices
+- **[Troubleshooting](troubleshooting-and-faq.md):** Common issues
+- **[Smart Playlist Integration](smart-playlist-integration.md):** Using playlists for filtering
+- **[Migration Guide](migration-guide.md):** Upgrade notes and breaking changes

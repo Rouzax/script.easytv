@@ -1,6 +1,6 @@
 # Random-Order Shows
 
-Some TV shows don't need to be watched in order. Sitcoms, cartoons, sketch comedy, anthology series — these are "shuffle-friendly" shows where any episode works.
+Some TV shows don't need to be watched in order. Sitcoms, cartoons, sketch comedy, anthology series: these are "shuffle-friendly" shows where any episode works.
 
 EasyTV lets you mark these shows for random episode selection instead of sequential viewing.
 
@@ -91,7 +91,7 @@ The **Episode selection** setting (Unwatched/Watched/Both) affects random-order 
 | Next episode in order (S02E06) | Random unwatched episode |
 | Progress advances linearly | Progress is scattered |
 
-Both only pick from unwatched episodes — the difference is *which* unwatched episode.
+Both only pick from unwatched episodes. The difference is *which* unwatched episode.
 
 ### Watched Only
 
@@ -100,7 +100,7 @@ Both only pick from unwatched episodes — the difference is *which* unwatched e
 | Random rewatch | Random rewatch |
 | Same behavior | Same behavior |
 
-No difference — both pick randomly from watched episodes.
+No difference. Both pick randomly from watched episodes.
 
 ### Both (Mixed)
 
@@ -244,7 +244,7 @@ When using "Both" with "Allow multiple episodes" enabled, random-order shows in 
 
 ## Related Pages
 
-- **[Browse Mode](browse-mode.md)** — How random-order shows appear in the list
-- **[Random Playlist Mode](random-playlist-mode.md)** — How random-order affects playlists
-- **[Settings Reference](settings-reference.md)** — All related settings
-- **[Smart Playlist Integration](smart-playlist-integration.md)** — Combine with genre filtering
+- **[Browse Mode](browse-mode.md):** How random-order shows appear in the list
+- **[Random Playlist Mode](random-playlist-mode.md):** How random-order affects playlists
+- **[Settings Reference](settings-reference.md):** All related settings
+- **[Smart Playlist Integration](smart-playlist-integration.md):** Combine with genre filtering

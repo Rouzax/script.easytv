@@ -4,7 +4,7 @@
 
 EasyTV transforms your Kodi library into a personal TV channel. It tracks the next episode for every TV show and lets you dive right in, or creates randomized playlists for lean-back viewing.
 
-![EasyTV Split View](docs/wiki-images/view-split-golden-hour.png)
+![EasyTV Split View](docs/assets/screenshots/view-split-golden-hour.png)
 
 Built for Kodi 21+ (Omega and newer).
 

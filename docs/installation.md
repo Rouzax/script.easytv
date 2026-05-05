@@ -20,7 +20,7 @@
 1. **Download the latest release**
    - Go to [Releases](https://github.com/Rouzax/script.easytv/releases)
    - Download the `.zip` file (e.g., `script.easytv-1.2.0.zip`)
-   - **Do not extract the zip** — Kodi needs the zip file directly
+   - **Do not extract the zip.** Kodi needs the zip file directly.
 
 2. **Install in Kodi**
    - Open Kodi
@@ -40,7 +40,7 @@
 
 ### From Kodi Repository
 
-*(Coming soon — EasyTV will be submitted to the official Kodi addon repository)*
+*(Coming soon. EasyTV will be submitted to the official Kodi addon repository.)*
 
 ---
 
@@ -50,10 +50,10 @@
 
 When EasyTV installs, its background service starts and:
 
-1. **Scans your TV library** — Identifies all shows with unwatched episodes
-2. **Calculates episode durations** — Samples episodes to determine typical length per show
-3. **Caches the data** — Stores results for fast subsequent startups
-4. **Shows a notification** — "Database analysis complete" when ready
+1. **Scans your TV library:** Identifies all shows with unwatched episodes
+2. **Calculates episode durations:** Samples episodes to determine typical length per show
+3. **Caches the data:** Stores results for fast subsequent startups
+4. **Shows a notification:** "Database analysis complete" when ready
 
 ### Startup Times
 
@@ -70,7 +70,7 @@ Once the "Database analysis complete" notification appears:
 
 When you first launch EasyTV, you'll see the main dialog:
 
-![Main dialog](wiki-images/dialog-main.png)
+![Main dialog](assets/screenshots/dialog-main.png)
 
 1. **From Add-ons menu**
    - Go to **Add-ons → Program add-ons → EasyTV**
@@ -179,6 +179,6 @@ To fully remove all data, manually delete the `script.easytv` folder from your a
 
 ## Next Steps
 
-- **[Browse Mode](browse-mode.md)** — Learn to navigate the episode list
-- **[Random Playlist Mode](random-playlist-mode.md)** — Set up lean-back viewing
-- **[Settings Reference](settings-reference.md)** — Explore all configuration options
+- **[Browse Mode](browse-mode.md):** Learn to navigate the episode list
+- **[Random Playlist Mode](random-playlist-mode.md):** Set up lean-back viewing
+- **[Settings Reference](settings-reference.md):** Explore all configuration options

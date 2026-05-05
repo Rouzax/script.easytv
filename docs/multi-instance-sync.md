@@ -55,7 +55,7 @@ Every time you watch an episode, EasyTV writes the updated "next episode" to thi
 
 ### Auto-Detection
 
-EasyTV reads your database connection details directly from Kodi's `advancedsettings.xml`. You don't need to enter any credentials — if Kodi can connect to your shared database, so can EasyTV.
+EasyTV reads your database connection details directly from Kodi's `advancedsettings.xml`. You don't need to enter any credentials. If Kodi can connect to your shared database, so can EasyTV.
 
 The following paths are checked (in order):
 1. `special://userdata/advancedsettings.xml`
@@ -73,7 +73,7 @@ Both approaches work identically. The fallback happens automatically and require
 
 ### Staleness Detection
 
-Each write increments a global revision counter. Before showing data, each instance compares its local revision with the database revision. If they differ, the instance refreshes — an O(1) check that adds virtually no overhead.
+Each write increments a global revision counter. Before showing data, each instance compares its local revision with the database revision. If they differ, the instance refreshes. This is an O(1) check that adds virtually no overhead.
 
 ---
 
@@ -198,7 +198,7 @@ This deletes all show tracking data from the shared database and resets the revi
 | **Settings must match** | Random-order shows and positioned specials must be configured identically on all devices for consistent results. |
 | **Requires shared MySQL/MariaDB** | SQLite (Kodi's default) doesn't support multi-device access. |
 | **pymysql required** | The `script.module.pymysql` addon must be available. It's bundled with EasyTV but must be importable. |
-| **One-way episode tracking** | Sync shares which episode is "next". It doesn't sync Kodi's watch status — that's handled by Kodi's own shared database. |
+| **One-way episode tracking** | Sync shares which episode is "next". It doesn't sync Kodi's watch status, which is handled by Kodi's own shared database. |
 
 ---
 
@@ -248,16 +248,16 @@ The background service stops working after being idle overnight.
 Devices show different next episodes for the same show.
 
 **Check:**
-1. Compare random-order show selections — they must be identical on all devices
-2. Compare the "Include positioned specials" setting — it must match on all devices
+1. Compare random-order show selections. They must be identical on all devices.
+2. Compare the "Include positioned specials" setting. It must match on all devices.
 3. If settings match, try clearing sync data and letting devices repopulate
 
 ---
 
 ## Related Pages
 
-- **[Installation](installation.md)** — Setting up EasyTV
-- **[Settings Reference](settings-reference.md)** — Multi-instance sync settings
-- **[Advanced Features](advanced-features.md)** — Clone limitations with sync
-- **[Random-Order Shows](random-order-shows.md)** — Must match across devices
-- **[Troubleshooting](troubleshooting-and-faq.md)** — More troubleshooting tips
+- **[Installation](installation.md):** Setting up EasyTV
+- **[Settings Reference](settings-reference.md):** Multi-instance sync settings
+- **[Advanced Features](advanced-features.md):** Clone limitations with sync
+- **[Random-Order Shows](random-order-shows.md):** Must match across devices
+- **[Troubleshooting](troubleshooting-and-faq.md):** More troubleshooting tips

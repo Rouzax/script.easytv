@@ -44,8 +44,8 @@ EasyTV organizes settings into six categories:
 | Setting | Options | Default | Description |
 |---------|---------|---------|-------------|
 | **Theme** | Golden Hour / Ultraviolet / Ember / Nightfall | Golden Hour | Accent color theme for all EasyTV windows and dialogs |
-| **Set custom icon** | (button) | — | Choose an icon image for EasyTV. Replaces the addon icon in Kodi menus and notifications |
-| **Reset to default icon** | (button) | — | Restore the original EasyTV icon |
+| **Set custom icon** | (button) | (none) | Choose an icon image for EasyTV. Replaces the addon icon in Kodi menus and notifications |
+| **Reset to default icon** | (button) | (none) | Restore the original EasyTV icon |
 
 **Themes:**
 
@@ -70,9 +70,9 @@ EasyTV organizes settings into six categories:
 |---------|---------|---------|-------------|
 | **Use only selected shows** | On / Off | Off | Limit EasyTV to specific shows instead of entire library |
 | **Selection method** | Pick shows manually / Use a smart playlist | Pick shows manually | How to choose which shows to include |
-| **Select shows...** | (button) | — | Opens dialog to manually pick shows |
+| **Select shows...** | (button) | (none) | Opens dialog to manually pick shows |
 | **Smart playlist** | Ask each time / Use default | Ask each time | Whether to prompt for playlist or use a saved one |
-| **Choose playlist file...** | (button) | — | Select a Kodi smart playlist (.xsp) file |
+| **Choose playlist file...** | (button) | (none) | Select a Kodi smart playlist (.xsp) file |
 
 **Visibility rules:**
 - "Selection method" only appears when "Use only selected shows" is On
@@ -103,7 +103,7 @@ EasyTV organizes settings into six categories:
 
 | Setting | Options | Default | Description |
 |---------|---------|---------|-------------|
-| **Select shows for random order...** | (button) | — | Choose shows that don't require sequential viewing |
+| **Select shows for random order...** | (button) | (none) | Choose shows that don't require sequential viewing |
 
 Opens a selection dialog. Shows marked here will:
 - Pick any random unwatched episode instead of the "next" one
@@ -119,12 +119,12 @@ See [Random-Order Shows](random-order-shows.md) for full details.
 | **Season premieres** | Skip / Mix in / Only | Mix in | Controls whether SxxE01 episodes (first episode of each season) appear |
 | **Include positioned specials in watch order** | On / Off | Off | Insert TVDB-positioned specials at their designated place in the episode sequence |
 
-**Series premieres** — controls S01E01 from shows you haven't started:
+**Series premieres** controls S01E01 from shows you haven't started:
 - **Skip:** Only shows you've already begun watching appear.
 - **Mix in:** Series premieres appear alongside regular episodes (default).
-- **Only:** Restricts the list to premiere episodes only — useful for discovering new shows to start.
+- **Only:** Restricts the list to premiere episodes only. Useful for discovering new shows to start.
 
-**Season premieres** — controls SxxE01 episodes (new seasons):
+**Season premieres** controls SxxE01 episodes (new seasons):
 - **Skip:** Shows only appear when you're mid-season. Useful if you prefer to continue from where you left off.
 - **Mix in:** Season premieres appear alongside regular episodes (default).
 - **Only:** Restricts the list to premiere episodes only.
@@ -134,8 +134,8 @@ When either setting is **Only**, the entire list becomes premieres-only. The oth
 | Series premieres | Season premieres | Result |
 |-----------------|-----------------|--------|
 | Mix in | Mix in | All episodes (default) |
-| Skip | Mix in | No S01E01 — only shows already started |
-| Mix in | Skip | No season premieres — only mid-season shows |
+| Skip | Mix in | No S01E01, only shows already started |
+| Mix in | Skip | No season premieres, only mid-season shows |
 | Skip | Skip | Only mid-season episodes |
 | Only | Mix in | Premieres only: both S01E01 and season premieres |
 | Only | Skip | Premieres only: S01E01 only (no season premieres) |
@@ -314,9 +314,9 @@ When enabled, if you're about to play S02E05 but S02E03 is unwatched, EasyTV ask
 | **Export TVShow smart playlists** | On / Off | Off | Create TVShow-type playlists for skin widgets |
 | **Apply show filter to smart playlists** | On / Off | Off | Only include shows matching your show filter |
 
-**Episode playlists** point to specific episode files and are ordered randomly — ideal for channel surfing or PseudoTV Live.
+**Episode playlists** point to specific episode files and are ordered randomly. They are ideal for channel surfing or PseudoTV Live.
 
-**TVShow playlists** point to shows (not episodes) and are ordered alphabetically — ideal for skin widgets that browse by show artwork.
+**TVShow playlists** point to shows (not episodes) and are ordered alphabetically. They are ideal for skin widgets that browse by show artwork.
 
 **Apply show filter:** When enabled, the auto-created playlists respect your TV show filter (Settings → Shows). This only works on the main addon, not clones.
 
@@ -324,8 +324,8 @@ When enabled, EasyTV maintains ten `.xsp` files (five Episode, five TVShow):
 - All Shows
 - Continue Watching
 - Start Fresh
-- Show Premieres (S01E01 — brand new shows)
-- Season Premieres (S02E01+ — new seasons)
+- Show Premieres (S01E01, brand new shows)
+- Season Premieres (S02E01+, new seasons)
 
 See [Advanced Features](advanced-features.md#auto-created-smart-playlists) for details.
 
@@ -334,7 +334,7 @@ See [Advanced Features](advanced-features.md#auto-created-smart-playlists) for d
 | Setting | Options | Default | Description |
 |---------|---------|---------|-------------|
 | **Multi-instance sync** | On / Off | Off | Share watch progress across multiple Kodi devices via shared MySQL/MariaDB |
-| **Clear sync data** | (button) | — | Delete all shared sync data and reset revision counter |
+| **Clear sync data** | (button) | (none) | Delete all shared sync data and reset revision counter |
 
 **Visibility:** "Clear sync data" only appears when "Multi-instance sync" is On.
 
@@ -356,8 +356,8 @@ See [Troubleshooting](troubleshooting-and-faq.md#debug-logging) for log file pat
 
 | Setting | Options | Default | Description |
 |---------|---------|---------|-------------|
-| **Create EasyTV copy...** | (button) | — | Create a clone with separate settings |
-| **Export episodes to folder...** | (button) | — | Copy next episodes for offline viewing |
+| **Create EasyTV copy...** | (button) | (none) | Create a clone with separate settings |
+| **Export episodes to folder...** | (button) | (none) | Copy next episodes for offline viewing |
 
 See [Advanced Features](advanced-features.md) for details on these tools.
 
@@ -387,8 +387,8 @@ Some settings only appear based on other settings:
 
 ## Related Pages
 
-- **[Browse Mode](browse-mode.md)** — How browse settings work in practice
-- **[Random Playlist Mode](random-playlist-mode.md)** — How playlist settings work in practice
-- **[Smart Playlist Integration](smart-playlist-integration.md)** — Using smart playlists for filtering
-- **[Advanced Features](advanced-features.md)** — Clone and exporter details
-- **[Troubleshooting](troubleshooting-and-faq.md)** — Debug logging explained
+- **[Browse Mode](browse-mode.md):** How browse settings work in practice
+- **[Random Playlist Mode](random-playlist-mode.md):** How playlist settings work in practice
+- **[Smart Playlist Integration](smart-playlist-integration.md):** Using smart playlists for filtering
+- **[Advanced Features](advanced-features.md):** Clone and exporter details
+- **[Troubleshooting](troubleshooting-and-faq.md):** Debug logging explained

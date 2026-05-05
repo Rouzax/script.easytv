@@ -1,6 +1,6 @@
 # Random Playlist Mode
 
-Random Playlist Mode creates a shuffled playlist of episodes (and optionally movies) from your library. One click and playback starts immediately — perfect for eliminating decision fatigue.
+Random Playlist Mode creates a shuffled playlist of episodes (and optionally movies) from your library. One click and playback starts immediately. Perfect for eliminating decision fatigue.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -19,11 +19,11 @@ Random Playlist Mode creates a shuffled playlist of episodes (and optionally mov
 
 ## How It Works
 
-1. **EasyTV gathers candidates** — Your shows (and optionally movies) based on settings
-2. **Builds a shuffled playlist** — Randomizes the order
-3. **Prioritizes partials** — Unfinished content moves to the front
-4. **Starts playback** — First item plays immediately
-5. **Continues automatically** — Playlist plays through without interaction
+1. **EasyTV gathers candidates:** Your shows (and optionally movies) based on settings
+2. **Builds a shuffled playlist:** Randomizes the order
+3. **Prioritizes partials:** Unfinished content moves to the front
+4. **Starts playback:** First item plays immediately
+5. **Continues automatically:** Playlist plays through without interaction
 
 ---
 
@@ -148,11 +148,11 @@ Same behavior for partially watched movies.
 
 ### How Prioritization Works
 
-1. **All partials are gathered** — Every partially watched item matching your selection filters
-2. **Sorted by recency** — Most recently watched items first
-3. **Same-show order preserved** — If you have two partial episodes from the same show, they stay in episode order
-4. **Moved to front** — Partials become the first items in the playlist
-5. **Random content follows** — Shuffled content fills the rest
+1. **All partials are gathered:** Every partially watched item matching your selection filters
+2. **Sorted by recency:** Most recently watched items first
+3. **Same-show order preserved:** If you have two partial episodes from the same show, they stay in episode order
+4. **Moved to front:** Partials become the first items in the playlist
+5. **Random content follows:** Shuffled content fills the rest
 
 **Example:** You have:
 - Breaking Bad S02E05 (partial, watched yesterday)
@@ -231,7 +231,7 @@ Get prompted to generate another playlist when the current one ends.
 
 When enabled, a dialog appears after the last item finishes:
 
-![Playlist Finished dialog](wiki-images/dialog-playlist-finished.png)
+![Playlist Finished dialog](assets/screenshots/dialog-playlist-finished.png)
 
 ### Countdown Duration
 
@@ -272,7 +272,7 @@ Filter shows by typical episode length.
 
 **Settings → Shows → Episode Duration**
 
-This affects random playlists — only shows within your duration range are included.
+This affects random playlists. Only shows within your duration range are included.
 
 **Example use case:** Create a "quick watch" playlist with only shows under 30 minutes.
 
@@ -297,9 +297,9 @@ When either setting is **Only**, the random playlist contains only premiere epis
 | Series premieres | Season premieres | Playlist contains |
 |-----------------|-----------------|-------------------|
 | Only | Mix in | All premieres (S01E01 + season premieres) |
-| Only | Skip | S01E01 only — discover new shows |
+| Only | Skip | S01E01 only, to discover new shows |
 | Mix in | Only | All premieres (S01E01 + season premieres) |
-| Skip | Only | Season premieres only — catch up on new seasons |
+| Skip | Only | Season premieres only, to catch up on new seasons |
 
 ---
 
@@ -381,8 +381,8 @@ Random playlist generation typically takes a few seconds, depending on:
 
 ## Related Pages
 
-- **[Browse Mode](browse-mode.md)** — The other way to watch
-- **[Settings Reference](settings-reference.md)** — All Random Playlist settings
-- **[Smart Playlist Integration](smart-playlist-integration.md)** — Advanced filtering
-- **[Smart Playlist Examples](smart-playlist-examples.md)** — Ready-to-use filters
-- **[Random-Order Shows](random-order-shows.md)** — Shuffle-friendly shows
+- **[Browse Mode](browse-mode.md):** The other way to watch
+- **[Settings Reference](settings-reference.md):** All Random Playlist settings
+- **[Smart Playlist Integration](smart-playlist-integration.md):** Advanced filtering
+- **[Smart Playlist Examples](smart-playlist-examples.md):** Ready-to-use filters
+- **[Random-Order Shows](random-order-shows.md):** Shuffle-friendly shows
