@@ -322,11 +322,15 @@ class PlaybackMonitor(xbmc.Player):
             source_id = self._window.getProperty(PROP_SOURCE_ADDON_ID) or None
             source_addon = xbmcaddon.Addon(source_id) if source_id else xbmcaddon.Addon()
             icon = os.path.join(source_addon.getAddonInfo('path'), 'icon.png')
-            xbmc.executebuiltin(
-                'Notification(%s,%s S%sE%s,%i,%s)' % (
-                    lang(32163), showtitle, season_np, episode_np,
-                    NOTIFICATION_DURATION_MS, icon
-                )
+            # Use the typed Dialog API instead of the comma-separated
+            # Notification builtin: show titles can contain commas
+            # ("What We Do, In the Shadows") which break the builtin's
+            # argument parser and corrupt the displayed body.
+            xbmcgui.Dialog().notification(
+                lang(32163),
+                '%s S%sE%s' % (showtitle, season_np, episode_np),
+                icon,
+                NOTIFICATION_DURATION_MS,
             )
         
         # Handle resume point
