@@ -217,7 +217,7 @@ You can:
 
 ## Apply Show Filter to Smart Playlists
 
-If you use a show filter (Settings → Shows → Show Filter) and also generate auto-created smart playlists, you can connect them: enable **Apply show filter to smart playlists** in Settings → Advanced → Background Service. When enabled, only shows matching your filter will appear in the auto-created Episode and TVShow playlists. This is especially useful when combined with the [Power User Pattern](clones.md#power-user-pattern-main-as-service-clones-as-entry-points) of using the main addon as a service and clones as entry points. *(Added in v1.2.4)*
+If you use a show filter (Settings → Shows → Show Filter) and also generate auto-created smart playlists, you can connect them: enable **Apply show filter to smart playlists** in Settings → Advanced → Background Service. When enabled, only shows matching your filter will appear in the auto-created Episode and TVShow playlists. This is especially useful when combined with the [Power User Pattern](clones.md#power-user-pattern-main-as-service-clones-as-entry-points) of using the main addon as a service and clones as entry points.
 
 ---
 

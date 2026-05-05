@@ -222,12 +222,6 @@ If you're using [multi-instance sync](multi-instance-sync.md), these are the mos
 
 **Solution:** Install `script.module.pymysql` from the Kodi addon repository. It's normally installed as an EasyTV dependency, but may be missing if you installed EasyTV manually.
 
-#### Service Stops After Overnight Idle
-
-**Symptoms:** EasyTV stops tracking and shows stale data after being idle overnight. Requires Kodi restart.
-
-**Solution:** Update to EasyTV v1.4.0 or later. Earlier versions had a bug where MariaDB connections going idle overnight caused an unhandled exception that silently killed the background service.
-
 ---
 
 ### Smart Playlist Names Changed

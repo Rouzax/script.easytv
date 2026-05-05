@@ -143,7 +143,7 @@ When either setting is **Only**, the entire list becomes premieres-only. The oth
 | Skip | Only | Premieres only: season premieres only (no S01E01) |
 | Only | Only | Premieres only: both types |
 
-**Positioned specials:** Some shows have specials that TVDB marks as belonging between specific episodes (e.g., a special that should be watched between S10E55 and S10E56). When enabled, these specials appear at their designated position in the watch order. Specials without TVDB positioning data remain excluded. *(Added in v1.4.0)*
+**Positioned specials:** Some shows have specials that TVDB marks as belonging between specific episodes (e.g., a special that should be watched between S10E55 and S10E56). When enabled, these specials appear at their designated position in the watch order. Specials without TVDB positioning data remain excluded.
 
 > **Multi-instance sync users:** Configure this setting identically on all devices. Different values will cause devices to disagree on the next episode. See [Multi-Instance Sync](multi-instance-sync.md#consistent-settings).
 
@@ -344,7 +344,7 @@ See [Advanced Features](auto-generated-playlists.md) for details.
 
 **Requirements:** A shared MySQL/MariaDB video database (configured in `advancedsettings.xml`) and the `script.module.pymysql` addon.
 
-See [Multi-Instance Sync](multi-instance-sync.md) for full setup and usage documentation. *(Added in v1.3.0)*
+See [Multi-Instance Sync](multi-instance-sync.md) for full setup and usage documentation.
 
 ### Debugging
 
