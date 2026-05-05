@@ -212,7 +212,7 @@ When enabled with **Unwatched only**, a show appearing twice means:
 When you combine **Episode selection: Both** with **Allow multiple episodes**, EasyTV uses a special "lazy queue" mode:
 
 **How it works:**
-1. Only 2-3 items are added to the visible playlist initially
+1. Only 3 items are added to the visible playlist initially
 2. As you watch each item, the next one is added
 3. On-deck episodes are recalculated in real-time
 4. If you watch S02E05, your next appearance of that show will be S02E06
@@ -235,14 +235,23 @@ When enabled, a dialog appears after the last item finishes:
 
 ### Countdown Duration
 
-**Settings → Random Playlist → Playlist Continuation → Countdown duration**
+**Settings → Random Playlist → Playlist Continuation → Countdown duration (seconds)**
 
 | Value | Behavior |
 |-------|----------|
 | **0** | Prompt stays until you respond |
-| **1-60** | Auto-dismisses after this many seconds |
+| **1-60** | Auto-dismisses after this many seconds (default: 20) |
 
-Default action when countdown expires: **Stop** (doesn't generate another playlist).
+### If Countdown Expires
+
+**Settings → Random Playlist → Playlist Continuation → If countdown expires**
+
+| Option | Behavior on timeout |
+|--------|--------------------|
+| **Stop** (default) | Playback ends. No new playlist is generated. |
+| **Generate new playlist** | A fresh shuffled playlist is built and starts playing. |
+
+The dialog itself always offers both **Generate** and **Stop** buttons. This setting only controls which one fires when the countdown reaches zero without any user input.
 
 ---
 
