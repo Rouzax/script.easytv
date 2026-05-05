@@ -1,6 +1,27 @@
 EasyTV Changelog
 ================
 
+v1.5.2~alpha6 (2026-05-05)
+--------------------------
+UI Improvements:
+  - Next-episode prompt redesigned to mirror EasyMovie's continuation
+    pattern. The dialog now shows a "You just watched [show SxxEyy
+    title]" line and an "Up next [SxxEyy title]" line in two distinct
+    blocks, makes both items bold-formatted, and renames the buttons
+    from "Play" / "Don't Play" to "Watch Next" / "Skip" for clearer
+    action verbs. The dialog is now 800x490 (was 800x460) so the
+    multi-line message and subtitle fit without crowding. Added new
+    strings 32164-32168 (You just watched / Up next / Watch Next /
+    auto-closing line / Skip).
+  - Missed-episode warning rephrased and reformatted. Episode
+    identifier now uses Kodi-standard SxxEyy format instead of the
+    previous (06x02) bracketed form, and the dialog text gained an
+    "instead?" framing so the swap-to-library-version semantics is
+    explicit. String 32161 reduced to the show + S/E identifier;
+    32162 now reads "Would you like to watch it instead?"; new
+    string 32169 carries the suffix sentence "is in your library
+    and unwatched."
+
 v1.5.2~alpha5 (2026-05-04)
 --------------------------
 Bug Fixes:
