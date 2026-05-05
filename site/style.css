@@ -245,7 +245,7 @@ a:hover {
 
 .views-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
 }
 
@@ -413,6 +413,10 @@ a:hover {
     }
 
     .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .views-grid {
         grid-template-columns: repeat(2, 1fr);
     }
 
