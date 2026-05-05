@@ -305,11 +305,11 @@ Smart playlist: "User rating > 7"
 
 ### Wrong Content Type
 
-EasyTV checks playlist type:
+EasyTV requires the right playlist type for each slot:
 - TV show filter requires `type="tvshows"`
 - Movie filter requires `type="movies"`
 
-Using the wrong type will result in errors.
+The selection dialog filters available playlists to the correct type before showing them, so picking the wrong one through the UI is normally not possible. If a TV filter slot has no entries to choose from, the dialog displays "No TV show playlists found" (and the same for movies). The mismatch can only occur if a `.xsp` path was edited manually in Kodi's settings file, or if a playlist's `type` attribute was changed after EasyTV stored its path.
 
 ---
 
