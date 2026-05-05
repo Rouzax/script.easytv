@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <addon id="script.easytv"
        name="EasyTV"
-       version="1.5.2~alpha6"
+       version="1.5.2"
        provider-name="Rouzax">
     <requires>
         <import addon="xbmc.python" version="3.0.1"/>
@@ -25,11 +25,13 @@
         <forum>https://forum.kodi.tv/showthread.php?tid=383902</forum>
         <website>https://rouzax.github.io/script.easytv/</website>
         <source>https://github.com/Rouzax/script.easytv</source>
-        <news>v1.5.2~alpha5 (2026-05-04)
-- Multi-instance sync now reflects new episodes, fully-watched shows, and resume progress without waiting for a local library scan
-- Clone addons now stay in sync with the main instance via the shared database (existing clones will prompt to update)
-- Browse mode premiere filter no longer hides in-progress episodes synced from other instances
-- Fixed missing show posters and fanart in Browse view; the art cache now self-heals on each addon launch</news>
+        <news>v1.5.2 (2026-05-05)
+- Next-episode and missed-episode dialogs redesigned with clearer text and "Watch Next" / "Skip" buttons, matching EasyMovie's pattern.
+- Multi-instance sync: shows with new episodes from other Kodi instances now appear in Browse mode without needing a library scan; resume progress and watched state stay current too.
+- Clone addons now properly connect to the shared sync database; existing clones will prompt for a mandatory update.
+- Browse view show artwork no longer disappears after a partial load; the cache flag self-heals on the next launch.
+- "Now Playing" notification now shows the full show title even when the title contains commas.
+- Documentation site rebuilt page by page with refreshed screenshots and clearer settings descriptions.</news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
