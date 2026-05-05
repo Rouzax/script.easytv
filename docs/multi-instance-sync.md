@@ -237,12 +237,6 @@ One device updates but others don't reflect the change.
 3. All devices are running the same EasyTV version
 4. Check logs on each device for `Using shared database storage` (should appear) vs `Using window property storage` (means sync isn't active)
 
-### Silent Service Crash During Overnight Scans
-
-The background service stops working after being idle overnight.
-
-**Solution:** Update EasyTV. Older versions had a bug where MariaDB connections going idle overnight caused unhandled exceptions that silently killed the service. The current release recovers from idle disconnects automatically.
-
 ### "Next Episode" Differs Between Devices
 
 Devices show different next episodes for the same show.
