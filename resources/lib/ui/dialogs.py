@@ -349,9 +349,9 @@ class CountdownDialog(xbmcgui.WindowXMLDialog):
 
             # Focus the non-default button (user must act to override default)
             if self._default_yes:
-                self.setFocus(self.getControl(COUNTDOWN_NO_BUTTON))
-            else:
                 self.setFocus(self.getControl(COUNTDOWN_YES_BUTTON))
+            else:
+                self.setFocus(self.getControl(COUNTDOWN_NO_BUTTON))
 
             # Start countdown thread
             self._timer_thread = threading.Thread(target=self._countdown_loop, daemon=True)
