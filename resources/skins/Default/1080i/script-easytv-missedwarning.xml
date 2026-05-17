@@ -16,7 +16,7 @@
 -->
 <window>
     <zorder>1</zorder>
-    <defaultcontrol always="true">10</defaultcontrol>
+    <defaultcontrol>10</defaultcontrol>
 
     <controls>
         <!-- Dim overlay -->
