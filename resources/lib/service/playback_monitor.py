@@ -744,7 +744,8 @@ class PlaybackMonitor(xbmc.Player):
 
         # Always: Yes="Watch Next", No="Skip"
         # default_yes determines what happens on timeout
-        default_yes = (settings.promptdefaultaction != 1)
+        # Setting value 0 = "Don't play", 1 = "Play next episode"
+        default_yes = (settings.promptdefaultaction == 1)
 
         # Primary message: "You just watched" + show + S/E (+ episode title)
         # of just-finished. Falls back to simpler forms when finished-episode

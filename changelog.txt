@@ -1,6 +1,14 @@
 EasyTV Changelog
 ================
 
+v1.5.3~alpha1 (2026-05-17)
+---------------------------
+Bug Fixes:
+  - Fixed "If prompt times out" setting for the next-episode dialog
+    being inverted: selecting "Don't play" caused playback to continue,
+    and "Play next episode" caused it to stop. The setting now behaves
+    as labeled. (#26)
+
 v1.5.2 (2026-05-05)
 -------------------
 UI Improvements:
