@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <addon id="script.easytv"
        name="EasyTV"
-       version="1.5.3~alpha2"
+       version="1.5.3~alpha3"
        provider-name="Rouzax">
     <requires>
         <import addon="xbmc.python" version="3.0.1"/>
@@ -25,9 +25,10 @@
         <forum>https://forum.kodi.tv/showthread.php?tid=383902</forum>
         <website>https://rouzax.github.io/script.easytv/</website>
         <source>https://github.com/Rouzax/script.easytv</source>
-        <news>v1.5.3~alpha2 (2026-05-17)
-- Fixed next-episode timeout setting being inverted ("Don't play" was playing, and vice versa)
-- Fixed countdown dialog focus: highlighted button now matches the timeout action</news>
+        <news>v1.5.3~alpha3 (2026-05-30)
+- Fixed shows disappearing from tracking when a new episode arrives on a different HTPC
+- The service now periodically checks the shared database for changes from other devices
+- Clone UI discoveries are instantly handed off to the service for persistent tracking</news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>

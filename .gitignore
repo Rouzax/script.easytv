@@ -27,8 +27,9 @@ _temp/
 # MkDocs build output
 build/
 
-# Implementation plans (development only)
+# Implementation plans and local notes (development only)
 IMPLEMENTATION.md
+TODO.md
 docs/plans/
 
 # Claude Code

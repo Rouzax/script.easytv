@@ -1,6 +1,35 @@
 EasyTV Changelog
 ================
 
+v1.5.3~alpha3 (2026-05-30)
+---------------------------
+Bug Fixes:
+  - Fixed multi-HTPC sync gap where shows disappeared from tracking
+    after all episodes were watched and a new episode arrived on a
+    different HTPC. The daemon on the non-scanning HTPC never learned
+    about the new episode because it only reconciled with the shared
+    database during Kodi library scans, which only occur on the machine
+    Sonarr notifies. The clone UI's sync correctly discovered the show
+    but the daemon overwrote it from its own stale state on the next
+    playback event.
+
+Improvements:
+  - Added periodic shared database revision check to the service daemon
+    (every ~5 minutes). When the revision changes, the daemon reconciles
+    its tracked show list with the shared database, discovering shows
+    added or removed by other instances.
+  - Added instant clone-to-daemon handoff via a window property flag.
+    When the clone UI discovers new shows from the shared database, it
+    signals the daemon, which integrates them within one event loop tick
+    (~100ms). This prevents the daemon from overwriting the clone's
+    additions on the next playback event.
+
+Internal:
+  - New daemon methods: _check_shared_db_sync (periodic),
+    _process_sync_pending_shows (flag-based)
+  - New constants: SYNC_CHECK_INTERVAL_TICKS, PROP_SYNC_PENDING_SHOWS
+  - Documented sync event domain in LOGGING.md
+
 v1.5.3~alpha2 (2026-05-17)
 ---------------------------
 Bug Fixes:

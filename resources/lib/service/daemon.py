@@ -82,6 +82,7 @@ from resources.lib.constants import (
     TARGET_DETECTION_SLEEP_MS,
     TARGET_DETECTION_MAX_TICKS,
     POSITION_CHECK_INTERVAL_TICKS,
+    SYNC_CHECK_INTERVAL_TICKS,
     FIRST_REGULAR_SEASON,
     EPISODE_INITIAL_VALUE,
     INITIAL_LOOP_LIMIT,
@@ -100,6 +101,7 @@ from resources.lib.constants import (
     PROP_PLAYLIST_RUNNING,
     PROP_RANDOM_ORDER_SHUFFLE,
     PROP_SHOWS_WITH_NEXT_EPISODES,
+    PROP_SYNC_PENDING_SHOWS,
     PREMIERE_MIX_IN,
     SETTING_MULTI_INSTANCE_SYNC,
 )
@@ -302,7 +304,9 @@ class ServiceDaemon:
         
         # Track multi-instance sync setting for change detection
         self._sync_enabled: bool = False
-        
+        self._sync_tick_counter: int = 0
+        self._last_sync_rev: int = 0
+
         # Cache playback completion threshold from Kodi settings
         self._playback_complete_threshold = get_playcount_minimum_percent() / 100.0
         self._log.info(
@@ -494,7 +498,13 @@ class ServiceDaemon:
             validate_show_selections(
                 set(self._all_shows_list), self._addon, self._log
             )
-        
+
+        # Check shared DB for shows added/removed by other instances
+        self._check_shared_db_sync()
+
+        # Process shows flagged by clone sync for immediate integration
+        self._process_sync_pending_shows()
+
         # Handle random order shuffle request
         shuffle_request = self._window.getProperty(PROP_RANDOM_ORDER_SHUFFLE)
         if shuffle_request == 'true':
@@ -931,6 +941,140 @@ class ServiceDaemon:
                 str(self._state.shows_with_next_episodes)
             )
     
+    def _check_shared_db_sync(self) -> None:
+        """
+        Periodic check for shows added/removed by other instances.
+
+        Called every tick from _process_events(). Uses a tick counter to
+        only perform the actual DB check every SYNC_CHECK_INTERVAL_TICKS
+        (~5 minutes). Gated behind multi-instance sync setting.
+
+        When the shareddb global revision has changed, reconciles the
+        daemon's tracked show list:
+        - Shows in DB but not tracked locally are processed via
+          refresh_show_episodes (queries Kodi, caches properties,
+          updates playlists).
+        - Shows tracked locally but removed from DB are removed,
+          unless they still have episodes in Kodi (local is fresher).
+        """
+        if not self._sync_enabled:
+            return
+
+        self._sync_tick_counter += 1
+        if self._sync_tick_counter < SYNC_CHECK_INTERVAL_TICKS:
+            return
+        self._sync_tick_counter = 0
+
+        if self._player and self._player._playing_showid:
+            self._log.debug(
+                "Skipping shared DB sync (playback active)",
+                event="sync.daemon_skip_playback",
+            )
+            return
+
+        storage = get_storage()
+        if not isinstance(storage, SharedDatabaseStorage):
+            return
+        if not storage.is_available():
+            return
+
+        current_rev = storage.db.get_global_rev()
+
+        if current_rev == self._last_sync_rev:
+            self._log.debug(
+                "Shared DB revision unchanged",
+                event="sync.daemon_unchanged",
+                rev=current_rev,
+            )
+            self._last_sync_rev = current_rev
+            return
+
+        self._log.debug(
+            "Shared DB revision check",
+            event="sync.daemon_check",
+            current_rev=current_rev,
+            last_rev=self._last_sync_rev,
+        )
+
+        try:
+            db_show_ids, revision = storage.get_tracked_show_ids()
+        except Exception:
+            self._log.exception(
+                "Failed to fetch tracked show IDs",
+                event="sync.daemon_error",
+            )
+            return
+
+        local_ids = set(self._state.shows_with_next_episodes)
+        added = db_show_ids - local_ids
+        removed = local_ids - db_show_ids
+
+        if added:
+            self._log.info(
+                "Shows added from shared DB (daemon)",
+                event="sync.daemon_added",
+                show_ids=sorted(added),
+                count=len(added),
+            )
+            self.refresh_show_episodes(showids=sorted(added), bulk=False)
+
+        if removed:
+            kodi_ids = set(self._all_shows_list)
+            safe_to_remove = removed - kodi_ids
+            if safe_to_remove:
+                self._log.info(
+                    "Shows removed per shared DB (daemon)",
+                    event="sync.daemon_removed",
+                    show_ids=sorted(safe_to_remove),
+                    count=len(safe_to_remove),
+                )
+                for show_id in safe_to_remove:
+                    self._remove_from_shows_with_next_episodes(show_id)
+
+        self._last_sync_rev = revision
+
+    def _process_sync_pending_shows(self) -> None:
+        """
+        Process shows flagged by clone UI sync for daemon integration.
+
+        The clone's sync_show_list_from_shared_db sets a window property
+        with comma-separated show IDs when it discovers new shows. This
+        method picks up that flag within one event loop tick (~100ms),
+        clears it, and processes any shows not already tracked.
+        """
+        if not self._sync_enabled:
+            return
+
+        pending = self._window.getProperty(PROP_SYNC_PENDING_SHOWS)
+        if not pending:
+            return
+
+        self._window.clearProperty(PROP_SYNC_PENDING_SHOWS)
+
+        tracked = set(self._state.shows_with_next_episodes)
+        new_ids = []
+        for part in pending.split(','):
+            part = part.strip()
+            if not part:
+                continue
+            try:
+                show_id = int(part)
+            except ValueError:
+                continue
+            if show_id not in tracked:
+                new_ids.append(show_id)
+
+        if not new_ids:
+            return
+
+        self._log.debug(
+            "Processed pending sync shows",
+            event="sync.pending_processed",
+            show_ids=new_ids,
+            count=len(new_ids),
+        )
+        self.refresh_show_episodes(showids=new_ids, bulk=False)
+
     def _reshuffle_random_order_shows(
         self,
         supplied_random_shows: Optional[List[int]] = None,
@@ -1734,7 +1878,10 @@ class ServiceDaemon:
                 SharedDatabase.clear_advertised_config(reason="setting_disabled")
             reset_storage()
             self._sync_enabled = new_sync_enabled
-        
+            if new_sync_enabled:
+                self._sync_tick_counter = 0
+                self._last_sync_rev = 0
+
         self._settings = load_settings(
             firstrun=False,
             window=self._window,

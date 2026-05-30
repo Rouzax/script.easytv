@@ -114,6 +114,7 @@ POSITION_CHECK_INTERVAL_TICKS = 50
 SERVICE_POLL_TIMEOUT_TICKS = 500
 DIALOG_WAIT_MAX_TICKS = 5
 ISTREAM_FIX_MAX_RETRIES = 2
+SYNC_CHECK_INTERVAL_TICKS = 3000  # ~5 minutes at 100ms per tick
 
 # Database startup timing
 DB_STARTUP_CHECK_INTERVAL_MS = 1000  # Check every 1 second
@@ -464,6 +465,8 @@ PROP_RANDOM_ORDER_SHUFFLE = "EasyTV.random_order_shuffle"
 PROP_SHOWS_WITH_NEXT_EPISODES = "EasyTV.shows_with_next_episodes"
 # Sync revision counter for multi-instance coordination
 PROP_SYNC_REV = "EasyTV.sync_rev"
+# Comma-separated show IDs pending daemon integration (clone -> service handoff)
+PROP_SYNC_PENDING_SHOWS = "EasyTV.sync_pending_shows"
 
 # =============================================================================
 # Setting IDs

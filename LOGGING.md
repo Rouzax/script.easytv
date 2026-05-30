@@ -143,7 +143,7 @@ Events follow the pattern: `domain.action`
 | `selector` | Show selector       | `selector.open`, `selector.save`                     |
 | `shareddb` | Shared DB sync      | `shareddb.connect`, `shareddb.backoff`, `shareddb.write` |
 | `storage`  | Storage abstraction | `storage.init_local`, `storage.init_shared`, `storage.reset` |
-| `sync`     | Sync operations     | `sync.clear_requested`, `sync.clear_success`, `sync.clear_failed` |
+| `sync`     | Multi-instance sync | `sync.added`, `sync.daemon_check`, `sync.clear_requested` |
 
 ### When to Add Logging
 
@@ -352,9 +352,32 @@ Storage abstraction layer.
 | `storage.clear_stale` | DEBUG | Cleared props for show deleted elsewhere |
 | `storage.reset` | INFO | Storage singleton reset |
 
-### sync Events (Logger: 'clear_sync')
+### sync Events
 
-Sync data management.
+Multi-instance show synchronization and data management.
+
+**Clone/browse sync** (Logger: 'data'):
+
+| Event | Level | Description |
+|-------|-------|-------------|
+| `sync.added` | INFO | Shows discovered from shared DB by clone/browse |
+| `sync.removed` | INFO | Shows removed per shared DB by clone/browse |
+| `sync.add_error` | ERROR | Failed to fetch added show data |
+| `sync.error` | ERROR | Show list sync failed |
+
+**Daemon periodic sync** (Logger: 'daemon'):
+
+| Event | Level | Description |
+|-------|-------|-------------|
+| `sync.daemon_check` | DEBUG | Shared DB revision changed, reconciling |
+| `sync.daemon_unchanged` | DEBUG | Shared DB revision unchanged, no action |
+| `sync.daemon_added` | INFO | Shows added to daemon from shared DB |
+| `sync.daemon_removed` | INFO | Shows removed from daemon per shared DB |
+| `sync.daemon_skip_playback` | DEBUG | Periodic sync skipped (playback active) |
+| `sync.daemon_error` | ERROR | Failed to fetch tracked show IDs |
+| `sync.pending_processed` | DEBUG | Processed pending shows flagged by clone |
+
+**Clear sync data** (Logger: 'clear_sync'):
 
 | Event | Level | Description |
 |-------|-------|-------------|

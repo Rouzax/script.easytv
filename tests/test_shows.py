@@ -17,6 +17,7 @@ from resources.lib.constants import (
     CATEGORY_SHOW_PREMIERE,
     CATEGORY_SEASON_PREMIERE,
     PROP_SHOWS_WITH_NEXT_EPISODES,
+    PROP_SYNC_PENDING_SHOWS,
 )
 
 
@@ -231,6 +232,29 @@ class TestSyncShowListFromSharedDb:
         assert call_args[0][0] == PROP_SHOWS_WITH_NEXT_EPISODES
         updated_ids = eval(call_args[0][1])
         assert set(updated_ids) == {10, 20, 30, 40}
+
+    @patch('resources.lib.data.shows.WINDOW')
+    def test_sets_pending_flag_on_add(self, mock_window):
+        """Should set PROP_SYNC_PENDING_SHOWS with added show IDs."""
+        mock_window.getProperty.return_value = '[10, 20]'
+        storage = self._make_storage()
+        storage.sync_tracked_shows.return_value = SyncResult(
+            added={30, 40}, removed=set(), revision=5
+        )
+        storage.get_ondeck_bulk.return_value = ({30: {}, 40: {}}, 5)
+        logger = self._make_logger()
+
+        sync_show_list_from_shared_db(storage, logger)
+
+        # Find the setProperty call for the pending flag
+        pending_calls = [
+            c for c in mock_window.setProperty.call_args_list
+            if c[0][0] == PROP_SYNC_PENDING_SHOWS
+        ]
+        assert len(pending_calls) == 1
+        flag_value = pending_calls[0][0][1]
+        flag_ids = {int(x) for x in flag_value.split(',')}
+        assert flag_ids == {30, 40}
 
     @patch('resources.lib.data.shows.WINDOW')
     def test_removes_shows_from_shared_db(self, mock_window):

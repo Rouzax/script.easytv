@@ -44,6 +44,7 @@ from resources.lib.constants import (
     ISTREAM_FIX_MAX_RETRIES,
     SECONDS_PER_MINUTE,
     PROP_SHOWS_WITH_NEXT_EPISODES,
+    PROP_SYNC_PENDING_SHOWS,
 )
 from resources.lib.service.episode_tracker import PROP_DURATION
 from resources.lib.data.queries import (
@@ -424,6 +425,10 @@ def sync_show_list_from_shared_db(storage, logger=None):
                            event="sync.added",
                            show_ids=sorted(data.keys()),
                            count=len(data))
+            WINDOW.setProperty(
+                PROP_SYNC_PENDING_SHOWS,
+                ",".join(str(x) for x in sorted(data.keys()))
+            )
         except Exception:
             log_inner.exception("Failed to fetch added shows",
                                 event="sync.add_error")
