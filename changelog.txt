@@ -1,9 +1,17 @@
 EasyTV Changelog
 ================
 
-v1.5.3~alpha3 (2026-05-30)
----------------------------
+v1.5.3 (2026-05-30)
+-------------------
 Bug Fixes:
+  - Fixed "If prompt times out" setting for the next-episode dialog
+    being inverted: selecting "Don't play" caused playback to continue,
+    and "Play next episode" caused it to stop. The setting now behaves
+    as labeled. (#26)
+  - Fixed countdown dialog focus: the highlighted button now matches the
+    timeout action instead of the override action. Removed
+    defaultcontrol always="true" from countdown dialog XMLs so Python
+    controls focus correctly. (#27)
   - Fixed multi-HTPC sync gap where shows disappeared from tracking
     after all episodes were watched and a new episode arrived on a
     different HTPC. The daemon on the non-scanning HTPC never learned
@@ -29,18 +37,6 @@ Internal:
     _process_sync_pending_shows (flag-based)
   - New constants: SYNC_CHECK_INTERVAL_TICKS, PROP_SYNC_PENDING_SHOWS
   - Documented sync event domain in LOGGING.md
-
-v1.5.3~alpha2 (2026-05-17)
----------------------------
-Bug Fixes:
-  - Fixed "If prompt times out" setting for the next-episode dialog
-    being inverted: selecting "Don't play" caused playback to continue,
-    and "Play next episode" caused it to stop. The setting now behaves
-    as labeled. (#26)
-  - Fixed countdown dialog focus: the highlighted button now matches the
-    timeout action instead of the override action. Removed
-    defaultcontrol always="true" from countdown dialog XMLs so Python
-    controls focus correctly. (#27)
 
 v1.5.2 (2026-05-05)
 -------------------
