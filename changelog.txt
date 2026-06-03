@@ -1,6 +1,15 @@
 EasyTV Changelog
 ================
 
+Unreleased
+----------
+Bug Fixes:
+  - Fixed inconsistent episode notation casing in browse view: the
+    shared database sync path formatted episodes as lowercase (s01e01)
+    while the initial load used uppercase (S01E01), causing the browse
+    view to show mixed casing depending on which path last updated the
+    window property.
+
 v1.5.3 (2026-05-30)
 -------------------
 Bug Fixes:

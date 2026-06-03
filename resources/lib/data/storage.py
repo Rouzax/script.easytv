@@ -669,7 +669,7 @@ class SharedDatabaseStorage(StorageBackend):
         # Format episode and season numbers
         episode_num = "%02d" % int(ep.get('episode', 0))
         season_num = "%02d" % int(ep.get('season', 0))
-        episode_no = f"s{season_num}e{episode_num}"
+        episode_no = f"S{season_num}E{episode_num}"
         
         # Calculate resume state
         resume_dict = ep.get('resume', {})
