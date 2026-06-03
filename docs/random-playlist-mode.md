@@ -2,17 +2,15 @@
 
 Random Playlist Mode creates a shuffled playlist of episodes (and optionally movies) from your library. One click and playback starts immediately. Perfect for eliminating decision fatigue.
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│  Now Playing: The Office S04E01 - Fun Run                           │
-│                                                                     │
-│  Up Next:                                                           │
-│    1. Breaking Bad S02E03                                           │
-│    2. Fargo (2014 film)                                             │
-│    3. Better Call Saul S01E01                                       │
-│    4. Parks and Recreation S03E12                                   │
-│    5. The Sopranos S03E08                                           │
-└─────────────────────────────────────────────────────────────────────┘
+``` title="Random Playlist"
+Now Playing: The Office S04E01 - Fun Run
+
+Up Next:
+  1. Breaking Bad S02E03
+  2. Fargo (2014 film)
+  3. Better Call Saul S01E01
+  4. Parks and Recreation S03E12
+  5. The Sopranos S03E08
 ```
 
 ---
@@ -328,11 +326,8 @@ See [Random-Order Shows](random-order-shows.md) for configuration details.
 
 When enabled, a notification appears when each item starts:
 
-```
-┌─────────────────────────────────────────────────┐
-│  Now Playing                                    │
-│  Breaking Bad - S02E03 - Bit by a Dead Bee      │
-└─────────────────────────────────────────────────┘
+``` title="Now Playing"
+Breaking Bad - S02E03 - Bit by a Dead Bee
 ```
 
 ---
