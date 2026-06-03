@@ -3,6 +3,12 @@ EasyTV Changelog
 
 Unreleased
 ----------
+Improvements:
+  - Added library scan cooldown guard: when episodes download one by
+    one, each triggers a separate Kodi library scan. EasyTV now waits
+    3 seconds for scan activity to settle before refreshing, batching
+    rapid-fire scans into a single refresh instead of one per episode.
+
 Bug Fixes:
   - Fixed inconsistent episode notation casing in browse view: the
     shared database sync path formatted episodes as lowercase (s01e01)
