@@ -116,6 +116,11 @@ DIALOG_WAIT_MAX_TICKS = 5
 ISTREAM_FIX_MAX_RETRIES = 2
 SYNC_CHECK_INTERVAL_TICKS = 3000  # ~5 minutes at 100ms per tick
 
+# Library scan cooldown: seconds to wait after last onScanFinished before
+# processing the library update. Batches rapid-fire scans (e.g., episodes
+# downloading one by one) into a single refresh.
+SCAN_COOLDOWN_SECONDS = 3.0
+
 # Database startup timing
 DB_STARTUP_CHECK_INTERVAL_MS = 1000  # Check every 1 second
 DB_STARTUP_MAX_RETRIES = 30  # Wait up to 30 seconds for DB

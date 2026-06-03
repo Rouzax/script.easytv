@@ -20,12 +20,13 @@ Logging:
 from __future__ import annotations
 
 import ast
+import time
 from typing import Callable, List, Optional, TYPE_CHECKING
 
 import xbmc
 import xbmcgui
 
-from resources.lib.constants import WATCHED_PLAYCOUNT, PROP_ART_FETCHED
+from resources.lib.constants import WATCHED_PLAYCOUNT, PROP_ART_FETCHED, SCAN_COOLDOWN_SECONDS
 from resources.lib.utils import get_logger, json_query
 from resources.lib.data.queries import build_episode_show_id_query
 
@@ -46,13 +47,12 @@ class LibraryMonitor(xbmc.Monitor):
     
     Responds to:
     - Settings changes: Triggers settings reload
-    - Library scan completion: Triggers full refresh and clears art cache
+    - Library scan completion: Records timestamp for daemon cooldown polling
     - VideoLibrary.OnUpdate notifications: Handles watched/unwatched changes
-    
+
     Args:
         window: The Kodi home window for property access.
         on_settings_changed: Callback when settings change.
-        on_library_updated: Callback to set library update flag.
         get_random_order_shows: Callback to get current random order shows list.
         on_refresh_show: Callback to refresh a specific show's episodes.
         on_playing_episode_watched: Callback(show_id, episode_id) when a tracked
@@ -60,12 +60,11 @@ class LibraryMonitor(xbmc.Monitor):
             daemon to complete tracking before the refresh blocks the loop.
         logger: Optional logger instance.
     """
-    
+
     def __init__(
         self,
         window: xbmcgui.Window,
         on_settings_changed: SettingsReloadCallback,
-        on_library_updated: Callable[[], None],
         get_random_order_shows: GetRandomShowsCallback,
         on_refresh_show: GetEpisodesCallback,
         on_playing_episode_watched: Callable[[int, int], None],
@@ -76,7 +75,6 @@ class LibraryMonitor(xbmc.Monitor):
 
         self._window = window
         self._on_settings_changed = on_settings_changed
-        self._on_library_updated = on_library_updated
         self._get_random_order_shows = get_random_order_shows
         self._on_refresh_show = on_refresh_show
         self._on_playing_episode_watched = on_playing_episode_watched
@@ -84,30 +82,78 @@ class LibraryMonitor(xbmc.Monitor):
         
         # Notification data storage
         self._notification_data: dict = {}
+
+        # Scan cooldown state
+        self.scan_finished_at: Optional[float] = None
+        self.is_scanning: bool = False
     
     def onSettingsChanged(self) -> None:
         """Handle settings changes by triggering a reload."""
         self._on_settings_changed()
     
+    def onScanStarted(self, library: str) -> None:
+        """
+        Handle library scan start.
+
+        Tracks that a video scan is in progress so the cooldown timer
+        does not fire while the database is still being updated.
+
+        Args:
+            library: The library being scanned ('video' or 'music').
+        """
+        if library == 'video':
+            self.is_scanning = True
+            self._log.debug(
+                "Library scan started",
+                event="library.scan_started"
+            )
+
     def onScanFinished(self, library: str) -> None:
         """
         Handle library scan completion.
-        
-        When a video library scan completes, triggers a full refresh to pick up
-        any new shows or episodes. Also clears the art cache flag so that new
-        shows will have their art fetched when Browse mode opens.
-        
+
+        Records the finish timestamp for the cooldown guard instead of
+        triggering an immediate refresh. The daemon polls
+        consume_scan_update() and only refreshes after the cooldown
+        elapses with no new scan activity.
+
+        Also clears the art cache flag so new shows get their art
+        fetched when Browse mode opens.
+
         Args:
             library: The library that was scanned ('video' or 'music').
         """
         if library == 'video':
+            self.is_scanning = False
+            self.scan_finished_at = time.monotonic()
             self._log.info(
-                "Library scan finished, refreshing episode list",
+                "Library scan finished, cooldown started",
                 event="library.scan_finished"
             )
-            # Clear art cache flag so new shows get art on next Browse
             self._window.clearProperty(PROP_ART_FETCHED)
-            self._on_library_updated()
+
+    def consume_scan_update(self) -> bool:
+        """
+        Check whether a scan cooldown has elapsed and consume it.
+
+        Called by the daemon on each loop tick. Returns True (once) when:
+        - A scan has finished (scan_finished_at is set)
+        - No scan is currently in progress
+        - At least SCAN_COOLDOWN_SECONDS have passed since the last finish
+
+        When True is returned, scan_finished_at is reset to None so the
+        update is consumed exactly once.
+
+        Returns:
+            True if a library refresh should run now, False otherwise.
+        """
+        if self.scan_finished_at is None or self.is_scanning:
+            return False
+        elapsed = time.monotonic() - self.scan_finished_at
+        if elapsed >= SCAN_COOLDOWN_SECONDS:
+            self.scan_finished_at = None
+            return True
+        return False
     
     def onNotification(self, _sender: str, method: str, data: str) -> None:
         """

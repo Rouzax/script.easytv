@@ -244,9 +244,6 @@ class ServiceState:
     # Info dict for next episode prompt
     nextprompt_info: dict = field(default_factory=dict)
     
-    # Flag set by LibraryMonitor when database updates
-    on_lib_update: bool = False
-    
     # List of show IDs with available next episodes
     shows_with_next_episodes: List[int] = field(default_factory=list)
 
@@ -369,7 +366,6 @@ class ServiceDaemon:
         self._monitor = LibraryMonitor(
             window=self._window,
             on_settings_changed=self._on_settings_changed,
-            on_library_updated=lambda: setattr(self._state, 'on_lib_update', True),
             get_random_order_shows=lambda: self._settings.random_order_shows,
             on_refresh_show=self.refresh_show_episodes,
             on_playing_episode_watched=self._on_playing_episode_watched,
@@ -483,18 +479,21 @@ class ServiceDaemon:
            - Sets nextprompt_trigger for end-of-episode prompt
            - Removes show from list if no more episodes
         """
+        assert self._monitor is not None
         assert self._player is not None
         assert self._episode_tracker is not None
         service_heartbeat()
-        
+
         self._pending_next_episode = False
-        
-        # Handle library updates
-        if self._state.on_lib_update:
-            self._state.on_lib_update = False
+
+        # Handle library updates (cooldown guard batches rapid scans)
+        if self._monitor.consume_scan_update():
+            self._log.info(
+                "Scan cooldown elapsed, refreshing episode list",
+                event="library.cooldown_elapsed"
+            )
             self._retrieve_all_show_ids()
             self.refresh_show_episodes(showids=self._all_shows_list, bulk=True)
-            # Clean orphaned show IDs from settings after library changes
             validate_show_selections(
                 set(self._all_shows_list), self._addon, self._log
             )
