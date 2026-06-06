@@ -1,8 +1,8 @@
 EasyTV Changelog
 ================
 
-Unreleased
-----------
+v1.5.4 (2026-06-06)
+-------------------
 Improvements:
   - Browse view now shows the actual episode runtime instead of the
     show's median duration. A new streamdetails cache persists
