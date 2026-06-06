@@ -4,6 +4,12 @@ EasyTV Changelog
 Unreleased
 ----------
 Improvements:
+  - Browse view now shows the actual episode runtime instead of the
+    show's median duration. A new streamdetails cache persists
+    per-episode stream info (duration, resolution, video codec, HDR,
+    audio codec, channels, subtitle languages) across restarts without
+    extra queries. First startup after upgrade triggers a one-time
+    cache build; subsequent startups read from cache with no overhead.
   - Added library scan cooldown guard: when episodes download one by
     one, each triggers a separate Kodi library scan. EasyTV now waits
     3 seconds for scan activity to settle before refreshing, batching

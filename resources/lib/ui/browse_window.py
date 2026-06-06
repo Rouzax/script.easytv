@@ -256,6 +256,7 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         num_ondeck = WINDOW.getProperty(f"{prop_prefix}.CountonDeckEps")
         genre = WINDOW.getProperty(f"{prop_prefix}.Genre")
         duration_secs = WINDOW.getProperty(f"{prop_prefix}.Duration")
+        ep_runtime = WINDOW.getProperty(f"{prop_prefix}.EpRuntime")
 
         # Calculate time since last watched (calendar-day aware)
         if lastplayed == 0:
@@ -289,7 +290,7 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         list_item.setProperty("percentplayed", pct_played)
         list_item.setProperty("episodeno", ep_no)
         list_item.setProperty("genre", genre)
-        list_item.setProperty("duration", format_duration(duration_secs))
+        list_item.setProperty("duration", format_duration(ep_runtime or duration_secs))
 
         list_item.setProperty('ID', str(show_id))
         list_item.setProperty("file", file_path)
@@ -312,9 +313,10 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         if genre_str:
             info_tag.setGenres([g.strip() for g in genre_str.split(',')])
 
-        if duration_secs:
+        display_duration = ep_runtime or duration_secs
+        if display_duration:
             try:
-                info_tag.setDuration(int(duration_secs))
+                info_tag.setDuration(int(display_duration))
             except ValueError:
                 pass
 
@@ -348,6 +350,7 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
 
         genre = WINDOW.getProperty(f"{prop_prefix}.Genre")
         duration_secs = WINDOW.getProperty(f"{prop_prefix}.Duration")
+        ep_runtime = WINDOW.getProperty(f"{prop_prefix}.EpRuntime")
 
         # Update the item in-place
         item.setLabel2(eptitle)
@@ -360,7 +363,7 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         item.setProperty("percentplayed", pct_played)
         item.setProperty("episodeno", ep_no)
         item.setProperty("genre", genre)
-        item.setProperty("duration", format_duration(duration_secs))
+        item.setProperty("duration", format_duration(ep_runtime or duration_secs))
         item.setProperty("file", file_path)
         item.setProperty("EpisodeID", episode_id)
         info_tag = item.getVideoInfoTag()
@@ -381,9 +384,10 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         if genre_str:
             info_tag.setGenres([g.strip() for g in genre_str.split(',')])
 
-        if duration_secs:
+        display_duration = ep_runtime or duration_secs
+        if display_duration:
             try:
-                info_tag.setDuration(int(duration_secs))
+                info_tag.setDuration(int(display_duration))
             except ValueError:
                 pass
 

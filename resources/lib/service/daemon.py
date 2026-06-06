@@ -151,6 +151,14 @@ from resources.lib.data.duration_cache import (
     get_shows_needing_calculation,
     build_updated_cache,
 )
+from resources.lib.data.streamdetails_cache import (
+    load_streamdetails_cache,
+    save_streamdetails_cache,
+    extract_episode_streamdetails,
+    get_shows_needing_streamdetails,
+    build_updated_streamdetails_cache,
+    get_episode_duration,
+)
 from resources.lib.service.settings import (
     load_settings,
     ServiceSettings,
@@ -158,7 +166,9 @@ from resources.lib.service.settings import (
 )
 from resources.lib.service.library_monitor import LibraryMonitor
 from resources.lib.service.playback_monitor import PlaybackMonitor, PlaybackSettings
-from resources.lib.service.episode_tracker import EpisodeTracker, PROP_DURATION, PROP_GENRE
+from resources.lib.service.episode_tracker import (
+    EpisodeTracker, PROP_DURATION, PROP_EP_RUNTIME, PROP_GENRE,
+)
 from resources.lib.data.storage import get_storage, reset_storage, SharedDatabaseStorage
 
 if TYPE_CHECKING:
@@ -1625,37 +1635,47 @@ class ServiceDaemon:
                     if eps
                 }
                 
-                # Determine which shows need duration recalculation
+                # Determine which shows need recalculation/requery
                 shows_needing_calc = get_shows_needing_calculation(
                     duration_cache, current_episode_counts
                 )
-                
+
+                sd_cache = load_streamdetails_cache()
+                shows_needing_sd = get_shows_needing_streamdetails(
+                    sd_cache, current_episode_counts
+                )
+                shows_to_query = shows_needing_calc | shows_needing_sd
+
                 if timer is not None:
-                    timer.mark("duration_compare")
-                
-                # Query streamdetails only for shows that need recalculation
+                    timer.mark("cache_compare")
+
+                # Query streamdetails for shows that either cache needs
                 new_durations: Dict[int, int] = {}
-                if shows_needing_calc:
-                    for show_id in shows_needing_calc:
+                new_streamdetails: Dict[int, Dict[int, Dict[str, Any]]] = {}
+                if shows_to_query:
+                    for show_id in shows_to_query:
                         service_heartbeat()
-                        # Query this show's episodes with streamdetails
                         ep_result = json_query(
                             build_show_episodes_with_streamdetails_query(show_id),
                             True
                         )
                         episodes_with_stream = ep_result.get('episodes', [])
-                        # Calculate median duration
-                        median = calculate_median_duration(episodes_with_stream)
-                        new_durations[show_id] = median
-                    
+                        if show_id in shows_needing_calc:
+                            median = calculate_median_duration(episodes_with_stream)
+                            new_durations[show_id] = median
+                        new_streamdetails[show_id] = extract_episode_streamdetails(
+                            episodes_with_stream
+                        )
+
                     self._log.debug(
-                        "Duration recalculation complete",
-                        shows_recalculated=len(shows_needing_calc),
-                        shows_from_cache=len(current_episode_counts) - len(shows_needing_calc)
+                        "Streamdetails queries complete",
+                        shows_queried=len(shows_to_query),
+                        duration_recalculated=len(new_durations),
+                        streamdetails_extracted=len(new_streamdetails)
                     )
-                
+
                 if timer is not None:
-                    timer.mark("duration_calc")
+                    timer.mark("streamdetails_query")
                 
                 # Build updated cache (merges old + new, prunes removed shows)
                 updated_cache = build_updated_cache(
@@ -1676,8 +1696,8 @@ class ServiceDaemon:
                     prop_key = f"EasyTV.{show_id}.{PROP_DURATION}"
                     self._window.setProperty(prop_key, str(duration))
                 
-                # Save updated cache
-                save_duration_cache(updated_cache)
+                if new_durations:
+                    save_duration_cache(updated_cache)
                 
                 self._log.debug(
                     "Duration cache updated",
@@ -1688,7 +1708,53 @@ class ServiceDaemon:
                 
                 if timer is not None:
                     timer.mark("duration_save")
-            
+
+                # Build and save streamdetails cache (per-episode stream info)
+                updated_sd_cache = build_updated_streamdetails_cache(
+                    sd_cache, current_episode_counts, new_streamdetails
+                )
+
+                # Set per-episode runtime window properties
+                ep_runtime_set = 0
+                for show_id in current_episode_counts.keys():
+                    ep_id_str = self._window.getProperty(
+                        f"EasyTV.{show_id}.EpisodeID"
+                    )
+                    if ep_id_str:
+                        try:
+                            duration = get_episode_duration(
+                                updated_sd_cache, show_id, int(ep_id_str)
+                            )
+                        except (ValueError, TypeError):
+                            continue
+                        if duration:
+                            self._window.setProperty(
+                                f"EasyTV.{show_id}.{PROP_EP_RUNTIME}",
+                                str(duration)
+                            )
+                            ep_runtime_set += 1
+
+                if timer is not None:
+                    timer.mark("streamdetails_apply")
+
+                if new_streamdetails:
+                    save_streamdetails_cache(updated_sd_cache)
+
+                sd_ep_count = sum(
+                    len(s.get('episodes', {}))
+                    for s in updated_sd_cache.get('shows', {}).values()
+                )
+                self._log.debug(
+                    "Streamdetails cache updated",
+                    total_shows=len(current_episode_counts),
+                    episodes_cached=sd_ep_count,
+                    shows_requeried=len(new_streamdetails),
+                    ep_runtime_set=ep_runtime_set
+                )
+
+                if timer is not None:
+                    timer.mark("streamdetails_save")
+
             # Flush batched playlist writes
             if bulk and (self._settings.playlist_export_episodes or 
                          self._settings.playlist_export_tvshows):

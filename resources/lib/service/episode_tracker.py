@@ -79,6 +79,7 @@ PROP_PREMIERED = "Premiered"
 PROP_PLOT = "Plot"
 PROP_IS_SKIPPED = "IsSkipped"
 PROP_DURATION = "Duration"
+PROP_EP_RUNTIME = "EpRuntime"
 PROP_GENRE = "Genre"
 PROP_YEAR = "Year"
 
@@ -103,6 +104,7 @@ EPISODE_PROPERTIES = [
     PROP_PREMIERED,
     PROP_PLOT,
     PROP_IS_SKIPPED,
+    PROP_EP_RUNTIME,
 ]
 
 # Temporary show ID used for staging next episode data
@@ -305,7 +307,13 @@ class EpisodeTracker:
         self._set_property(normalized_show_id, PROP_PREMIERED, ep_details.get('firstaired', ''))
         self._set_property(normalized_show_id, PROP_PLOT, ep_details.get('plot', ''))
         self._set_property(normalized_show_id, PROP_IS_SKIPPED, str(is_skipped).lower())
-        
+
+        ep_runtime = ep_details.get('runtime', 0)
+        self._set_property(
+            normalized_show_id, PROP_EP_RUNTIME,
+            str(ep_runtime) if ep_runtime else ''
+        )
+
         # Update smart playlists for non-temp show IDs
         if normalized_show_id != TEMP_SHOW_ID and self._on_update_smartplaylist:
             self._on_update_smartplaylist(normalized_show_id, quiet=quiet)

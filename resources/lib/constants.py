@@ -454,6 +454,14 @@ DURATION_CACHE_FILENAME = "duration_cache.json"
 DURATION_CACHE_VERSION = 1
 
 # =============================================================================
+# Streamdetails Cache
+# =============================================================================
+# Cache file for storing per-episode stream info (duration, resolution, audio)
+STREAMDETAILS_CACHE_FILENAME = "streamdetails_cache.json"
+# Schema version for cache file format (increment on breaking changes)
+STREAMDETAILS_CACHE_VERSION = 1
+
+# =============================================================================
 # Service / System Window Properties
 # =============================================================================
 # Service lifecycle status ('starting', 'true', 'marco', 'polo')
