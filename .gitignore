@@ -39,3 +39,7 @@ CLAUDE.md
 .mcp.json
 # Worktrees
 .worktrees/
+
+# Integration tests (local-only, contains env-specific config)
+tests/integration/
+
