@@ -820,37 +820,46 @@ def _write_show_to_playlist_file(
     except (IOError, OSError):
         all_lines = []
     
+    # Compute the new file content before touching disk
     content = []
     found = False
     action_taken = None
-    
+    if not all_lines:
+        # Create new file
+        content.append(header)
+        content.append(show_entry)
+        content.append(footer)
+        action_taken = 'created'
+    else:
+        for line in all_lines:
+            if show_marker in line:
+                found = True
+                content.append(show_entry)
+                action_taken = 'updated'
+                continue
+
+            if not found and line.strip() == footer.strip():
+                content.append(show_entry)
+                action_taken = 'added'
+                content.append(line)
+            else:
+                content.append(line)
+
+    new_content = ''.join(content)
+
+    # Skip the write when the file is already correct. This keeps shared
+    # (multi-instance) playlist files safe: a consuming instance that
+    # computes an identical entry must not rewrite what the producing
+    # instance already wrote, avoiding redundant writes and write races.
+    if all_lines and new_content == ''.join(all_lines):
+        return True
+
     xbmc.sleep(FILE_WRITE_DELAY_MS)
-    
+
     try:
         with open(playlist_path, 'w+', encoding='utf-8') as f:
-            if not all_lines:
-                # Create new file
-                content.append(header)
-                content.append(show_entry)
-                content.append(footer)
-                action_taken = 'created'
-            else:
-                for line in all_lines:
-                    if show_marker in line:
-                        found = True
-                        content.append(show_entry)
-                        action_taken = 'updated'
-                        continue
-                    
-                    if not found and line.strip() == footer.strip():
-                        content.append(show_entry)
-                        action_taken = 'added'
-                        content.append(line)
-                    else:
-                        content.append(line)
-            
-            f.write(''.join(content))
-        
+            f.write(new_content)
+
         if action_taken and not quiet:
             log.debug("Playlist entry %s" % action_taken,
                      playlist=playlist_name, show_id=show_id)
