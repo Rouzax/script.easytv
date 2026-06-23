@@ -67,7 +67,7 @@ import os
 import random
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Union, cast
+from typing import Any, Dict, List, Optional, Set, Tuple, TYPE_CHECKING, Union, cast
 
 import xbmc
 import xbmcaddon
@@ -313,6 +313,9 @@ class ServiceDaemon:
         self._sync_enabled: bool = False
         self._sync_tick_counter: int = 0
         self._last_sync_rev: int = 0
+        # Opaque server-side updated_at watermark for change detection.
+        # None until seeded at startup (see _initialize_storage).
+        self._last_sync_updated_at: Optional[Any] = None
 
         # Cache playback completion threshold from Kodi settings
         self._playback_complete_threshold = get_playcount_minimum_percent() / 100.0
@@ -1040,7 +1043,66 @@ class ServiceDaemon:
                 for show_id in safe_to_remove:
                     self._remove_from_shows_with_next_episodes(show_id)
 
+        # Shows tracked on both sides whose row changed on another instance
+        # (on-deck advance, resume point, or counts). The revision bumps but
+        # the add/remove sets do not catch them, so consume them locally.
+        self._consume_remote_changes(local_ids, storage)
+
         self._last_sync_rev = revision
+
+    def _consume_remote_changes(
+        self,
+        local_snapshot: Set[int],
+        storage: "SharedDatabaseStorage",
+    ) -> None:
+        """
+        Apply rows changed on another instance for locally-tracked shows.
+
+        Detection: any show whose shared-DB row was written at or after the
+        last-applied updated_at watermark. This catches on-deck advances,
+        resume-point changes, and count changes uniformly, unlike the old
+        on-deck-id comparison.
+
+        Apply (read-only, no rebroadcast):
+        - storage.get_ondeck_bulk(refresh_display=True) updates this instance's
+          window properties from the shared Kodi library (resume state and
+          counts for same-episode shows, full display refresh for advanced
+          shows). It performs no DB write.
+        - _update_smartplaylist re-derives the category from those properties.
+          The playlist writer is content-checked, so an already-correct entry
+          is a no-op (safe for shared playlist files).
+
+        Never calls set_ondeck, so it does not bump the revision or fight the
+        originating instance. Random-order shows are adopted verbatim.
+
+        Args:
+            local_snapshot: Show IDs tracked locally before this sync's
+                add/remove reconciliation (added shows are handled there).
+            storage: The shared-database storage backend.
+        """
+        changed_ids, new_watermark = storage.db.get_show_ids_updated_since(
+            self._last_sync_updated_at
+        )
+        if new_watermark is not None:
+            self._last_sync_updated_at = new_watermark
+
+        changed_tracked = sorted(changed_ids & local_snapshot)
+        if not changed_tracked:
+            return
+
+        self._log.info(
+            "Show changes consumed from shared DB (daemon)",
+            event="sync.daemon_consumed",
+            show_ids=changed_tracked,
+            count=len(changed_tracked),
+        )
+
+        # Read-only window-property refresh from the shared Kodi library.
+        storage.get_ondeck_bulk(changed_tracked, refresh_display=True)
+
+        # Re-derive smart playlist category from the refreshed window props.
+        for show_id in changed_tracked:
+            self._update_smartplaylist(show_id, quiet=True)
 
     def _process_sync_pending_shows(self) -> None:
         """
@@ -1946,6 +2008,7 @@ class ServiceDaemon:
             if new_sync_enabled:
                 self._sync_tick_counter = 0
                 self._last_sync_rev = 0
+                self._last_sync_updated_at = None
 
         self._settings = load_settings(
             firstrun=False,

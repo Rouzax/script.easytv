@@ -27,6 +27,7 @@ def _make_daemon():
     daemon._sync_enabled = True
     daemon._sync_tick_counter = 0
     daemon._last_sync_rev = 0
+    daemon._last_sync_updated_at = None
 
     class FakeState:
         shows_with_next_episodes = []
@@ -133,6 +134,8 @@ class TestCheckSharedDbSync:
         storage.db = MagicMock()
         storage.db.get_global_rev.return_value = 11
         storage.get_tracked_show_ids.return_value = ({1, 2, 3, 4, 5}, 11)
+        # No changes among already-tracked shows.
+        storage.db.get_show_ids_updated_since.return_value = (set(), None)
         mock_get_storage.return_value = storage
 
         with patch.object(daemon, 'refresh_show_episodes') as mock_refresh:
@@ -159,6 +162,7 @@ class TestCheckSharedDbSync:
         storage.db = MagicMock()
         storage.db.get_global_rev.return_value = 11
         storage.get_tracked_show_ids.return_value = ({1, 2}, 11)
+        storage.db.get_show_ids_updated_since.return_value = (set(), None)
         mock_get_storage.return_value = storage
 
         with patch.object(daemon, 'refresh_show_episodes'):
@@ -182,6 +186,7 @@ class TestCheckSharedDbSync:
         storage.db = MagicMock()
         storage.db.get_global_rev.return_value = 11
         storage.get_tracked_show_ids.return_value = ({1, 2}, 11)
+        storage.db.get_show_ids_updated_since.return_value = (set(), None)
         mock_get_storage.return_value = storage
 
         with patch.object(daemon, 'refresh_show_episodes'):
@@ -202,6 +207,132 @@ class TestCheckSharedDbSync:
         daemon._check_shared_db_sync()
 
         storage.db.get_global_rev.assert_not_called()
+
+
+# ── consume changed (watermark-driven) ─────────────────────────────────
+
+class TestConsumeChangedShows:
+    """Periodic sync must apply ANY row changed since last sync for shows
+    tracked on both instances, via the updated_at watermark, without writing
+    back to the shared DB (no rebroadcast)."""
+
+    @patch('resources.lib.service.daemon.get_storage')
+    def test_changed_tracked_show_consumed_without_rebroadcast(self, mock_get_storage):
+        """A tracked show whose row changed since the watermark (e.g. a
+        resume-only change with the same on-deck episode) is refreshed and
+        re-categorised, with no DB write-back."""
+        daemon = _make_daemon()
+        daemon._sync_tick_counter = SYNC_CHECK_INTERVAL_TICKS
+        daemon._last_sync_rev = 631
+        daemon._last_sync_updated_at = "2026-06-23 20:00:00"
+        daemon._state.shows_with_next_episodes = [439]
+
+        storage = MagicMock(spec=SharedDatabaseStorage)
+        storage.is_available.return_value = True
+        storage.db = MagicMock()
+        storage.db.get_global_rev.return_value = 632
+        storage.get_tracked_show_ids.return_value = ({439}, 632)
+        storage.db.get_show_ids_updated_since.return_value = (
+            {439}, "2026-06-23 21:00:00"
+        )
+        mock_get_storage.return_value = storage
+
+        with patch.object(daemon, '_update_smartplaylist') as mock_sp:
+            daemon._check_shared_db_sync()
+
+        storage.get_ondeck_bulk.assert_called_once()
+        bulk_args, bulk_kwargs = storage.get_ondeck_bulk.call_args
+        assert set(bulk_args[0]) == {439}
+        assert bulk_kwargs.get('refresh_display') is True
+        mock_sp.assert_called_once_with(439, quiet=True)
+        storage.set_ondeck.assert_not_called()
+        storage.db.set_show_tracking.assert_not_called()
+        assert daemon._last_sync_updated_at == "2026-06-23 21:00:00"
+        assert daemon._last_sync_rev == 632
+
+    @patch('resources.lib.service.daemon.get_storage')
+    def test_no_changed_rows_does_not_consume(self, mock_get_storage):
+        """When nothing changed since the watermark, no consume occurs."""
+        daemon = _make_daemon()
+        daemon._sync_tick_counter = SYNC_CHECK_INTERVAL_TICKS
+        daemon._last_sync_rev = 631
+        daemon._last_sync_updated_at = "2026-06-23 20:00:00"
+        daemon._state.shows_with_next_episodes = [439]
+
+        storage = MagicMock(spec=SharedDatabaseStorage)
+        storage.is_available.return_value = True
+        storage.db = MagicMock()
+        storage.db.get_global_rev.return_value = 632
+        storage.get_tracked_show_ids.return_value = ({439}, 632)
+        storage.db.get_show_ids_updated_since.return_value = (
+            set(), "2026-06-23 20:00:00"
+        )
+        mock_get_storage.return_value = storage
+
+        with patch.object(daemon, '_update_smartplaylist') as mock_sp:
+            daemon._check_shared_db_sync()
+
+        storage.get_ondeck_bulk.assert_not_called()
+        mock_sp.assert_not_called()
+        storage.set_ondeck.assert_not_called()
+
+    @patch('resources.lib.service.daemon.get_storage')
+    def test_changed_but_untracked_show_not_consumed(self, mock_get_storage):
+        """A changed row not tracked locally is left to the add branch,
+        not double-processed by the consume path."""
+        daemon = _make_daemon()
+        daemon._sync_tick_counter = SYNC_CHECK_INTERVAL_TICKS
+        daemon._last_sync_rev = 631
+        daemon._last_sync_updated_at = "2026-06-23 20:00:00"
+        daemon._state.shows_with_next_episodes = [439]
+
+        storage = MagicMock(spec=SharedDatabaseStorage)
+        storage.is_available.return_value = True
+        storage.db = MagicMock()
+        storage.db.get_global_rev.return_value = 632
+        # 439 still tracked; 999 is a new show only present in the changed set
+        storage.get_tracked_show_ids.return_value = ({439, 999}, 632)
+        storage.db.get_show_ids_updated_since.return_value = (
+            {999}, "2026-06-23 21:00:00"
+        )
+        mock_get_storage.return_value = storage
+
+        with patch.object(daemon, 'refresh_show_episodes'):
+            with patch.object(daemon, '_update_smartplaylist') as mock_sp:
+                daemon._check_shared_db_sync()
+
+        storage.get_ondeck_bulk.assert_not_called()
+        mock_sp.assert_not_called()
+
+    @patch('resources.lib.service.daemon.get_storage')
+    def test_random_order_show_consumed_not_reshuffled(self, mock_get_storage):
+        """A changed random-order show is consumed (adopted verbatim), never
+        routed through refresh_show_episodes (which would reshuffle/rebroadcast)."""
+        daemon = _make_daemon()
+        daemon._sync_tick_counter = SYNC_CHECK_INTERVAL_TICKS
+        daemon._last_sync_rev = 631
+        daemon._last_sync_updated_at = "2026-06-23 20:00:00"
+        daemon._state.shows_with_next_episodes = [439]
+        daemon._settings.random_order_shows = {439}
+
+        storage = MagicMock(spec=SharedDatabaseStorage)
+        storage.is_available.return_value = True
+        storage.db = MagicMock()
+        storage.db.get_global_rev.return_value = 632
+        storage.get_tracked_show_ids.return_value = ({439}, 632)
+        storage.db.get_show_ids_updated_since.return_value = (
+            {439}, "2026-06-23 21:00:00"
+        )
+        mock_get_storage.return_value = storage
+
+        with patch.object(daemon, 'refresh_show_episodes') as mock_refresh:
+            with patch.object(daemon, '_update_smartplaylist'):
+                daemon._check_shared_db_sync()
+
+        for call in mock_refresh.call_args_list:
+            assert 439 not in (call.kwargs.get('showids') or [])
+        storage.get_ondeck_bulk.assert_called_once()
+        storage.set_ondeck.assert_not_called()
 
 
 # ── _process_sync_pending_shows ─────────────────────────────────────────
