@@ -1008,8 +1008,9 @@ class ServiceDaemon:
             last_rev=self._last_sync_rev,
         )
 
+        local_ids = set(self._state.shows_with_next_episodes)
         try:
-            db_show_ids, revision = storage.get_tracked_show_ids()
+            sync_result = storage.sync_tracked_shows(local_ids)
         except Exception:
             self._log.exception(
                 "Failed to fetch tracked show IDs",
@@ -1017,9 +1018,9 @@ class ServiceDaemon:
             )
             return
 
-        local_ids = set(self._state.shows_with_next_episodes)
-        added = db_show_ids - local_ids
-        removed = local_ids - db_show_ids
+        added = sync_result.added
+        removed = sync_result.removed
+        revision = sync_result.revision
 
         if added:
             self._log.info(

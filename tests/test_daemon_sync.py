@@ -5,7 +5,7 @@ from resources.lib.constants import (
     PROP_SYNC_PENDING_SHOWS,
     SYNC_CHECK_INTERVAL_TICKS,
 )
-from resources.lib.data.storage import SharedDatabaseStorage
+from resources.lib.data.storage import SharedDatabaseStorage, SyncResult
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────
@@ -114,7 +114,7 @@ class TestCheckSharedDbSync:
 
         daemon._check_shared_db_sync()
 
-        storage.get_tracked_show_ids.assert_not_called()
+        storage.sync_tracked_shows.assert_not_called()
         daemon._log.debug.assert_any_call(
             "Shared DB revision unchanged",
             event="sync.daemon_unchanged",
@@ -133,7 +133,9 @@ class TestCheckSharedDbSync:
         storage.is_available.return_value = True
         storage.db = MagicMock()
         storage.db.get_global_rev.return_value = 11
-        storage.get_tracked_show_ids.return_value = ({1, 2, 3, 4, 5}, 11)
+        storage.sync_tracked_shows.return_value = SyncResult(
+            added={4, 5}, removed=set(), revision=11
+        )
         # No changes among already-tracked shows.
         storage.db.get_show_ids_updated_since.return_value = (set(), None)
         mock_get_storage.return_value = storage
@@ -161,7 +163,9 @@ class TestCheckSharedDbSync:
         storage.is_available.return_value = True
         storage.db = MagicMock()
         storage.db.get_global_rev.return_value = 11
-        storage.get_tracked_show_ids.return_value = ({1, 2}, 11)
+        storage.sync_tracked_shows.return_value = SyncResult(
+            added=set(), removed={3}, revision=11
+        )
         storage.db.get_show_ids_updated_since.return_value = (set(), None)
         mock_get_storage.return_value = storage
 
@@ -185,7 +189,9 @@ class TestCheckSharedDbSync:
         storage.is_available.return_value = True
         storage.db = MagicMock()
         storage.db.get_global_rev.return_value = 11
-        storage.get_tracked_show_ids.return_value = ({1, 2}, 11)
+        storage.sync_tracked_shows.return_value = SyncResult(
+            added=set(), removed={3}, revision=11
+        )
         storage.db.get_show_ids_updated_since.return_value = (set(), None)
         mock_get_storage.return_value = storage
 
@@ -231,7 +237,9 @@ class TestConsumeChangedShows:
         storage.is_available.return_value = True
         storage.db = MagicMock()
         storage.db.get_global_rev.return_value = 632
-        storage.get_tracked_show_ids.return_value = ({439}, 632)
+        storage.sync_tracked_shows.return_value = SyncResult(
+            added=set(), removed=set(), revision=632
+        )
         storage.db.get_show_ids_updated_since.return_value = (
             {439}, "2026-06-23 21:00:00"
         )
@@ -263,7 +271,9 @@ class TestConsumeChangedShows:
         storage.is_available.return_value = True
         storage.db = MagicMock()
         storage.db.get_global_rev.return_value = 632
-        storage.get_tracked_show_ids.return_value = ({439}, 632)
+        storage.sync_tracked_shows.return_value = SyncResult(
+            added=set(), removed=set(), revision=632
+        )
         storage.db.get_show_ids_updated_since.return_value = (
             set(), "2026-06-23 20:00:00"
         )
@@ -291,7 +301,9 @@ class TestConsumeChangedShows:
         storage.db = MagicMock()
         storage.db.get_global_rev.return_value = 632
         # 439 still tracked; 999 is a new show only present in the changed set
-        storage.get_tracked_show_ids.return_value = ({439, 999}, 632)
+        storage.sync_tracked_shows.return_value = SyncResult(
+            added={999}, removed=set(), revision=632
+        )
         storage.db.get_show_ids_updated_since.return_value = (
             {999}, "2026-06-23 21:00:00"
         )
@@ -319,7 +331,9 @@ class TestConsumeChangedShows:
         storage.is_available.return_value = True
         storage.db = MagicMock()
         storage.db.get_global_rev.return_value = 632
-        storage.get_tracked_show_ids.return_value = ({439}, 632)
+        storage.sync_tracked_shows.return_value = SyncResult(
+            added=set(), removed=set(), revision=632
+        )
         storage.db.get_show_ids_updated_since.return_value = (
             {439}, "2026-06-23 21:00:00"
         )
