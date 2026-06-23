@@ -101,6 +101,79 @@ class TestGetTrackedShowIds:
         mock_cursor.close.assert_called_once()
 
 
+class TestGetMaxUpdatedAt:
+    """Tests for SharedDatabase.get_max_updated_at()."""
+
+    def test_returns_max_value(self):
+        db, mock_conn = _make_shared_db()
+        cur = MagicMock()
+        mock_conn.cursor.return_value = cur
+        cur.fetchone.return_value = ("2026-06-23 22:00:00",)
+
+        assert db.get_max_updated_at() == "2026-06-23 22:00:00"
+        cur.close.assert_called_once()
+
+    def test_empty_table_returns_none(self):
+        db, mock_conn = _make_shared_db()
+        cur = MagicMock()
+        mock_conn.cursor.return_value = cur
+        cur.fetchone.return_value = (None,)
+
+        assert db.get_max_updated_at() is None
+
+
+class TestGetShowIdsUpdatedSince:
+    """Tests for SharedDatabase.get_show_ids_updated_since()."""
+
+    def test_returns_changed_ids_and_max_watermark(self):
+        db, mock_conn = _make_shared_db()
+        cur = MagicMock()
+        mock_conn.cursor.return_value = cur
+        cur.fetchall.return_value = [
+            (101, "2026-06-23 21:00:00"),
+            (202, "2026-06-23 21:05:00"),
+        ]
+
+        ids, watermark = db.get_show_ids_updated_since("2026-06-23 20:00:00")
+
+        assert ids == {101, 202}
+        assert watermark == "2026-06-23 21:05:00"
+        cur.close.assert_called_once()
+
+    def test_no_rows_keeps_since_watermark(self):
+        db, mock_conn = _make_shared_db()
+        cur = MagicMock()
+        mock_conn.cursor.return_value = cur
+        cur.fetchall.return_value = []
+
+        ids, watermark = db.get_show_ids_updated_since("2026-06-23 20:00:00")
+
+        assert ids == set()
+        assert watermark == "2026-06-23 20:00:00"
+
+    def test_none_since_returns_baseline_and_no_ids(self):
+        db, _mock_conn = _make_shared_db()
+        db.get_max_updated_at = MagicMock(return_value="2026-06-23 22:00:00")
+
+        ids, watermark = db.get_show_ids_updated_since(None)
+
+        assert ids == set()
+        assert watermark == "2026-06-23 22:00:00"
+        db.get_max_updated_at.assert_called_once()
+
+    def test_uses_prefixed_table_and_idx_query(self):
+        db, mock_conn = _make_shared_db(table_prefix="myp_")
+        cur = MagicMock()
+        mock_conn.cursor.return_value = cur
+        cur.fetchall.return_value = [(1, "2026-06-23 21:00:00")]
+
+        db.get_show_ids_updated_since("2026-06-23 20:00:00")
+
+        sql = cur.execute.call_args[0][0]
+        assert "myp_show_tracking" in sql
+        assert "updated_at >= %s" in sql
+
+
 class TestValidateAndMigrateIds:
     """Tests for SharedDatabase.validate_and_migrate_ids()."""
 

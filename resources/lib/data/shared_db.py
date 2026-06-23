@@ -981,6 +981,70 @@ class SharedDatabase:
         finally:
             cursor.close()
 
+    def get_max_updated_at(self) -> Optional[Any]:
+        """
+        Get the maximum updated_at timestamp across all tracked shows.
+
+        Used to seed the change-detection watermark at startup so the first
+        post-startup sync only consumes rows written afterwards.
+
+        Returns:
+            The maximum updated_at value, or None if the table is empty.
+        """
+        conn = self._get_connection()
+        conn.commit()  # Fresh snapshot
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                f"SELECT MAX(updated_at) FROM {self._table('show_tracking')}"
+            )
+            row = cursor.fetchone()
+            return row[0] if row else None
+        finally:
+            cursor.close()
+
+    def get_show_ids_updated_since(
+        self, since: Optional[Any]
+    ) -> Tuple[Set[int], Optional[Any]]:
+        """
+        Get show IDs whose tracking row changed at or after a timestamp.
+
+        Uses the idx_updated index. Comparison is inclusive (>=) so a row
+        written in the same one-second TIMESTAMP tick as the watermark is
+        never skipped; consumers must apply changes idempotently to absorb
+        any row re-pulled at the boundary.
+
+        Args:
+            since: The watermark (a server-side updated_at value), or None.
+                   When None, no rows are returned and the current maximum
+                   timestamp is returned as the baseline.
+
+        Returns:
+            Tuple of (changed_show_ids, new_watermark) where new_watermark
+            is the maximum updated_at among the returned rows, or `since`
+            when no rows changed.
+        """
+        if since is None:
+            return set(), self.get_max_updated_at()
+
+        conn = self._get_connection()
+        conn.commit()  # Fresh snapshot
+        cursor = conn.cursor()
+        try:
+            cursor.execute(f"""
+                SELECT show_id, updated_at
+                FROM {self._table('show_tracking')}
+                WHERE updated_at >= %s
+            """, (since,))
+            rows = cursor.fetchall()
+            if not rows:
+                return set(), since
+            show_ids = {row[0] for row in rows}
+            new_watermark = max(row[1] for row in rows)
+            return show_ids, new_watermark
+        finally:
+            cursor.close()
+
     def is_empty(self) -> bool:
         """
         Check if database has no show tracking data.
