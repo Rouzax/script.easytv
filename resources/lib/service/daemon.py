@@ -2094,6 +2094,11 @@ class ServiceDaemon:
         else:
             # Database has existing data - validate IDs against current library
             self._validate_storage_ids(storage)
+
+        # Seed the change-detection watermark so the first post-startup sync
+        # only consumes rows written after now (local state is current after
+        # the startup refresh / migration above).
+        self._last_sync_updated_at = storage.db.get_max_updated_at()
     
     def _migrate_to_shared_storage(self, storage: SharedDatabaseStorage) -> None:
         """

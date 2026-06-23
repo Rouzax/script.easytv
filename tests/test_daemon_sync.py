@@ -417,3 +417,23 @@ class TestProcessSyncPendingShows:
 
         called_ids = set(mock_refresh.call_args[1]['showids'])
         assert called_ids == {131, 438}
+
+
+# ── _initialize_storage (watermark seeding) ─────────────────────────────
+
+class TestInitializeStorageWatermark:
+    """Startup must seed the change-detection watermark."""
+
+    @patch('resources.lib.service.daemon.get_storage')
+    def test_seeds_watermark_from_max_updated_at(self, mock_get_storage):
+        daemon = _make_daemon()
+        storage = MagicMock(spec=SharedDatabaseStorage)
+        storage.db = MagicMock()
+        storage.db.is_empty.return_value = False
+        storage.db.get_max_updated_at.return_value = "2026-06-23 22:00:00"
+        mock_get_storage.return_value = storage
+
+        with patch.object(daemon, '_validate_storage_ids'):
+            daemon._initialize_storage()
+
+        assert daemon._last_sync_updated_at == "2026-06-23 22:00:00"
