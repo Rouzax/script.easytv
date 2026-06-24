@@ -373,6 +373,7 @@ Multi-instance show synchronization and data management.
 | `sync.daemon_unchanged` | DEBUG | Shared DB revision unchanged, no action |
 | `sync.daemon_added` | INFO | Shows added to daemon from shared DB |
 | `sync.daemon_removed` | INFO | Shows removed from daemon per shared DB |
+| `sync.daemon_consumed` | INFO | On-deck/resume/count changes consumed from shared DB |
 | `sync.daemon_skip_playback` | DEBUG | Periodic sync skipped (playback active) |
 | `sync.daemon_error` | ERROR | Failed to fetch tracked show IDs |
 | `sync.pending_processed` | DEBUG | Processed pending shows flagged by clone |
