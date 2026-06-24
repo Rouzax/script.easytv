@@ -101,6 +101,7 @@ from resources.lib.constants import (
     PROP_PLAYLIST_RUNNING,
     PROP_RANDOM_ORDER_SHUFFLE,
     PROP_SHOWS_WITH_NEXT_EPISODES,
+    PROP_FORCE_SYNC,
     PROP_SYNC_PENDING_SHOWS,
     PREMIERE_MIX_IN,
     SETTING_MULTI_INSTANCE_SYNC,
@@ -513,6 +514,9 @@ class ServiceDaemon:
 
         # Check shared DB for shows added/removed by other instances
         self._check_shared_db_sync()
+
+        # Run an immediate sync if the UI requested one (on-open trigger)
+        self._process_force_sync()
 
         # Process shows flagged by clone sync for immediate integration
         self._process_sync_pending_shows()
@@ -953,7 +957,7 @@ class ServiceDaemon:
                 str(self._state.shows_with_next_episodes)
             )
     
-    def _check_shared_db_sync(self) -> None:
+    def _check_shared_db_sync(self, force: bool = False) -> None:
         """
         Periodic check for shows added/removed by other instances.
 
@@ -972,9 +976,12 @@ class ServiceDaemon:
         if not self._sync_enabled:
             return
 
-        self._sync_tick_counter += 1
-        if self._sync_tick_counter < SYNC_CHECK_INTERVAL_TICKS:
-            return
+        # On-open trigger (force=True) runs immediately, bypassing only the
+        # periodic tick counter. All other gates below still apply.
+        if not force:
+            self._sync_tick_counter += 1
+            if self._sync_tick_counter < SYNC_CHECK_INTERVAL_TICKS:
+                return
         self._sync_tick_counter = 0
 
         if self._player and self._player._playing_showid:
@@ -1146,6 +1153,20 @@ class ServiceDaemon:
             count=len(new_ids),
         )
         self.refresh_show_episodes(showids=new_ids, bulk=False)
+
+    def _process_force_sync(self) -> None:
+        """
+        Run an immediate shared DB sync when the UI requests one.
+
+        The UI sets PROP_FORCE_SYNC on launch (the on-open trigger) so a
+        consuming instance reflects cross-instance changes right away instead
+        of waiting for the next periodic tick. Picked up within one event-loop
+        tick (~100ms) and cleared.
+        """
+        if not self._window.getProperty(PROP_FORCE_SYNC):
+            return
+        self._window.clearProperty(PROP_FORCE_SYNC)
+        self._check_shared_db_sync(force=True)
 
     def _reshuffle_random_order_shows(
         self,

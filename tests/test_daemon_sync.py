@@ -2,6 +2,7 @@
 from unittest.mock import MagicMock, patch
 
 from resources.lib.constants import (
+    PROP_FORCE_SYNC,
     PROP_SYNC_PENDING_SHOWS,
     SYNC_CHECK_INTERVAL_TICKS,
 )
@@ -347,6 +348,92 @@ class TestConsumeChangedShows:
             assert 439 not in (call.kwargs.get('showids') or [])
         storage.get_ondeck_bulk.assert_called_once()
         storage.set_ondeck.assert_not_called()
+
+
+# ── force-sync path ─────────────────────────────────────────────────────
+
+class TestForceSync:
+    """The on-open trigger forces an immediate sync, bypassing the tick gate."""
+
+    @patch('resources.lib.service.daemon.get_storage')
+    def test_force_bypasses_tick_gate(self, mock_get_storage):
+        """force=True reaches the DB even when the tick counter is far below
+        the interval (a periodic call would have returned early)."""
+        daemon = _make_daemon()
+        daemon._sync_tick_counter = 0
+        daemon._last_sync_rev = 5
+        storage = MagicMock(spec=SharedDatabaseStorage)
+        storage.is_available.return_value = True
+        storage.db = MagicMock()
+        storage.db.get_global_rev.return_value = 5  # unchanged: stops at the rev gate
+        mock_get_storage.return_value = storage
+
+        daemon._check_shared_db_sync(force=True)
+
+        storage.db.get_global_rev.assert_called_once()
+
+    @patch('resources.lib.service.daemon.get_storage')
+    def test_force_resets_tick_counter(self, mock_get_storage):
+        """A forced sync reschedules the periodic timer by resetting the counter."""
+        daemon = _make_daemon()
+        daemon._sync_tick_counter = 1234
+        daemon._last_sync_rev = 5
+        storage = MagicMock(spec=SharedDatabaseStorage)
+        storage.is_available.return_value = True
+        storage.db = MagicMock()
+        storage.db.get_global_rev.return_value = 5
+        mock_get_storage.return_value = storage
+
+        daemon._check_shared_db_sync(force=True)
+
+        assert daemon._sync_tick_counter == 0
+
+    @patch('resources.lib.service.daemon.get_storage')
+    def test_force_honors_sync_disabled(self, mock_get_storage):
+        """force=True still does nothing when multi-instance sync is off."""
+        daemon = _make_daemon()
+        daemon._sync_enabled = False
+
+        daemon._check_shared_db_sync(force=True)
+
+        mock_get_storage.assert_not_called()
+
+    @patch('resources.lib.service.daemon.get_storage')
+    def test_force_honors_playback_active(self, mock_get_storage):
+        """force=True still skips while playback is active."""
+        daemon = _make_daemon()
+        daemon._player._playing_showid = 42
+        storage = MagicMock(spec=SharedDatabaseStorage)
+        storage.db = MagicMock()
+        mock_get_storage.return_value = storage
+
+        daemon._check_shared_db_sync(force=True)
+
+        storage.db.get_global_rev.assert_not_called()
+
+
+class TestProcessForceSync:
+    """The daemon picks up the UI's force-sync flag each tick."""
+
+    def test_noop_when_flag_unset(self):
+        daemon = _make_daemon()
+        daemon._window.getProperty.return_value = ''
+
+        with patch.object(daemon, '_check_shared_db_sync') as mock_sync:
+            daemon._process_force_sync()
+
+        mock_sync.assert_not_called()
+        daemon._window.clearProperty.assert_not_called()
+
+    def test_runs_and_clears_when_flag_set(self):
+        daemon = _make_daemon()
+        daemon._window.getProperty.return_value = '1'
+
+        with patch.object(daemon, '_check_shared_db_sync') as mock_sync:
+            daemon._process_force_sync()
+
+        daemon._window.clearProperty.assert_called_once_with(PROP_FORCE_SYNC)
+        mock_sync.assert_called_once_with(force=True)
 
 
 # ── _process_sync_pending_shows ─────────────────────────────────────────

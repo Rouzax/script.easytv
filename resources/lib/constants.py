@@ -480,6 +480,7 @@ PROP_SHOWS_WITH_NEXT_EPISODES = "EasyTV.shows_with_next_episodes"
 PROP_SYNC_REV = "EasyTV.sync_rev"
 # Comma-separated show IDs pending daemon integration (clone -> service handoff)
 PROP_SYNC_PENDING_SHOWS = "EasyTV.sync_pending_shows"
+PROP_FORCE_SYNC = "EasyTV.force_sync"
 
 # =============================================================================
 # Setting IDs
