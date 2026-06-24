@@ -355,6 +355,21 @@ class TestGetOndeckBulkBoundedRefresh:
         mock_json_query.return_value = {}
         assert storage._refresh_resume_state(42, 100) is False
 
+    @patch('resources.lib.data.storage.WINDOW')
+    def test_no_marker_set_when_display_refresh_fails(self, mock_window):
+        storage, mock_db = self._make_storage()
+        mock_db.get_show_tracking_bulk_with_rev.return_value = ({42: self._row(ondeck=200)}, 5)
+        props = {
+            _build_property_key(42, "SyncedAt"): "2026-06-23 09:00:00",
+            _build_property_key(42, "EpisodeID"): "100",
+        }
+        mock_window.getProperty.side_effect = lambda k: props.get(k, '')
+        synced_key = _build_property_key(42, "SyncedAt")
+        with patch.object(storage, '_fetch_and_set_display_properties', return_value=False):
+            storage.get_ondeck_bulk([42], refresh_display=True)
+        set_calls = [c for c in mock_window.setProperty.call_args_list if c[0][0] == synced_key]
+        assert set_calls == [], "SyncedAt must not be written when display refresh fails"
+
 
 class TestGetStorageCloneFallback:
     """Test get_storage() clone fallback via advertised shared DB config."""
