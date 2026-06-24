@@ -1,5 +1,23 @@
 """Tests for UI entry point module."""
 
+from unittest.mock import MagicMock, patch
+
+
+def test_signal_force_sync_sets_flag_when_enabled():
+    from resources.lib.ui import main
+    window = MagicMock()
+    with patch.object(main, 'get_bool_setting', return_value=True):
+        main._signal_force_sync_on_open(window)
+    window.setProperty.assert_called_once_with('EasyTV.force_sync', '1')
+
+
+def test_signal_force_sync_noop_when_disabled():
+    from resources.lib.ui import main
+    window = MagicMock()
+    with patch.object(main, 'get_bool_setting', return_value=False):
+        main._signal_force_sync_on_open(window)
+    window.setProperty.assert_not_called()
+
 
 def test_ui_main_importable():
     """Verify the UI main module can be imported."""

@@ -37,7 +37,7 @@ from resources.lib.constants import (
     KODI_HOME_WINDOW_ID, ADDON_RESTART_DELAY_MS,
     SERVICE_POLL_SLEEP_MS, SERVICE_POLL_TIMEOUT_TICKS,
     PROP_SERVICE_RUNNING, PROP_VERSION, PROP_SERVICE_PATH,
-    PROP_ART_FETCHED,
+    PROP_ART_FETCHED, PROP_FORCE_SYNC, SETTING_MULTI_INSTANCE_SYNC,
 )
 from resources.lib.utils import (
     lang, get_logger, get_bool_setting, get_int_setting,
@@ -90,6 +90,18 @@ def _get_skin_setting(addon):
         return 0
 
 
+def _signal_force_sync_on_open(window):
+    """Signal the service to run an immediate shared-DB sync (on-open trigger).
+
+    Set on UI launch so a consuming instance reflects cross-instance changes
+    right away instead of waiting for the next periodic tick. No-op when
+    multi-instance sync is disabled. The daemon clears the flag within one
+    event-loop tick.
+    """
+    if get_bool_setting(SETTING_MULTI_INSTANCE_SYNC):
+        window.setProperty(PROP_FORCE_SYNC, '1')
+
+
 def main_entry(addon, log):
     """Main entry point - determines mode and launches appropriate functionality."""
     log.debug("Main entry point")
@@ -101,6 +113,10 @@ def main_entry(addon, log):
 
     # Track which addon (main or clone) started playback for service dialogs
     window.setProperty('EasyTV.SourceAddonId', addon.getAddonInfo('id'))
+
+    # On-open trigger: ask the service to sync now so cross-instance changes
+    # appear immediately instead of waiting for the next periodic tick.
+    _signal_force_sync_on_open(window)
 
     # Clear the art-cache session flag on every UI launch so a stale latch
     # (e.g. an earlier empty/transient JSON-RPC result) self-heals without
