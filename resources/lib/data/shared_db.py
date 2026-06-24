@@ -905,6 +905,7 @@ class SharedDatabase:
                         'offdeck_list': json.loads(row['offdeck_list'] or '[]'),
                         'watched_count': row['watched_count'],
                         'unwatched_count': row['unwatched_count'],
+                        'updated_at': row['updated_at'],
                     }
                 
                 return result, revision

@@ -328,3 +328,30 @@ class TestIsAvailableDoesNotMutateAdvertisedConfig:
         assert "EasyTV.sync_rev" not in cleared_keys, (
             "is_available must not clear EasyTV.sync_rev; it's main-service-owned cache state"
         )
+
+
+class TestGetShowTrackingBulkWithRev:
+    """Tests for SharedDatabase.get_show_tracking_bulk_with_rev()."""
+
+    def test_returns_updated_at_per_show(self):
+        db, mock_conn = _make_shared_db()
+        cur = MagicMock()
+        mock_conn.cursor.return_value = cur
+        cur.fetchall.return_value = [{
+            'show_id': 42,
+            'show_title': 'X',
+            'show_year': 2020,
+            'ondeck_episode_id': 100,
+            'ondeck_list': '[100]',
+            'offdeck_list': '[]',
+            'watched_count': 1,
+            'unwatched_count': 5,
+            'updated_at': '2026-06-24 10:00:00',
+            'current_rev': 7,
+        }]
+
+        data, rev = db.get_show_tracking_bulk_with_rev([42])
+
+        assert rev == 7
+        assert data[42]['updated_at'] == '2026-06-24 10:00:00'
+        assert data[42]['ondeck_episode_id'] == 100
