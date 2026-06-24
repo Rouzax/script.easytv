@@ -257,6 +257,105 @@ class TestSharedDatabaseStorageSyncTrackedShows:
         assert result.revision == 4
 
 
+class TestGetOndeckBulkBoundedRefresh:
+    """get_ondeck_bulk(refresh_display=True) only refreshes changed shows."""
+
+    def _make_storage(self):
+        mock_db = MagicMock()
+        storage = SharedDatabaseStorage(mock_db)
+        return storage, mock_db
+
+    def _row(self, ondeck=100, updated="2026-06-24 10:00:00"):
+        return {'ondeck_episode_id': ondeck, 'updated_at': updated,
+                'show_title': 'X', 'show_year': 2020, 'ondeck_list': [ondeck],
+                'offdeck_list': [], 'watched_count': 1, 'unwatched_count': 5}
+
+    def _window(self, props):
+        def _get(key):
+            return props.get(key, '')
+        win = MagicMock()
+        win.getProperty.side_effect = _get
+        return win
+
+    @patch('resources.lib.data.storage.WINDOW')
+    def test_skips_show_whose_marker_matches(self, mock_window):
+        storage, mock_db = self._make_storage()
+        mock_db.get_show_tracking_bulk_with_rev.return_value = ({42: self._row()}, 5)
+        # SyncedAt already equals updated_at -> nothing to do
+        win = self._window({_build_property_key(42, "SyncedAt"): "2026-06-24 10:00:00"})
+        mock_window.getProperty.side_effect = win.getProperty.side_effect
+        with patch.object(storage, '_fetch_and_set_display_properties') as mdisp, \
+             patch.object(storage, '_refresh_resume_state') as mres:
+            storage.get_ondeck_bulk([42], refresh_display=True)
+        mdisp.assert_not_called()
+        mres.assert_not_called()
+
+    @patch('resources.lib.data.storage.WINDOW')
+    def test_first_encounter_seeds_marker_without_kodi_call(self, mock_window):
+        storage, mock_db = self._make_storage()
+        mock_db.get_show_tracking_bulk_with_rev.return_value = ({42: self._row(ondeck=100)}, 5)
+        # No SyncedAt yet, but local EpisodeID already matches the DB on-deck
+        props = {
+            _build_property_key(42, "SyncedAt"): "",
+            _build_property_key(42, "EpisodeID"): "100",
+        }
+        mock_window.getProperty.side_effect = lambda k: props.get(k, '')
+        with patch.object(storage, '_fetch_and_set_display_properties') as mdisp, \
+             patch.object(storage, '_refresh_resume_state') as mres:
+            storage.get_ondeck_bulk([42], refresh_display=True)
+        mdisp.assert_not_called()
+        mres.assert_not_called()
+        mock_window.setProperty.assert_any_call(
+            _build_property_key(42, "SyncedAt"), "2026-06-24 10:00:00"
+        )
+
+    @patch('resources.lib.data.storage.WINDOW')
+    def test_refreshes_display_when_ondeck_changed(self, mock_window):
+        storage, mock_db = self._make_storage()
+        mock_db.get_show_tracking_bulk_with_rev.return_value = ({42: self._row(ondeck=200)}, 5)
+        props = {
+            _build_property_key(42, "SyncedAt"): "2026-06-23 09:00:00",  # stale
+            _build_property_key(42, "EpisodeID"): "100",                 # old on-deck
+        }
+        mock_window.getProperty.side_effect = lambda k: props.get(k, '')
+        with patch.object(storage, '_fetch_and_set_display_properties', return_value=True) as mdisp, \
+             patch.object(storage, '_refresh_resume_state') as mres:
+            storage.get_ondeck_bulk([42], refresh_display=True)
+        mdisp.assert_called_once()
+        assert mdisp.call_args[0][0] == 42 and mdisp.call_args[0][1] == 200
+        mres.assert_not_called()
+        mock_window.setProperty.assert_any_call(
+            _build_property_key(42, "SyncedAt"), "2026-06-24 10:00:00"
+        )
+
+    @patch('resources.lib.data.storage.WINDOW')
+    def test_refreshes_resume_when_row_changed_same_episode(self, mock_window):
+        storage, mock_db = self._make_storage()
+        mock_db.get_show_tracking_bulk_with_rev.return_value = ({42: self._row(ondeck=100)}, 5)
+        props = {
+            _build_property_key(42, "SyncedAt"): "2026-06-23 09:00:00",  # stale -> row changed
+            _build_property_key(42, "EpisodeID"): "100",                 # same on-deck
+        }
+        mock_window.getProperty.side_effect = lambda k: props.get(k, '')
+        with patch.object(storage, '_fetch_and_set_display_properties') as mdisp, \
+             patch.object(storage, '_refresh_resume_state', return_value=True) as mres:
+            storage.get_ondeck_bulk([42], refresh_display=True)
+        mdisp.assert_not_called()
+        mres.assert_called_once_with(42, 100)
+        mock_window.setProperty.assert_any_call(
+            _build_property_key(42, "SyncedAt"), "2026-06-24 10:00:00"
+        )
+
+    @patch('resources.lib.data.storage.WINDOW')
+    @patch('resources.lib.data.storage.json_query')
+    def test_refresh_resume_state_returns_bool(self, mock_json_query, mock_window):
+        storage, _ = self._make_storage()
+        mock_json_query.return_value = {'episodedetails': {'resume': {'position': 0, 'total': 0}}}
+        assert storage._refresh_resume_state(42, 100) is True
+        mock_json_query.return_value = {}
+        assert storage._refresh_resume_state(42, 100) is False
+
+
 class TestGetStorageCloneFallback:
     """Test get_storage() clone fallback via advertised shared DB config."""
 

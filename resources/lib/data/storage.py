@@ -454,30 +454,50 @@ class SharedDatabaseStorage(StorageBackend):
         display_refreshed = 0
         for show_id, show_data in data.items():
             if refresh_display:
-                # Check if episode changed and needs display refresh
                 db_episode_id = show_data.get('ondeck_episode_id')
+                db_updated = str(show_data.get('updated_at', '') or '')
+                synced_key = _build_property_key(show_id, "SyncedAt")
+                synced = WINDOW.getProperty(synced_key)
+
+                # Already current for this show: no Kodi call needed.
+                if db_updated and synced == db_updated:
+                    self._update_window_properties(show_id, show_data)
+                    continue
+
                 current_episode_str = WINDOW.getProperty(
                     _build_property_key(show_id, "EpisodeID")
                 )
-                
-                # Compare episode IDs (handle empty/missing values)
                 try:
-                    current_episode_id = int(current_episode_str) if current_episode_str else None
+                    current_episode_id = (
+                        int(current_episode_str) if current_episode_str else None
+                    )
                 except (ValueError, TypeError):
                     current_episode_id = None
-                
+
+                # First encounter with props already matching the DB on-deck:
+                # trust startup-populated props and seed the marker, no Kodi call.
+                if (not synced and db_episode_id
+                        and db_episode_id == current_episode_id):
+                    self._update_window_properties(show_id, show_data)
+                    if db_updated:
+                        WINDOW.setProperty(synced_key, db_updated)
+                    continue
+
                 if db_episode_id and db_episode_id != current_episode_id:
-                    # Episode changed - full display refresh from Kodi
-                    if self._fetch_and_set_display_properties(show_id, db_episode_id, show_data):
+                    # On-deck changed - full display refresh from Kodi
+                    if self._fetch_and_set_display_properties(
+                        show_id, db_episode_id, show_data
+                    ):
                         display_refreshed += 1
+                        if db_updated:
+                            WINDOW.setProperty(synced_key, db_updated)
                         continue
                     # Kodi query failed - fall back to tracking properties only
-                else:
-                    # Same episode - still refresh resume state from Kodi
-                    # (user may have partially watched on another instance)
-                    if db_episode_id:
-                        self._refresh_resume_state(show_id, db_episode_id)
-            
+                elif db_episode_id:
+                    # Same episode but the row changed - refresh resume from Kodi
+                    if self._refresh_resume_state(show_id, db_episode_id) and db_updated:
+                        WINDOW.setProperty(synced_key, db_updated)
+
             # Default: just update tracking properties
             self._update_window_properties(show_id, show_data)
         
@@ -721,7 +741,7 @@ class SharedDatabaseStorage(StorageBackend):
         
         return True
 
-    def _refresh_resume_state(self, show_id: int, episode_id: int) -> None:
+    def _refresh_resume_state(self, show_id: int, episode_id: int) -> bool:
         """
         Refresh only the resume/progress window properties from Kodi.
 
@@ -732,14 +752,18 @@ class SharedDatabaseStorage(StorageBackend):
         Args:
             show_id: The TV show ID
             episode_id: The ondeck episode ID to query resume for
+
+        Returns:
+            True if properties were updated successfully, False if the Kodi
+            query failed or returned no episode data.
         """
         try:
             ep_result = json_query(build_episode_details_query(episode_id), True)
         except Exception:
-            return  # Query failed, keep existing values
+            return False  # Query failed, keep existing values
 
         if 'episodedetails' not in ep_result:
-            return
+            return False
 
         resume_dict = ep_result['episodedetails'].get('resume', {})
         resume_pos = resume_dict.get('position', 0)
@@ -755,6 +779,7 @@ class SharedDatabaseStorage(StorageBackend):
 
         WINDOW.setProperty(_build_property_key(show_id, "Resume"), resume)
         WINDOW.setProperty(_build_property_key(show_id, "PercentPlayed"), percent_played)
+        return True
 
     def _clear_window_properties(self, show_id: int) -> None:
         """
