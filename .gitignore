@@ -43,3 +43,10 @@ CLAUDE.md
 # Integration tests (local-only, contains env-specific config)
 tests/integration/
 
+# Docker integration test tooling (local-only)
+docker/
+
+# Claude working docs / subagent ledgers (local-only)
+docs/superpowers/
+.superpowers/
+

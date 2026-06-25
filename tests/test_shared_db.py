@@ -1,5 +1,6 @@
 """Tests for resources/lib/data/shared_db.py — get_tracked_show_ids."""
-from unittest.mock import MagicMock
+import sys
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -350,7 +351,15 @@ class TestGetShowTrackingBulkWithRev:
             'current_rev': 7,
         }]
 
-        data, rev = db.get_show_tracking_bulk_with_rev([42])
+        # The method imports pymysql.cursors for a DictCursor; mock it so the
+        # test runs without pymysql installed (e.g. CI), matching how the other
+        # connection internals are mocked here.
+        fake_pymysql = MagicMock()
+        with patch.dict(
+            sys.modules,
+            {'pymysql': fake_pymysql, 'pymysql.cursors': fake_pymysql.cursors},
+        ):
+            data, rev = db.get_show_tracking_bulk_with_rev([42])
 
         assert rev == 7
         assert data[42]['updated_at'] == '2026-06-24 10:00:00'
