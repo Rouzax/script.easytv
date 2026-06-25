@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <addon id="script.easytv"
        name="EasyTV"
-       version="1.5.4"
+       version="1.5.5"
        provider-name="Rouzax">
     <requires>
         <import addon="xbmc.python" version="3.0.1"/>
@@ -25,11 +25,11 @@
         <forum>https://forum.kodi.tv/showthread.php?tid=383902</forum>
         <website>https://rouzax.github.io/script.easytv/</website>
         <source>https://github.com/Rouzax/script.easytv</source>
-        <news>v1.5.4 (2026-06-06)
-- Browse view now shows the actual episode runtime instead of the show average
-- Per-episode stream info (resolution, audio, subtitles) cached for future use
-- Library scan cooldown batches rapid-fire scans into a single refresh
-- Fixed inconsistent episode notation casing in browse view</news>
+        <news>v1.5.5 (2026-06-25)
+- Multi-instance sync now keeps every device in step: finishing or pausing an episode on one device updates the next episode and resume point on the others
+- Opening EasyTV now syncs immediately, so changes made on another device show up right away instead of after a delay
+- Faster browse on large libraries when another device has made changes
+- Fewer unnecessary smart playlist rewrites</news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>

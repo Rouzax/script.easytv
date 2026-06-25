@@ -1,6 +1,42 @@
 EasyTV Changelog
 ================
 
+v1.5.5 (2026-06-25)
+-------------------
+Bug Fixes:
+  - Fixed: multi-instance sync only propagated show add/remove changes, not
+    on-deck advances or resume points. Watching or partially watching an
+    episode on one instance did not update the next-episode or resume state
+    on other instances until an unrelated change occurred. The daemon now
+    detects every changed show via an updated_at watermark
+    (get_show_ids_updated_since) during its periodic sync and applies the
+    on-deck, resume, and count changes, then refreshes the smart playlist.
+
+Improvements:
+  - Opening EasyTV now forces an immediate shared-database sync (on-open
+    trigger via a window-property flag set on UI launch) so changes made on
+    another instance appear right away instead of waiting for the next
+    periodic check.
+  - Smart playlists are no longer rewritten when their generated content is
+    identical to the file on disk (content-check guard), avoiding redundant
+    writes on every sync.
+
+Performance:
+  - Browse refresh on multi-instance setups now refreshes only the shows
+    whose tracking row changed instead of re-querying every displayed show
+    from Kodi. A per-show SyncedAt window-property marker, compared against
+    the row's updated_at, gates the per-show GetEpisodeDetails call so an
+    unchanged show makes no query. Removes the multi-second stall when
+    opening browse on a large stale list.
+
+Internal:
+  - Added updated_at watermark read methods to SharedDatabase
+    (get_show_ids_updated_since, get_max_updated_at), reusing the existing
+    idx_updated index; seeded the change-detection watermark at startup.
+  - get_show_tracking_bulk_with_rev now returns each row's updated_at.
+  - Reused storage.sync_tracked_shows for daemon add/remove detection.
+  - Documented the sync.daemon_consumed log event in LOGGING.md.
+
 v1.5.4 (2026-06-06)
 -------------------
 Improvements:
