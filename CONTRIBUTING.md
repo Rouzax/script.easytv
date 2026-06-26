@@ -181,17 +181,33 @@ The `IsSkipped` property indicates when the displayed episode is from the "offde
 
 ## Testing Locally
 
+Install the pinned dev tooling once, then run the same gate that pre-commit and CI run:
+
 ```bash
-# Syntax check all files
-find . -name "*.py" -exec python3 -m py_compile {} \;
+# Install the pinned dev tools
+pip install -r requirements-dev.txt
+
+# Lint + import sorting
+ruff check
 
 # Static analysis
-pip install pyflakes
-pyflakes *.py resources/*.py resources/lib/**/*.py
+pyflakes $(find . -name "*.py" -not -path "*/__pycache__/*")
 
-# Dead code detection
-pip install vulture
-vulture *.py resources/*.py resources/lib/**/*.py --min-confidence 80
+# Type checking (Python 3.8 target)
+pyright
+
+# Dead-code detection
+vulture resources/lib --min-confidence 80
+
+# Tests + coverage
+python3 -m pytest tests/ --ignore=tests/integration --cov=resources/lib
+```
+
+Or run the whole gate through pre-commit (recommended; install the hooks once):
+
+```bash
+pre-commit install && pre-commit install --hook-type pre-push
+pre-commit run --all-files
 ```
 
 ---
