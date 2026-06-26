@@ -1,0 +1,17 @@
+# Structurally synced with script.easymovie/.github/dependabot.yml. Keep parallel.
+# Monitors the SHA-pinned GitHub Actions and the pinned dev tools in
+# requirements-dev.txt. A cooldown skips just-published versions (supply-chain).
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
