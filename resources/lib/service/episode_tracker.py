@@ -36,19 +36,19 @@ Logging:
 from __future__ import annotations
 
 import ast
-from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
 
 import xbmcgui
 
 from resources.lib.constants import PERCENT_MULTIPLIER
-from resources.lib.utils import (
-    get_logger,
-    json_query,
-    is_abort_requested,
-    service_heartbeat,
-)
 from resources.lib.data.queries import build_episode_details_query
 from resources.lib.data.storage import get_storage
+from resources.lib.utils import (
+    get_logger,
+    is_abort_requested,
+    json_query,
+    service_heartbeat,
+)
 
 if TYPE_CHECKING:
     from resources.lib.utils import StructuredLogger

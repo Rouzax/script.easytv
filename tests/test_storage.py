@@ -382,7 +382,7 @@ class TestGetStorageCloneFallback:
     def test_clone_uses_window_property_when_no_advertised_config(self, mocker):
         """Clone without advertised DB config falls back to WindowPropertyStorage."""
         from resources.lib.data import storage as storage_mod
-        from resources.lib.data.storage import get_storage, WindowPropertyStorage
+        from resources.lib.data.storage import WindowPropertyStorage, get_storage
 
         mocker.patch.object(storage_mod, 'get_bool_setting', return_value=False)
         mock_window = mocker.patch.object(storage_mod, 'WINDOW')
@@ -394,12 +394,15 @@ class TestGetStorageCloneFallback:
     def test_clone_uses_shared_db_when_advertised(self, mocker):
         """Clone with advertised DB config creates SharedDatabaseStorage."""
         from resources.lib.data import storage as storage_mod
-        from resources.lib.data.storage import get_storage, SharedDatabaseStorage
+        from resources.lib.data.storage import SharedDatabaseStorage, get_storage
 
         mocker.patch.object(storage_mod, 'get_bool_setting', return_value=False)
 
         def fake_get_prop(key):
-            from resources.lib.constants import PROP_SHARED_DB_NAME, PROP_SHARED_DB_TABLE_PREFIX
+            from resources.lib.constants import (
+                PROP_SHARED_DB_NAME,
+                PROP_SHARED_DB_TABLE_PREFIX,
+            )
             props = {
                 PROP_SHARED_DB_NAME: 'easytv_mastervideo',
                 PROP_SHARED_DB_TABLE_PREFIX: '',
@@ -420,12 +423,15 @@ class TestGetStorageCloneFallback:
     def test_clone_falls_back_when_advertised_db_unavailable(self, mocker):
         """Clone falls back if advertised DB is unreachable."""
         from resources.lib.data import storage as storage_mod
-        from resources.lib.data.storage import get_storage, WindowPropertyStorage
+        from resources.lib.data.storage import WindowPropertyStorage, get_storage
 
         mocker.patch.object(storage_mod, 'get_bool_setting', return_value=False)
 
         def fake_get_prop(key):
-            from resources.lib.constants import PROP_SHARED_DB_NAME, PROP_SHARED_DB_TABLE_PREFIX
+            from resources.lib.constants import (
+                PROP_SHARED_DB_NAME,
+                PROP_SHARED_DB_TABLE_PREFIX,
+            )
             props = {
                 PROP_SHARED_DB_NAME: 'easytv_mastervideo',
                 PROP_SHARED_DB_TABLE_PREFIX: '',
@@ -450,18 +456,19 @@ class TestGetStorageCloneFallback:
         preserved (regression for the 2026-04-07 RCA).
         """
         import sys
+
         from resources.lib.constants import (
             PROP_SHARED_DB_NAME,
             PROP_SHARED_DB_TABLE_PREFIX,
         )
+        from resources.lib.data import shared_db as shared_db_mod
         from resources.lib.data import storage as storage_mod
+        from resources.lib.data.shared_db import SharedDatabase
         from resources.lib.data.storage import (
+            WindowPropertyStorage,
             get_storage,
             reset_storage,
-            WindowPropertyStorage,
         )
-        from resources.lib.data import shared_db as shared_db_mod
-        from resources.lib.data.shared_db import SharedDatabase
 
         # Reset class-level backoff state and storage singleton
         SharedDatabase._last_failure_time = 0

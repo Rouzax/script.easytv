@@ -31,17 +31,17 @@ from __future__ import annotations
 
 import json
 import random
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import xbmcgui
 
 from resources.lib.constants import (
-    KODI_HOME_WINDOW_ID,
-    PROP_LAZY_QUEUE_SESSION,
-    LAZY_QUEUE_BUFFER_SIZE,
     EPISODE_SELECTION_WATCHED,
-    TV_CANDIDATE_PREFIX,
+    KODI_HOME_WINDOW_ID,
+    LAZY_QUEUE_BUFFER_SIZE,
     MOVIE_CANDIDATE_PREFIX,
+    PROP_LAZY_QUEUE_SESSION,
+    TV_CANDIDATE_PREFIX,
 )
 from resources.lib.data.queries import (
     build_random_episodes_query,

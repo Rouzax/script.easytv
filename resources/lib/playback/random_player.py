@@ -30,48 +30,51 @@ import ast
 import json
 import random
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import xbmc
 import xbmcgui
 
 from resources.lib.constants import (
-    KODI_HOME_WINDOW_ID,
-    PLAYLIST_BUILD_BREAK_VALUE,
+    EPISODE_SELECTION_BOTH,
     EPISODE_SELECTION_UNWATCHED,
     EPISODE_SELECTION_WATCHED,
-    EPISODE_SELECTION_BOTH,
+    KODI_HOME_WINDOW_ID,
+    LAZY_QUEUE_BUFFER_SIZE,
+    PLAYLIST_BUILD_BREAK_VALUE,
     PREMIERE_MIX_IN,
     PREMIERE_ONLY,
     PREMIERE_SKIP,
     PROP_PLAYLIST_CONFIG,
-    LAZY_QUEUE_BUFFER_SIZE,
     PROP_PLAYLIST_RUNNING,
     PROP_RANDOM_ORDER_SHUFFLE,
 )
 from resources.lib.data.queries import (
-    get_clear_video_playlist_query,
     build_add_episode_query,
     build_add_movie_query,
-    build_random_movies_query,
-    build_random_episodes_query,
     build_inprogress_episodes_query,
     build_inprogress_movies_query,
+    build_random_episodes_query,
+    build_random_movies_query,
+    get_clear_video_playlist_query,
     get_episode_filter,
 )
 from resources.lib.data.shows import (
-    find_next_episode,
-    fetch_unwatched_shows,
-    fetch_shows_with_watched_episodes,
-    extract_showids_from_playlist,
     extract_movieids_from_playlist,
+    extract_showids_from_playlist,
+    fetch_shows_with_watched_episodes,
+    fetch_unwatched_shows,
     filter_shows_by_duration,
-    validate_duration_settings,
+    find_next_episode,
     sync_show_list_from_shared_db,
+    validate_duration_settings,
 )
-from resources.lib.playback.playlist_session import PlaylistSession, calculate_movie_target
 from resources.lib.data.storage import get_storage
-from resources.lib.utils import get_logger, json_query, log_timing, busy_progress
+from resources.lib.playback.playlist_session import (
+    PlaylistSession,
+    calculate_movie_target,
+)
+from resources.lib.utils import busy_progress, get_logger, json_query, log_timing
 
 if TYPE_CHECKING:
     from resources.lib.utils import StructuredLogger

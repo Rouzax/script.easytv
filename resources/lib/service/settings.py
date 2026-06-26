@@ -29,19 +29,19 @@ from __future__ import annotations
 import ast
 import os
 from dataclasses import dataclass, field
-from typing import Callable, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple
 
 import xbmcaddon
 import xbmcgui
 
 from resources.lib.constants import KODI_HOME_WINDOW_ID
+from resources.lib.data.queries import build_show_details_query, get_all_shows_query
 from resources.lib.utils import (
     get_addon,
+    get_logger,
     json_query,
     lang,
-    get_logger,
 )
-from resources.lib.data.queries import build_show_details_query, get_all_shows_query
 
 if TYPE_CHECKING:
     from resources.lib.utils import StructuredLogger

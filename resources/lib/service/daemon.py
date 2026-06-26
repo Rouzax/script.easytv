@@ -67,7 +67,7 @@ import os
 import random
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set, Tuple, TYPE_CHECKING, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Union, cast
 
 import xbmc
 import xbmcaddon
@@ -76,42 +76,96 @@ import xbmcvfs
 
 from resources.lib.constants import (
     CUSTOM_ICON_BACKUP,
-    KODI_HOME_WINDOW_ID,
     DAEMON_LOOP_SLEEP_MS,
-    NOTIFICATION_DURATION_MS,
-    TARGET_DETECTION_SLEEP_MS,
-    TARGET_DETECTION_MAX_TICKS,
-    POSITION_CHECK_INTERVAL_TICKS,
-    SYNC_CHECK_INTERVAL_TICKS,
-    FIRST_REGULAR_SEASON,
-    EPISODE_INITIAL_VALUE,
-    INITIAL_LOOP_LIMIT,
     # Database startup timing
     DB_STARTUP_CHECK_INTERVAL_MS,
     DB_STARTUP_MAX_RETRIES,
+    EPISODE_INITIAL_VALUE,
+    FIRST_REGULAR_SEASON,
+    INITIAL_LOOP_LIMIT,
+    KODI_HOME_WINDOW_ID,
+    NOTIFICATION_DURATION_MS,
     # Smart playlist format version
     PLAYLIST_FORMAT_VERSION,
+    POSITION_CHECK_INTERVAL_TICKS,
+    PREMIERE_MIX_IN,
+    PROP_FORCE_SYNC,
     # Playlist continuation
     PROP_PLAYLIST_CONFIG,
     PROP_PLAYLIST_REGENERATE,
-    # Service / system properties
-    PROP_SERVICE_RUNNING,
-    PROP_VERSION,
-    PROP_SERVICE_PATH,
     PROP_PLAYLIST_RUNNING,
     PROP_RANDOM_ORDER_SHUFFLE,
+    PROP_SERVICE_PATH,
+    # Service / system properties
+    PROP_SERVICE_RUNNING,
     PROP_SHOWS_WITH_NEXT_EPISODES,
-    PROP_FORCE_SYNC,
     PROP_SYNC_PENDING_SHOWS,
-    PREMIERE_MIX_IN,
+    PROP_VERSION,
     SETTING_MULTI_INSTANCE_SYNC,
+    SYNC_CHECK_INTERVAL_TICKS,
+    TARGET_DETECTION_MAX_TICKS,
+    TARGET_DETECTION_SLEEP_MS,
+)
+from resources.lib.data.duration_cache import (
+    build_updated_cache,
+    calculate_median_duration,
+    get_shows_needing_calculation,
+    load_duration_cache,
+    save_duration_cache,
+)
+from resources.lib.data.queries import (
+    build_all_episodes_no_streamdetails_query,
+    build_episode_prompt_info_query,
+    build_show_episodes_query,
+    build_show_episodes_with_streamdetails_query,
+    get_shows_by_lastplayed_query,
+    get_unwatched_shows_query,
+)
+from resources.lib.data.shows import (
+    extract_showids_from_playlist,
+    fetch_show_episode_data,
+    get_episode_sort_key,
+    get_premiere_category,
+    get_show_category,
+)
+from resources.lib.data.smart_playlists import (
+    delete_easytv_playlists,
+    flush_playlist_batch,
+    is_batch_mode,
+    load_playlist_format_version,
+    remove_show_from_all_playlists,
+    save_playlist_format_version,
+    start_playlist_batch,
+    update_show_in_playlists,
+)
+from resources.lib.data.storage import SharedDatabaseStorage, get_storage, reset_storage
+from resources.lib.data.streamdetails_cache import (
+    build_updated_streamdetails_cache,
+    extract_episode_streamdetails,
+    get_episode_duration,
+    get_shows_needing_streamdetails,
+    load_streamdetails_cache,
+    save_streamdetails_cache,
+)
+from resources.lib.service.episode_tracker import (
+    PROP_DURATION,
+    PROP_EP_RUNTIME,
+    PROP_GENRE,
+    EpisodeTracker,
+)
+from resources.lib.service.library_monitor import LibraryMonitor
+from resources.lib.service.playback_monitor import PlaybackMonitor, PlaybackSettings
+from resources.lib.service.settings import (
+    ServiceSettings,
+    load_settings,
+    validate_show_selections,
 )
 from resources.lib.utils import (
+    get_bool_setting,
+    get_ignore_percent_at_end,
+    get_ignore_seconds_at_start,
     get_logger,
     get_playcount_minimum_percent,
-    get_ignore_seconds_at_start,
-    get_ignore_percent_at_end,
-    get_bool_setting,
     invalidate_icon_cache,
     is_shared_video_database,
     json_query,
@@ -120,57 +174,6 @@ from resources.lib.utils import (
     runtime_converter,
     service_heartbeat,
 )
-from resources.lib.data.queries import (
-    get_unwatched_shows_query,
-    get_shows_by_lastplayed_query,
-    build_show_episodes_query,
-    build_all_episodes_no_streamdetails_query,
-    build_show_episodes_with_streamdetails_query,
-    build_episode_prompt_info_query,
-)
-from resources.lib.data.shows import (
-    get_show_category,
-    get_premiere_category,
-    fetch_show_episode_data,
-    extract_showids_from_playlist,
-    get_episode_sort_key,
-)
-from resources.lib.data.smart_playlists import (
-    remove_show_from_all_playlists,
-    update_show_in_playlists,
-    start_playlist_batch,
-    flush_playlist_batch,
-    load_playlist_format_version,
-    save_playlist_format_version,
-    delete_easytv_playlists,
-    is_batch_mode,
-)
-from resources.lib.data.duration_cache import (
-    load_duration_cache,
-    save_duration_cache,
-    calculate_median_duration,
-    get_shows_needing_calculation,
-    build_updated_cache,
-)
-from resources.lib.data.streamdetails_cache import (
-    load_streamdetails_cache,
-    save_streamdetails_cache,
-    extract_episode_streamdetails,
-    get_shows_needing_streamdetails,
-    build_updated_streamdetails_cache,
-    get_episode_duration,
-)
-from resources.lib.service.settings import (
-    load_settings,
-    ServiceSettings,
-    validate_show_selections,
-)
-from resources.lib.service.library_monitor import LibraryMonitor
-from resources.lib.service.playback_monitor import PlaybackMonitor, PlaybackSettings
-from resources.lib.service.episode_tracker import (
-    EpisodeTracker, PROP_DURATION, PROP_EP_RUNTIME, PROP_GENRE,
-)
-from resources.lib.data.storage import get_storage, reset_storage, SharedDatabaseStorage
 
 if TYPE_CHECKING:
     from resources.lib.utils import StructuredLogger
@@ -2129,8 +2132,8 @@ class ServiceDaemon:
         Args:
             storage: The SharedDatabaseStorage instance.
         """
-        import socket
         import os
+        import socket
         
         # Check if we have any data to migrate
         if not self._state.shows_with_next_episodes:

@@ -45,11 +45,10 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from resources.lib.constants import (
+    EPISODE_SELECTION_BOTH,
     EPISODE_SELECTION_UNWATCHED,
     EPISODE_SELECTION_WATCHED,
-    EPISODE_SELECTION_BOTH,
 )
-
 
 # =============================================================================
 # Filter Constants

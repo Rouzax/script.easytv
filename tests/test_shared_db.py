@@ -271,6 +271,7 @@ class TestIsAvailableDoesNotMutateAdvertisedConfig:
     def test_pymysql_import_error_does_not_clear_advertised_config(self, mocker):
         """Real ImportError path: clone tries to connect, pymysql missing, advertisement preserved."""
         import sys
+
         from resources.lib.constants import (
             PROP_SHARED_DB_NAME,
             PROP_SHARED_DB_TABLE_PREFIX,
@@ -308,6 +309,7 @@ class TestIsAvailableDoesNotMutateAdvertisedConfig:
     def test_pymysql_import_error_does_not_clear_sync_rev(self, mocker):
         """sync_rev is local cache state of the main service; clones must not clear it."""
         import sys
+
         from resources.lib.data import shared_db as shared_db_mod
         from resources.lib.data.shared_db import SharedDatabase
 

@@ -1,10 +1,10 @@
 """Tests for resources/lib/data/duration_cache.py — duration calculations."""
+from resources.lib.constants import DURATION_CACHE_VERSION
 from resources.lib.data.duration_cache import (
+    build_updated_cache,
     calculate_median_duration,
     get_shows_needing_calculation,
-    build_updated_cache,
 )
-from resources.lib.constants import DURATION_CACHE_VERSION
 
 
 def _make_episode(duration):

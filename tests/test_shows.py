@@ -1,25 +1,24 @@
 """Tests for resources/lib/data/shows.py — show data logic."""
 from unittest.mock import MagicMock, patch
 
-from resources.lib.data.shows import (
-    generate_sort_key,
-    parse_season_episode_string,
-    get_episode_sort_key,
-    get_show_category,
-    get_premiere_category,
-    sync_show_list_from_shared_db,
-    _get_playlist_filename,
-)
-from resources.lib.data.storage import SyncResult
 from resources.lib.constants import (
-    CATEGORY_START_FRESH,
     CATEGORY_CONTINUE_WATCHING,
-    CATEGORY_SHOW_PREMIERE,
     CATEGORY_SEASON_PREMIERE,
+    CATEGORY_SHOW_PREMIERE,
+    CATEGORY_START_FRESH,
     PROP_SHOWS_WITH_NEXT_EPISODES,
     PROP_SYNC_PENDING_SHOWS,
 )
-
+from resources.lib.data.shows import (
+    _get_playlist_filename,
+    generate_sort_key,
+    get_episode_sort_key,
+    get_premiere_category,
+    get_show_category,
+    parse_season_episode_string,
+    sync_show_list_from_shared_db,
+)
+from resources.lib.data.storage import SyncResult
 
 # ── generate_sort_key ────────────────────────────────────────────────
 

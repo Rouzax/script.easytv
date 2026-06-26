@@ -8,12 +8,11 @@ Snapshot date: 2026-03-12
 """
 from resources.lib.data.duration_cache import calculate_median_duration
 from resources.lib.data.shows import (
+    _get_playlist_filename,
     generate_sort_key,
     get_episode_sort_key,
-    _get_playlist_filename,
     parse_season_episode_string,
 )
-
 
 # =============================================================================
 # Frozen data from Kodi instance

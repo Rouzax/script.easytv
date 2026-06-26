@@ -1,7 +1,7 @@
 """Tests for 3-state premiere filtering logic in random_player.py."""
 import pytest
 
-from resources.lib.constants import PREMIERE_SKIP, PREMIERE_MIX_IN, PREMIERE_ONLY
+from resources.lib.constants import PREMIERE_MIX_IN, PREMIERE_ONLY, PREMIERE_SKIP
 from resources.lib.playback.random_player import (
     RandomPlaylistConfig,
     _check_premiere_exclusion,

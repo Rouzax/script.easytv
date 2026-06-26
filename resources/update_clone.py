@@ -57,15 +57,16 @@ Logging:
     Uses xbmc.log() directly (not StructuredLogger) due to import constraints.
 """
 
-import shutil
-import xbmc
-import xbmcgui
-import xbmcaddon
-import xbmcvfs
-import sys
 import os
+import shutil
+import sys
 from typing import Optional
 from xml.etree import ElementTree as et
+
+import xbmc
+import xbmcaddon
+import xbmcgui
+import xbmcvfs
 
 # Constants (inlined to avoid import issues)
 ADDON_ENABLE_DELAY_MS = 1000

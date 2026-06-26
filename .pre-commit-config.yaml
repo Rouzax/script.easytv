@@ -1,0 +1,33 @@
+# Structurally synced with script.easymovie/.pre-commit-config.yaml. Keep parallel.
+# Local hooks shell out to the tools pinned in requirements-dev.txt, so no remote
+# code enters the commit path. Fast checks run at commit; the unit suite at pre-push.
+# Activate: pre-commit install && pre-commit install --hook-type pre-push
+repos:
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff
+        entry: ruff check
+        language: system
+        types: [python]
+      - id: pyflakes
+        name: pyflakes
+        entry: pyflakes
+        language: system
+        types: [python]
+      - id: pyright
+        name: pyright
+        entry: pyright
+        language: system
+        pass_filenames: false
+      - id: vulture
+        name: vulture
+        entry: vulture resources/lib --min-confidence 80
+        language: system
+        pass_filenames: false
+      - id: pytest
+        name: pytest (unit)
+        entry: python3 -m pytest tests/ --ignore=tests/integration -q
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

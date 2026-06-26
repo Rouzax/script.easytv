@@ -8,7 +8,6 @@ from resources.lib.constants import (
 )
 from resources.lib.data.storage import SharedDatabaseStorage, SyncResult
 
-
 # ── Helpers ─────────────────────────────────────────────────────────────
 
 def _make_daemon():

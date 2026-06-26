@@ -21,8 +21,9 @@ Logging:
 
 import xbmc
 import xbmcaddon
-from resources.lib.utils import get_logger, parse_version, StructuredLogger
+
 from resources.lib.service.daemon import ServiceDaemon
+from resources.lib.utils import StructuredLogger, get_logger, parse_version
 
 
 def _get_device_name() -> str:

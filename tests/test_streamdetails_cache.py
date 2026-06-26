@@ -1,12 +1,12 @@
 """Tests for resources/lib/data/streamdetails_cache.py — per-episode stream info cache."""
+from resources.lib.constants import STREAMDETAILS_CACHE_VERSION
 from resources.lib.data.streamdetails_cache import (
+    build_updated_streamdetails_cache,
     extract_episode_streamdetails,
     format_resolution,
-    get_shows_needing_streamdetails,
-    build_updated_streamdetails_cache,
     get_episode_duration,
+    get_shows_needing_streamdetails,
 )
-from resources.lib.constants import STREAMDETAILS_CACHE_VERSION
 
 
 def _make_episode(episode_id, duration=2580, height=1080, video_codec="h264",

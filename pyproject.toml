@@ -1,0 +1,20 @@
+# Structurally synced with script.easymovie/pyproject.toml. Keep parallel.
+# Dev tooling configuration only. Excluded from the packaged Kodi addon zip.
+
+[tool.ruff]
+# Kodi Windows builds run Python 3.8; never propose newer syntax.
+target-version = "py38"
+
+[tool.ruff.lint]
+# ruff defaults (E4/E7/E9 + pyflakes F) plus import sorting (I).
+# E501 (line length) is intentionally not enforced (prefer noqa over mass-reformat);
+# UP (pyupgrade) is excluded so the linter never suggests 3.9+ syntax.
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.coverage.run]
+source = ["resources/lib"]
+omit = ["*/__pycache__/*", "tests/*"]
+
+[tool.vulture]
+paths = ["resources/lib"]
+min_confidence = 80

@@ -5,8 +5,8 @@ Catches drift between the two files: wrong category, mismatched attributes,
 accidental omissions. Settings intentionally absent from clone are allowlisted.
 """
 import os
-from xml.etree import ElementTree as et
 from typing import Dict, List, Set, Tuple
+from xml.etree import ElementTree as et
 
 import pytest
 

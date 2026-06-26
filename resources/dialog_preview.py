@@ -18,8 +18,8 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional, Tuple, Union, cast
 
-import xbmcgui
 import xbmcaddon
+import xbmcgui
 
 dialog = xbmcgui.Dialog()
 
@@ -44,8 +44,8 @@ def _fetch_all_shows() -> List[Tuple[str, int, str]]:
     if _cached_shows is not None:
         return _cached_shows
 
+    from resources.lib.data.queries import build_shows_art_query, get_all_shows_query
     from resources.lib.utils import json_query
-    from resources.lib.data.queries import get_all_shows_query, build_shows_art_query
 
     # Get all shows
     result = json_query(get_all_shows_query())
@@ -186,7 +186,9 @@ def preview_browse() -> None:
         return
 
     from resources.lib.ui.browse_window import (
-        BrowseWindow, BrowseWindowConfig, get_skin_xml_file,
+        BrowseWindow,
+        BrowseWindowConfig,
+        get_skin_xml_file,
     )
 
     view_names = [

@@ -1,9 +1,8 @@
 """Tests for resources/lib/playback/playlist_session.py — session logic."""
 from resources.lib.playback.playlist_session import (
-    calculate_movie_target,
     PlaylistSession,
+    calculate_movie_target,
 )
-
 
 # ── calculate_movie_target ───────────────────────────────────────────
 

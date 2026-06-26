@@ -35,7 +35,7 @@ from __future__ import annotations
 import os
 import threading
 import xml.etree.ElementTree as ET
-from typing import List, Optional, TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, List, Optional, cast
 
 import xbmc
 import xbmcgui
@@ -67,11 +67,11 @@ from resources.lib.constants import (
     SELECTOR_LIST,
     SELECTOR_SAVE,
     SELECTOR_SEARCH,
-    THEME_COLORS,
     SETTING_THEME,
+    THEME_COLORS,
 )
-from resources.lib.utils import get_logger, json_query, lang
 from resources.lib.data.queries import get_playlist_files_query
+from resources.lib.utils import get_logger, json_query, lang
 
 if TYPE_CHECKING:
     from resources.lib.utils import StructuredLogger

@@ -35,26 +35,31 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import xbmc
 import xbmcgui
 
-from resources.lib.utils import json_query, get_logger, parse_lastplayed_date, lang, log_timing
 from resources.lib.constants import (
-    KODI_HOME_WINDOW_ID,
-    SEASON_START_EPISODE,
-    CATEGORY_START_FRESH,
     CATEGORY_CONTINUE_WATCHING,
+    CATEGORY_START_FRESH,
     ISTREAM_FIX_MAX_RETRIES,
-    SECONDS_PER_MINUTE,
+    KODI_HOME_WINDOW_ID,
     PROP_SHOWS_WITH_NEXT_EPISODES,
     PROP_SYNC_PENDING_SHOWS,
+    SEASON_START_EPISODE,
+    SECONDS_PER_MINUTE,
 )
-from resources.lib.service.episode_tracker import PROP_DURATION
 from resources.lib.data.queries import (
-    get_all_shows_query,
-    build_show_episodes_query,
-    build_show_details_query,
     build_episode_details_query,
     build_playlist_get_items_query,
+    build_show_details_query,
+    build_show_episodes_query,
+    get_all_shows_query,
 )
-
+from resources.lib.service.episode_tracker import PROP_DURATION
+from resources.lib.utils import (
+    get_logger,
+    json_query,
+    lang,
+    log_timing,
+    parse_lastplayed_date,
+)
 
 # Module-level logger
 log = get_logger('data')
@@ -467,8 +472,8 @@ def fetch_unwatched_shows(sort_by: int, sort_reverse: bool, language: str = 'Eng
     Raises:
         SystemExit: If no shows available from service.
     """
-    import sys
     import json
+    import sys
     
     with log_timing(log, "fetch_unwatched_shows", sort_by=sort_by) as timer:
         log.debug("Fetching TV shows", sort_by=sort_by)
@@ -763,8 +768,8 @@ def get_premiere_category(
         Empty string if episode > 1 or has resume point
     """
     from resources.lib.constants import (
-        CATEGORY_SHOW_PREMIERE,
         CATEGORY_SEASON_PREMIERE,
+        CATEGORY_SHOW_PREMIERE,
     )
 
     # Not a premiere if episode > 1 or already partially watched

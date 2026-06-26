@@ -29,22 +29,22 @@ Logging:
 """
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING, Union, cast
+from typing import TYPE_CHECKING, Optional, Union, cast
 
 import xbmc
 import xbmcgui
 
 from resources.lib.constants import (
+    CONTEXT_EXPORT_SELECTION,
+    CONTEXT_PLAY_FROM_HERE,
+    CONTEXT_PLAY_SELECTION,
+    CONTEXT_REFRESH,
     CONTEXT_TOGGLE_DELAY_MS,
     CONTEXT_TOGGLE_MULTISELECT,
-    CONTEXT_PLAY_SELECTION,
-    CONTEXT_PLAY_FROM_HERE,
-    CONTEXT_EXPORT_SELECTION,
     CONTEXT_TOGGLE_WATCHED,
     CONTEXT_UPDATE_LIBRARY,
-    CONTEXT_REFRESH,
-    THEME_COLORS,
     SETTING_THEME,
+    THEME_COLORS,
 )
 from resources.lib.utils import get_logger, lang
 

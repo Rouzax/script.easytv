@@ -1,8 +1,8 @@
 """Tests for episode tracker property constants."""
 from resources.lib.service.episode_tracker import (
-    PROP_EP_RUNTIME,
     EPISODE_PROPERTIES,
     PROP_DURATION,
+    PROP_EP_RUNTIME,
 )
 
 

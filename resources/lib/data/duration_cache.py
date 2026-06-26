@@ -76,7 +76,6 @@ from resources.lib.constants import (
 )
 from resources.lib.utils import get_logger
 
-
 # Module-level logger
 log = get_logger('data')
 

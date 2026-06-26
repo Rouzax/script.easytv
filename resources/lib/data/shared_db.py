@@ -52,7 +52,7 @@ import re
 import socket
 import time
 import xml.etree.ElementTree as ET
-from typing import Any, Dict, Generator, List, Optional, Set, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Set, Tuple
 
 import xbmcgui
 import xbmcvfs

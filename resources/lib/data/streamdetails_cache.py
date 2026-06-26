@@ -63,7 +63,6 @@ from resources.lib.constants import (
 )
 from resources.lib.utils import get_logger
 
-
 log = get_logger('data')
 
 _cache_file_path: Optional[str] = None

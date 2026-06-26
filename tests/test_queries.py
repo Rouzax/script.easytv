@@ -1,19 +1,18 @@
 """Tests for resources/lib/data/queries.py — JSON-RPC query builders."""
 from resources.lib.constants import (
+    EPISODE_SELECTION_BOTH,
     EPISODE_SELECTION_UNWATCHED,
     EPISODE_SELECTION_WATCHED,
-    EPISODE_SELECTION_BOTH,
 )
 from resources.lib.data.queries import (
-    get_episode_filter,
+    FILTER_UNWATCHED,
+    build_episode_details_query,
+    build_player_seek_time_query,
     build_random_episodes_query,
     build_random_movies_query,
-    build_player_seek_time_query,
     build_show_episodes_query,
-    build_episode_details_query,
-    FILTER_UNWATCHED,
+    get_episode_filter,
 )
-
 
 # ── get_episode_filter ──────────────────────────────────────────────
 

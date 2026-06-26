@@ -21,14 +21,18 @@ from __future__ import annotations
 
 import ast
 import time
-from typing import Callable, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, List, Optional
 
 import xbmc
 import xbmcgui
 
-from resources.lib.constants import WATCHED_PLAYCOUNT, PROP_ART_FETCHED, SCAN_COOLDOWN_SECONDS
-from resources.lib.utils import get_logger, json_query
+from resources.lib.constants import (
+    PROP_ART_FETCHED,
+    SCAN_COOLDOWN_SECONDS,
+    WATCHED_PLAYCOUNT,
+)
 from resources.lib.data.queries import build_episode_show_id_query
+from resources.lib.utils import get_logger, json_query
 
 if TYPE_CHECKING:
     from resources.lib.utils import StructuredLogger

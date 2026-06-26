@@ -34,19 +34,31 @@ import xbmcgui
 import xbmcvfs
 
 from resources.lib.constants import (
-    KODI_HOME_WINDOW_ID, ADDON_RESTART_DELAY_MS,
-    SERVICE_POLL_SLEEP_MS, SERVICE_POLL_TIMEOUT_TICKS,
-    PROP_SERVICE_RUNNING, PROP_VERSION, PROP_SERVICE_PATH,
-    PROP_ART_FETCHED, PROP_FORCE_SYNC, SETTING_MULTI_INSTANCE_SYNC,
+    ADDON_RESTART_DELAY_MS,
+    KODI_HOME_WINDOW_ID,
+    PROP_ART_FETCHED,
+    PROP_FORCE_SYNC,
+    PROP_SERVICE_PATH,
+    PROP_SERVICE_RUNNING,
+    PROP_VERSION,
+    SERVICE_POLL_SLEEP_MS,
+    SERVICE_POLL_TIMEOUT_TICKS,
+    SETTING_MULTI_INSTANCE_SYNC,
 )
-from resources.lib.utils import (
-    lang, get_logger, get_bool_setting, get_int_setting,
-    parse_version, compare_versions, restart_addon
-)
-from resources.lib.ui.dialogs import show_confirm, show_playlist_selection
 from resources.lib.playback.browse_mode import EpisodeListConfig, build_episode_list
 from resources.lib.playback.random_player import (
-    RandomPlaylistConfig, build_random_playlist
+    RandomPlaylistConfig,
+    build_random_playlist,
+)
+from resources.lib.ui.dialogs import show_confirm, show_playlist_selection
+from resources.lib.utils import (
+    compare_versions,
+    get_bool_setting,
+    get_int_setting,
+    get_logger,
+    lang,
+    parse_version,
+    restart_addon,
 )
 
 
@@ -273,7 +285,7 @@ def _handle_special_modes(mode, addon, log, addon_name='EasyTV'):
 
     elif mode == 'set_icon':
         log.debug("Set custom icon mode")
-        from resources.lib.utils import set_custom_icon, invalidate_icon_cache
+        from resources.lib.utils import invalidate_icon_cache, set_custom_icon
         addon_id = addon.getAddonInfo('id')
         if set_custom_icon(addon_id):
             invalidate_icon_cache(addon_id)
@@ -290,7 +302,7 @@ def _handle_special_modes(mode, addon, log, addon_name='EasyTV'):
 
     elif mode == 'reset_icon':
         log.debug("Reset icon mode")
-        from resources.lib.utils import reset_icon, invalidate_icon_cache
+        from resources.lib.utils import invalidate_icon_cache, reset_icon
         addon_id = addon.getAddonInfo('id')
         if reset_icon(addon_id):
             invalidate_icon_cache(addon_id)

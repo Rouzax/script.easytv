@@ -48,19 +48,21 @@ Logging:
 """
 
 import os
+import shutil
+import sys
+from typing import Optional
+from xml.etree import ElementTree as et
+
 import xbmc
 import xbmcaddon
 import xbmcgui
 import xbmcvfs
-import sys
-import shutil
-from typing import Optional
-from xml.etree import ElementTree as et
+
+from resources.lib.constants import ADDON_ENABLE_DELAY_MS
+from resources.lib.ui.dialogs import show_confirm
 
 # Import shared utilities
-from resources.lib.utils import lang, get_logger, sanitize_filename, restart_addon
-from resources.lib.ui.dialogs import show_confirm
-from resources.lib.constants import ADDON_ENABLE_DELAY_MS
+from resources.lib.utils import get_logger, lang, restart_addon, sanitize_filename
 
 
 def _replace_in_file(filepath, replacements):

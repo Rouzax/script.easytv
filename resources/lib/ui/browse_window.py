@@ -34,34 +34,34 @@ from __future__ import annotations
 
 import os
 import time
-from datetime import date
 from dataclasses import dataclass
-from typing import Optional, TYPE_CHECKING, Union, cast
+from datetime import date
+from typing import TYPE_CHECKING, Optional, Union, cast
 
 import xbmc
-import xbmcgui
 import xbmcaddon
+import xbmcgui
 
 from resources.lib.constants import (
+    ACTION_CONTEXT_MENU,
+    ACTION_NAV_BACK,
+    ACTION_PREVIOUS_MENU,
+    ACTION_TELETEXT_BLUE,
+    CONTEXT_EXPORT_SELECTION,
+    CONTEXT_IGNORE_SHOW,
+    CONTEXT_PLAY_FROM_HERE,
+    CONTEXT_PLAY_SELECTION,
+    CONTEXT_REFRESH,
+    CONTEXT_TOGGLE_MULTISELECT,
+    CONTEXT_TOGGLE_WATCHED,
+    CONTEXT_UPDATE_LIBRARY,
     KODI_HOME_WINDOW_ID,
     MAX_ITEMS_HARD_LIMIT,
-    ACTION_PREVIOUS_MENU,
-    ACTION_NAV_BACK,
-    ACTION_CONTEXT_MENU,
-    ACTION_TELETEXT_BLUE,
-    CONTEXT_TOGGLE_MULTISELECT,
-    CONTEXT_PLAY_SELECTION,
-    CONTEXT_PLAY_FROM_HERE,
-    CONTEXT_EXPORT_SELECTION,
-    CONTEXT_TOGGLE_WATCHED,
-    CONTEXT_IGNORE_SHOW,
-    CONTEXT_UPDATE_LIBRARY,
-    CONTEXT_REFRESH,
     THEME_COLORS,
     THEME_NAMES,
 )
 from resources.lib.data.storage import get_storage
-from resources.lib.utils import get_logger, lang, json_query, format_duration
+from resources.lib.utils import format_duration, get_logger, json_query, lang
 
 if TYPE_CHECKING:
     from resources.lib.utils import StructuredLogger

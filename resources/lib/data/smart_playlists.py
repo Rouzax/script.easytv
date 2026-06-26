@@ -74,17 +74,16 @@ from typing import Any, Dict, List, Optional, Tuple
 import xbmc
 import xbmcvfs
 
-from resources.lib.utils import get_logger, log_timing
 from resources.lib.constants import (
-    FILE_WRITE_DELAY_MS,
-    PLAYLIST_FORMAT_FILENAME,
-    PLAYLIST_CONFIG,
-    LEGACY_PLAYLIST_FILES,
-    CATEGORY_START_FRESH,
-    CATEGORY_SHOW_PREMIERE,
     CATEGORY_SEASON_PREMIERE,
+    CATEGORY_SHOW_PREMIERE,
+    CATEGORY_START_FRESH,
+    FILE_WRITE_DELAY_MS,
+    LEGACY_PLAYLIST_FILES,
+    PLAYLIST_CONFIG,
+    PLAYLIST_FORMAT_FILENAME,
 )
-
+from resources.lib.utils import get_logger, log_timing
 
 # Module-level logger
 log = get_logger('data')

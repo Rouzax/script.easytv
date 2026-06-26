@@ -1,7 +1,6 @@
 """Tests for resources/lib/constants.py — PlaylistConfig XML generation."""
 from resources.lib.constants import PLAYLIST_CONFIG
 
-
 # ── XML Headers ──────────────────────────────────────────────────────
 
 class TestPlaylistXmlHeaders:

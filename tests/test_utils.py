@@ -2,13 +2,12 @@
 import pytest
 
 from resources.lib.utils import (
-    parse_version,
     compare_versions,
-    sanitize_filename,
-    runtime_converter,
     parse_lastplayed_date,
+    parse_version,
+    runtime_converter,
+    sanitize_filename,
 )
-
 
 # ── parse_version ────────────────────────────────────────────────────
 

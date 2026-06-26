@@ -25,36 +25,27 @@ import json
 import os
 import random
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Union
 
 import xbmc
 import xbmcaddon
 import xbmcgui
 
 from resources.lib.constants import (
+    MOVIE_RANDOM_SEEK_MAX_RATIO,
+    MOVIE_RANDOM_SEEK_MIN_PERCENT,
     NOTIFICATION_DURATION_MS,
+    PERCENT_MULTIPLIER,
     PLAYER_STOP_DELAY_MS,
     PLAYLIST_ADD_DELAY_MS,
     PLAYLIST_START_DELAY_MS,
-    MOVIE_RANDOM_SEEK_MAX_RATIO,
-    MOVIE_RANDOM_SEEK_MIN_PERCENT,
-    PERCENT_MULTIPLIER,
-    RANDOM_PERCENT_MAX,
-    RESUME_REWIND_SECONDS,
     PROP_PLAYLIST_CONFIG,
     PROP_PLAYLIST_REGENERATE,
-    PROP_SOURCE_ADDON_ID,
     PROP_PLAYLIST_RUNNING,
     PROP_SERVICE_PATH,
-)
-from resources.lib.utils import (
-    get_bool_setting,
-    get_int_setting,
-    get_logger,
-    json_query,
-    lang,
-    log_timing,
-    runtime_converter,
+    PROP_SOURCE_ADDON_ID,
+    RANDOM_PERCENT_MAX,
+    RESUME_REWIND_SECONDS,
 )
 from resources.lib.data.queries import (
     build_add_episode_query,
@@ -69,6 +60,15 @@ from resources.lib.data.shows import (
 )
 from resources.lib.data.storage import get_storage
 from resources.lib.playback.playlist_session import PlaylistSession
+from resources.lib.utils import (
+    get_bool_setting,
+    get_int_setting,
+    get_logger,
+    json_query,
+    lang,
+    log_timing,
+    runtime_converter,
+)
 
 if TYPE_CHECKING:
     from resources.lib.utils import StructuredLogger

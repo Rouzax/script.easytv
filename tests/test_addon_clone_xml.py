@@ -9,7 +9,6 @@ runtime.
 import os
 from xml.etree import ElementTree as et
 
-
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 CLONE_TEMPLATE = os.path.join(REPO_ROOT, 'resources', 'addon_clone.xml')
 MAIN_ADDON_XML = os.path.join(REPO_ROOT, 'addon.xml')

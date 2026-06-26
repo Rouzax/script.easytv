@@ -41,14 +41,16 @@ Logging:
     Events: None (debug logging only)
 """
 
-import xbmc
-import xbmcaddon
 import ast
 import sys
 
-# Import shared utilities
-from resources.lib.utils import lang, json_query, get_logger
+import xbmc
+import xbmcaddon
+
 from resources.lib.data.shows import generate_sort_key
+
+# Import shared utilities
+from resources.lib.utils import get_logger, json_query, lang
 
 __addon__ = xbmcaddon.Addon('script.easytv')
 __addonid__          = __addon__.getAddonInfo('id')

@@ -25,12 +25,12 @@ from __future__ import annotations
 import datetime
 import json
 import os
+import re
 import threading
 import time
 import traceback
 from contextlib import contextmanager
 from datetime import datetime as dt
-import re
 from typing import Any, Dict, Generator, List, Optional, TextIO, Tuple, Union, cast
 
 import xbmc
@@ -42,7 +42,6 @@ from resources.lib.constants import (
     CUSTOM_ICON_BACKUP,
     DEFAULT_ADDON_ID,
     KODI_HOME_WINDOW_ID,
-    PROP_SERVICE_RUNNING,
     LOG_DIR_NAME,
     LOG_FILENAME,
     LOG_MAX_ROTATED_FILES,
@@ -50,11 +49,11 @@ from resources.lib.constants import (
     LOG_MAX_VALUE_LENGTH,
     LOG_TIMESTAMP_FORMAT,
     LOG_TIMESTAMP_TRIM,
+    PROP_SERVICE_RUNNING,
     VERSION_PRERELEASE_ALPHA,
     VERSION_PRERELEASE_BETA,
     VERSION_PRERELEASE_RELEASE,
 )
-
 
 # Singleton addon instance
 _addon: Optional[xbmcaddon.Addon] = None

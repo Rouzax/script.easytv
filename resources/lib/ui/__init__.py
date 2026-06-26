@@ -32,7 +32,8 @@ def apply_theme(window: xbmcgui.WindowXMLDialog, addon_id: Optional[str] = None)
             If None, reads from the calling addon's settings.
     """
     import xbmcaddon
-    from resources.lib.constants import THEME_COLORS, SETTING_THEME
+
+    from resources.lib.constants import SETTING_THEME, THEME_COLORS
     addon = xbmcaddon.Addon(addon_id) if addon_id else xbmcaddon.Addon()
     theme = addon.getSetting(SETTING_THEME) or '0'
     for prop, value in THEME_COLORS.get(theme, THEME_COLORS['0']).items():

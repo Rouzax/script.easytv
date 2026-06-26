@@ -30,18 +30,18 @@ Logging:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import xbmc
 import xbmcgui
 
 from resources.lib.constants import (
-    KODI_HOME_WINDOW_ID,
+    DIALOG_WAIT_MAX_TICKS,
+    DIALOG_WAIT_SLEEP_MS,
     KODI_FULLSCREEN_VIDEO_WINDOW_ID,
+    KODI_HOME_WINDOW_ID,
     MAIN_LOOP_SLEEP_MS,
     PLAYLIST_ADD_DELAY_MS,
-    DIALOG_WAIT_SLEEP_MS,
-    DIALOG_WAIT_MAX_TICKS,
     PREMIERE_MIX_IN,
     PREMIERE_ONLY,
     PREMIERE_SKIP,
@@ -50,18 +50,23 @@ from resources.lib.constants import (
     PROP_RANDOM_ORDER_SHUFFLE,
 )
 from resources.lib.data.queries import (
-    get_clear_video_playlist_query,
     build_add_episode_query,
     build_shows_art_query,
+    get_clear_video_playlist_query,
 )
-from resources.lib.utils import get_logger, json_query, log_timing, busy_progress
-from resources.lib.ui.browse_window import (
-    BrowseWindow, BrowseWindowConfig, get_skin_xml_file
+from resources.lib.data.shows import (
+    filter_shows_by_duration,
+    sync_show_list_from_shared_db,
 )
+from resources.lib.data.storage import get_storage
 from resources.lib.playback.browse_player import BrowseModePlayer
 from resources.lib.playback.random_player import filter_shows_by_population
-from resources.lib.data.shows import filter_shows_by_duration, sync_show_list_from_shared_db
-from resources.lib.data.storage import get_storage
+from resources.lib.ui.browse_window import (
+    BrowseWindow,
+    BrowseWindowConfig,
+    get_skin_xml_file,
+)
+from resources.lib.utils import busy_progress, get_logger, json_query, log_timing
 
 if TYPE_CHECKING:
     from resources.lib.utils import StructuredLogger

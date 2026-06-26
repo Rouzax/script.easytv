@@ -58,8 +58,8 @@ from resources.lib.constants import (
     PROP_SYNC_REV,
     SETTING_MULTI_INSTANCE_SYNC,
 )
-from resources.lib.utils import get_bool_setting, get_logger, json_query, lang
 from resources.lib.data.queries import build_episode_details_query
+from resources.lib.utils import get_bool_setting, get_logger, json_query, lang
 
 log = get_logger('storage')
 
