@@ -218,37 +218,37 @@ def find_next_episode(
 ) -> Tuple[Optional[int], Optional[list]]:
     """
     Determine the next episode to play for a given show.
-    
+
     For shows in random order mode, shuffles available episodes and picks one.
     For sequential shows, returns the next episode in the list.
-    
+
     Args:
         showid: The TV show ID.
         random_order_shows: List of show IDs configured for random playback.
         epid: Current episode ID (to exclude from selection).
         eps: List of available episode IDs.
-    
+
     Returns:
         Tuple of (next_episode_id, [season, episode, remaining_eps, ep_id])
         Returns (None, None) if no next episode.
     """
     if eps is None:
         eps = []
-    
+
     log.debug("Finding next episode", show_id=showid, random_mode=showid in random_order_shows)
-    
+
     if not eps:
         return None, None
-    
+
     if showid in random_order_shows:
         # Random order: shuffle and pick, excluding current episode
         available = eps[:]
         if epid is not None and epid in available:
             available.remove(epid)
-        
+
         if not available:
             return None, None
-        
+
         random.shuffle(available)
         next_ep = available[0]
         remaining = available
@@ -259,15 +259,42 @@ def find_next_episode(
             remaining = eps[1:]
         except IndexError:
             return None, None
-    
+
     # Get details of next episode
     ep_details = json_query(build_episode_details_query(next_ep), True)
-    
+
     if 'episodedetails' in ep_details and ep_details['episodedetails']:
         details = ep_details['episodedetails']
         return next_ep, [details['season'], details['episode'], remaining, next_ep]
-    
+
     return None, None
+
+
+def resolve_ondeck_episode(
+    ondeck_list: List[int],
+    offdeck_list: List[int],
+    is_random: bool,
+) -> Optional[int]:
+    """Pick a show's on-deck episode id from its broadcast pools.
+
+    Mirrors the producer logic in service/daemon.py (the random vs
+    sequential branch around line 1643); keep the two in sync. The consumer
+    has only id lists, so this works on ids rather than episode dicts.
+
+    is_random True: uniform random pick from ondeck + offdeck.
+    is_random False: first ondeck episode, else earliest offdeck (skipped).
+    Returns None when the show has no unplayed episodes.
+    """
+    if is_random:
+        pool = list(ondeck_list) + list(offdeck_list)
+        if not pool:
+            return None
+        return random.choice(pool)
+    if ondeck_list:
+        return ondeck_list[0]
+    if offdeck_list:
+        return offdeck_list[0]
+    return None
 
 
 # =============================================================================

@@ -1,4 +1,5 @@
 """Tests for resources/lib/data/shows.py — show data logic."""
+import random
 from unittest.mock import MagicMock, patch
 
 from resources.lib.constants import (
@@ -16,6 +17,7 @@ from resources.lib.data.shows import (
     get_premiere_category,
     get_show_category,
     parse_season_episode_string,
+    resolve_ondeck_episode,
     sync_show_list_from_shared_db,
 )
 from resources.lib.data.storage import SyncResult
@@ -170,6 +172,26 @@ class TestGetPlaylistFilename:
         # os.path.basename handles platform-specific separators
         result = _get_playlist_filename("/some/path/file.avi")
         assert result == "file.avi"
+
+
+# ── resolve_ondeck_episode ──────────────────────────────────────────
+
+class TestResolveOndeckEpisode:
+    def test_sequential_prefers_first_ondeck(self):
+        assert resolve_ondeck_episode([10, 11, 12], [3, 4], False) == 10
+
+    def test_sequential_falls_back_to_offdeck_when_no_ondeck(self):
+        assert resolve_ondeck_episode([], [3, 4], False) == 3
+
+    def test_random_pick_is_from_pool(self):
+        random.seed(1)
+        pool = {10, 11, 12, 3, 4}
+        for _ in range(20):
+            assert resolve_ondeck_episode([10, 11, 12], [3, 4], True) in pool
+
+    def test_empty_pool_returns_none(self):
+        assert resolve_ondeck_episode([], [], True) is None
+        assert resolve_ondeck_episode([], [], False) is None
 
 
 # ── sync_show_list_from_shared_db ──────────────────────────────────
