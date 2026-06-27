@@ -21,10 +21,6 @@ _CLONE_SETTINGS = os.path.join(_ROOT, "resources", "settings_clone.xml")
 # Settings that are intentionally ONLY in main (service/admin features)
 # ---------------------------------------------------------------------------
 MAIN_ONLY_SETTINGS: Set[str] = {
-    # Watch order (library-wide, managed by service)
-    "select_random_order_shows",
-    "random_order_shows_display",
-    "random_order_shows",           # hidden
     # Specials inclusion (service-level)
     "include_positioned_specials",
     # Playback category (service monitors playback)
@@ -49,6 +45,14 @@ MAIN_ONLY_SETTINGS: Set[str] = {
 # Settings that are intentionally ONLY in clone
 CLONE_ONLY_SETTINGS: Set[str] = {
     "first_run",    # clone-specific initialization flag
+}
+
+# Settings that are shared but deliberately placed in a different
+# category or group in the clone (because the clone co-locates visible
+# controls and their backing storage in a single group, whereas main
+# keeps backing storage in the generic hidden/internal group).
+PLACEMENT_EXCEPTIONS: Set[str] = {
+    "random_order_shows",   # main: hidden/internal; clone: shows/watch_order
 }
 
 # Attributes to compare for shared settings
@@ -164,9 +168,9 @@ class TestSettingsPlacement:
     """Verify shared settings are in the same category and group."""
 
     def test_shared_settings_same_category(self, main_settings, clone_settings, shared_ids):
-        """Shared settings must be in the same category."""
+        """Shared settings must be in the same category (PLACEMENT_EXCEPTIONS excluded)."""
         misplaced = []
-        for sid in sorted(shared_ids):
+        for sid in sorted(shared_ids - PLACEMENT_EXCEPTIONS):
             main_cat = main_settings[sid]["category"]
             clone_cat = clone_settings[sid]["category"]
             if main_cat != clone_cat:
@@ -178,9 +182,9 @@ class TestSettingsPlacement:
         )
 
     def test_shared_settings_same_group(self, main_settings, clone_settings, shared_ids):
-        """Shared settings must be in the same group."""
+        """Shared settings must be in the same group (PLACEMENT_EXCEPTIONS excluded)."""
         misplaced = []
-        for sid in sorted(shared_ids):
+        for sid in sorted(shared_ids - PLACEMENT_EXCEPTIONS):
             main_grp = main_settings[sid]["group"]
             clone_grp = clone_settings[sid]["group"]
             if main_grp != clone_grp:
