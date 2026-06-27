@@ -1,6 +1,40 @@
 EasyTV Changelog
 ================
 
+v1.5.6 (2026-06-27)
+-------------------
+New Features:
+  - Per-clone random episode order. Each clone now has its own random-order
+    shows list, independent of the main addon, effective in both Random
+    Playlist mode and Browse Mode. A clone resolves each show's on-deck episode
+    locally from the broadcast ondeck_list/offdeck_list pools without mutating
+    the shared window properties.
+    Architectural limitations (a clone runs the addon code but has no background
+    service and cannot own the shared per-show display state):
+      * In Browse Mode, each random-order show whose pick differs from the
+        cached one needs a per-show metadata lookup at open (about 85 ms each),
+        so a clone with many random-order shows opens browse more slowly;
+        Random Playlist mode is unaffected.
+      * Premiere filtering for a clone's random pick evaluates the cached
+        (main) episode, not the clone's pick.
+      * The "Both + allow multiple episodes" lazy-queue path does not apply
+        per-clone random order.
+
+Bug Fixes:
+  - Fixed: clones ignored their own "Select TV Shows" selection and used the
+    main addon's instead. A clone read the show list from the shared
+    EasyTV.selection window property, which only the main addon's service
+    writes; clones have no service. Clones now read their own 'selection'
+    setting at playback.
+
+Internal:
+  - Moved _parse_show_setting from service to utils and added
+    parse_show_id_list, removing a ui->service import (architecture rule).
+
+Documentation:
+  - Clarified that random-order shows are a subset of your included shows: when
+    the show filter is on, a show must also be in the included list to play.
+
 v1.5.5 (2026-06-25)
 -------------------
 Bug Fixes:

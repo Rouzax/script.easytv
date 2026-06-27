@@ -82,7 +82,7 @@ Clones do NOT:
 
 ### Clone Random-Order Limitations
 
-The following limitations apply when a clone uses its own random-order shows list:
+These are architectural, not tuning issues: a clone runs the addon code but has no background service of its own and cannot own the shared per-show display state (that belongs to the main addon's service). So a clone resolves its picks locally and, in Browse Mode, fetches their metadata on demand rather than from the shared cache.
 
 **Browse Mode performance.** Opening Browse Mode triggers a brief per-show metadata lookup for each random-order show whose clone pick differs from the main addon's cached episode (approximately 85 ms per show). Very large random-order lists will slow the clone's Browse Mode open noticeably. Random Playlist mode is not affected.
 
