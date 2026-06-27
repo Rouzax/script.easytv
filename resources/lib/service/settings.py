@@ -37,6 +37,7 @@ import xbmcgui
 from resources.lib.constants import KODI_HOME_WINDOW_ID
 from resources.lib.data.queries import build_show_details_query, get_all_shows_query
 from resources.lib.utils import (
+    _parse_show_setting,
     get_addon,
     get_logger,
     json_query,
@@ -57,44 +58,6 @@ def _get_log() -> StructuredLogger:
     if _log is None:
         _log = get_logger('settings')
     return _log
-
-
-def _parse_show_setting(raw_value: str) -> Tuple[Dict[str, str], bool]:
-    """
-    Parse a show setting value, handling both old and new formats.
-    
-    Old format: "[367, 42]" - list of IDs
-    New format: "{'367': 'The Alienist', '42': 'Breaking Bad'}" - dict of ID to title
-    
-    Args:
-        raw_value: The raw setting string from addon.getSetting()
-    
-    Returns:
-        Tuple of (parsed_dict, needs_migration)
-        - For new format: ({"367": "Title"}, False)
-        - For old format: ({"367": "", "42": ""}, True) - empty titles = needs lookup
-        - For invalid/empty: ({}, False)
-    """
-    if not raw_value or raw_value in ('', '[]', '{}', 'none'):
-        return {}, False
-    
-    try:
-        parsed = ast.literal_eval(raw_value)
-    except (ValueError, SyntaxError) as e:
-        from resources.lib.utils import get_logger
-        get_logger('settings').debug("Failed to parse show setting",
-                                     raw_value=raw_value[:100], error=str(e))
-        return {}, False
-    
-    if isinstance(parsed, dict):
-        # New format - ensure all keys are strings
-        return {str(k): v for k, v in parsed.items()}, False
-    
-    if isinstance(parsed, list):
-        # Old format - convert to dict with empty titles (needs migration)
-        return {str(show_id): '' for show_id in parsed}, True
-    
-    return {}, False
 
 
 def _migrate_show_setting(

@@ -22,6 +22,7 @@ Logging:
 """
 from __future__ import annotations
 
+import ast
 import datetime
 import json
 import os
@@ -942,6 +943,71 @@ def sanitize_filename(dirty_string: str) -> str:
     sanitized = ''.join(c for c in dirty_string if c in valid_chars)
     sanitized = sanitized.replace(' ', '_').lower()
     return sanitized
+
+
+# =============================================================================
+# Show Setting Parsing
+# =============================================================================
+
+def _parse_show_setting(raw_value: str) -> Tuple[Dict[str, str], bool]:
+    """Parse a show setting value, handling both old and new formats.
+
+    Old format: "[367, 42]" - list of IDs
+    New format: "{'367': 'The Alienist', '42': 'Breaking Bad'}" - dict of ID to title
+
+    Args:
+        raw_value: The raw setting string from addon.getSetting()
+
+    Returns:
+        Tuple of (parsed_dict, needs_migration)
+        - For new format: ({"367": "Title"}, False)
+        - For old format: ({"367": "", "42": ""}, True) - empty titles need lookup
+        - For invalid/empty: ({}, False)
+    """
+    if not raw_value or raw_value in ('', '[]', '{}', 'none'):
+        return {}, False
+
+    try:
+        parsed = ast.literal_eval(raw_value)
+    except (ValueError, SyntaxError) as e:
+        get_logger('settings').debug(
+            "Failed to parse show setting",
+            raw_value=raw_value[:100],
+            error=str(e),
+        )
+        return {}, False
+
+    if isinstance(parsed, dict):
+        # New format - ensure all keys are strings
+        return {str(k): v for k, v in parsed.items()}, False
+
+    if isinstance(parsed, list):
+        # Old format - convert to dict with empty titles (needs migration)
+        return {str(show_id): '' for show_id in parsed}, True
+
+    return {}, False
+
+
+def parse_show_id_list(raw_value: str) -> List[int]:
+    """Parse a show setting string into a list of integer show IDs.
+
+    Accepts the new "{id: title}" dict form, the legacy "[id]" list form,
+    and "none"/empty (yields []). Invalid input yields [].
+
+    Args:
+        raw_value: The raw setting string from addon.getSetting()
+
+    Returns:
+        List of integer show IDs.
+    """
+    show_dict, _ = _parse_show_setting(raw_value)
+    out: List[int] = []
+    for sid in show_dict.keys():
+        try:
+            out.append(int(sid))
+        except (TypeError, ValueError):
+            continue
+    return out
 
 
 # =============================================================================

@@ -7,6 +7,7 @@ from resources.lib.utils import (
     compare_versions,
     is_clone,
     parse_lastplayed_date,
+    parse_show_id_list,
     parse_version,
     runtime_converter,
     sanitize_filename,
@@ -254,3 +255,25 @@ def test_is_clone_false_for_main_addon():
 def test_is_clone_true_for_clone_addon():
     """is_clone returns True for a clone addon."""
     assert is_clone(_addon('script.easytv.kids')) is True
+
+
+# ── parse_show_id_list ───────────────────────────────────────────────
+
+class TestParseShowIdList:
+    def test_dict_format(self):
+        assert sorted(parse_show_id_list("{'367': 'A', '42': 'B'}")) == [42, 367]
+
+    def test_old_list_format(self):
+        assert sorted(parse_show_id_list("[367, 42]")) == [42, 367]
+
+    def test_none_string(self):
+        assert parse_show_id_list("none") == []
+
+    def test_empty_string(self):
+        assert parse_show_id_list("") == []
+
+    def test_empty_list_string(self):
+        assert parse_show_id_list("[]") == []
+
+    def test_malformed(self):
+        assert parse_show_id_list("{not valid") == []

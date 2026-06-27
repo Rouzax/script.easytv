@@ -1,5 +1,5 @@
-"""Tests for resources/lib/service/settings.py — _parse_show_setting."""
-from resources.lib.service.settings import _parse_show_setting
+"""Tests for _parse_show_setting (now in resources/lib/utils.py)."""
+from resources.lib.utils import _parse_show_setting
 
 
 class TestParseShowSetting:
