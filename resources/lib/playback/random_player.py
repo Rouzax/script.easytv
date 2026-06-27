@@ -650,7 +650,7 @@ def _process_tv_candidate(
             # For watched/both mode, use library query; for unwatched, use cached data
             if config.episode_selection == EPISODE_SELECTION_UNWATCHED:
                 # Use existing sequential/random order logic with cached data
-                tmp_episode_id, tmp_details = find_next_episode(
+                tmp_episode_id, _ = find_next_episode(
                     show_id, random_order_shows,
                     epid=added_ep_dict[show_id][3],
                     eps=added_ep_dict[show_id][2]
@@ -787,9 +787,11 @@ def _process_tv_candidate(
             if has_unwatched and random.randint(1, 100) <= config.unwatched_ratio:
                 # Use the next sequential/random unwatched episode
                 if clone_mode:
-                    tmp_episode_id = clone_ondeck_id  # type: ignore[assignment]
+                    # has_unwatched is True only when clone_ondeck_id is not None
+                    assert clone_ondeck_id is not None
+                    tmp_episode_id = clone_ondeck_id
                 else:
-                    tmp_episode_id = int(episode_id_str)  # type: ignore[assignment]
+                    tmp_episode_id = int(episode_id_str)
             else:
                 # Query for a random watched episode
                 tmp_episode_id = _fetch_random_episode_for_show(
@@ -799,9 +801,10 @@ def _process_tv_candidate(
                     # No watched episodes, fall back to unwatched if available
                     if has_unwatched:
                         if clone_mode:
-                            tmp_episode_id = clone_ondeck_id  # type: ignore[assignment]
+                            assert clone_ondeck_id is not None
+                            tmp_episode_id = clone_ondeck_id
                         else:
-                            tmp_episode_id = int(episode_id_str)  # type: ignore[assignment]
+                            tmp_episode_id = int(episode_id_str)
                     else:
                         if candidate_tag in candidate_list:
                             candidate_list.remove(candidate_tag)
@@ -819,7 +822,6 @@ def _check_premiere_exclusion(
     show_id: int,
     candidate_list: List[str],
     config: RandomPlaylistConfig,
-    logger: StructuredLogger
 ) -> bool:
     """
     Check if episode should be excluded due to premiere settings.
@@ -832,7 +834,6 @@ def _check_premiere_exclusion(
         show_id: The TV show ID
         candidate_list: List of remaining candidates (modified in place)
         config: Playlist configuration
-        logger: Logger instance
 
     Returns:
         True if episode should be excluded, False otherwise.
@@ -1408,7 +1409,7 @@ def build_random_playlist(
                     continue
                 
                 # Check premiere exclusion
-                if _check_premiere_exclusion(candidate_id, candidate_list, config, log):
+                if _check_premiere_exclusion(candidate_id, candidate_list, config):
                     continue
                 
                 # Add episode to playlist

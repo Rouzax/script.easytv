@@ -108,8 +108,12 @@ def _clone_row_overrides(
         return None
 
     cached = WINDOW.getProperty(f"EasyTV.{show_id}.EpisodeID")
-    if cached and int(cached) == resolved:
-        return None
+    if cached:
+        try:
+            if int(cached) == resolved:
+                return None
+        except ValueError:
+            pass  # Non-numeric cached value; proceed to fetch fresh metadata
 
     details = (
         json_query(build_episode_details_query(resolved)) or {}

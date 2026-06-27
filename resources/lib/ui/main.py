@@ -362,7 +362,7 @@ def _handle_special_modes(mode, addon, log, addon_name='EasyTV'):
             raise
 
 
-def _check_service_running(window, log):
+def _check_service_running(window):
     """Check if EasyTV service is running. Returns True if running."""
     window.setProperty(PROP_SERVICE_RUNNING, 'marco')
     count = 0
@@ -459,7 +459,7 @@ def main() -> None:
             dialog.ok(script_name, lang(32115) + '\n' + lang(32116))
             sys.exit()
 
-        if not _check_service_running(window, log):
+        if not _check_service_running(window):
             log.warning("EasyTV service not running", event="service.missing")
             if show_confirm(script_name, lang(32106) + '\n' + lang(32107)):
                 restart_addon("script.easytv", ADDON_RESTART_DELAY_MS)

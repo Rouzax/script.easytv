@@ -8,7 +8,6 @@ window properties.
 """
 from unittest.mock import MagicMock
 
-from resources.lib.ui import main as ui_main
 from resources.lib.ui.main import _read_random_order_shows, _read_selected_shows
 
 
@@ -26,8 +25,6 @@ class _FakeWindow:
 
 
 def test_main_addon_reads_window_property(monkeypatch):
-    monkeypatch.setattr(ui_main, 'window', _FakeWindow({"EasyTV.selection": "[1, 2, 3]"}), raising=False)
-    # _read_selected_shows builds its own Window; monkeypatch the class read instead:
     monkeypatch.setattr('resources.lib.ui.main.xbmcgui.Window',
                         lambda _id: _FakeWindow({"EasyTV.selection": "[1, 2, 3]"}))
     assert sorted(_read_selected_shows(_addon('script.easytv'))) == [1, 2, 3]
