@@ -26,4 +26,4 @@ def test_random_order_lives_in_a_watch_order_group_under_shows():
     assert wo is not None, "watch_order group must be under the shows category"
     wo_ids = {s.get("id") for s in wo.iter("setting")}
     assert "select_random_order_shows" in wo_ids
-    assert "random_order_shows" in wo_ids
+    assert "random_order_shows_display" in wo_ids

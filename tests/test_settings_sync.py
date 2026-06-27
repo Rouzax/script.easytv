@@ -47,14 +47,6 @@ CLONE_ONLY_SETTINGS: Set[str] = {
     "first_run",    # clone-specific initialization flag
 }
 
-# Settings that are shared but deliberately placed in a different
-# category or group in the clone (because the clone co-locates visible
-# controls and their backing storage in a single group, whereas main
-# keeps backing storage in the generic hidden/internal group).
-PLACEMENT_EXCEPTIONS: Set[str] = {
-    "random_order_shows",   # main: hidden/internal; clone: shows/watch_order
-}
-
 # Attributes to compare for shared settings
 _SETTING_ATTRS = ("type",)
 
@@ -168,9 +160,9 @@ class TestSettingsPlacement:
     """Verify shared settings are in the same category and group."""
 
     def test_shared_settings_same_category(self, main_settings, clone_settings, shared_ids):
-        """Shared settings must be in the same category (PLACEMENT_EXCEPTIONS excluded)."""
+        """Shared settings must be in the same category."""
         misplaced = []
-        for sid in sorted(shared_ids - PLACEMENT_EXCEPTIONS):
+        for sid in sorted(shared_ids):
             main_cat = main_settings[sid]["category"]
             clone_cat = clone_settings[sid]["category"]
             if main_cat != clone_cat:
@@ -182,9 +174,9 @@ class TestSettingsPlacement:
         )
 
     def test_shared_settings_same_group(self, main_settings, clone_settings, shared_ids):
-        """Shared settings must be in the same group (PLACEMENT_EXCEPTIONS excluded)."""
+        """Shared settings must be in the same group."""
         misplaced = []
-        for sid in sorted(shared_ids - PLACEMENT_EXCEPTIONS):
+        for sid in sorted(shared_ids):
             main_grp = main_settings[sid]["group"]
             clone_grp = clone_settings[sid]["group"]
             if main_grp != clone_grp:

@@ -225,12 +225,6 @@
 					<enable>false</enable>
 					<control type="edit" format="string" />
 				</setting>
-
-				<setting id="random_order_shows" type="string" visible="false">
-					<level>4</level>
-					<default>none</default>
-					<control type="edit" format="string" />
-				</setting>
 			</group>
 
 		</category>
@@ -576,6 +570,12 @@
 				</setting>
 
 				<setting id="selection" type="string" visible="false">
+					<level>4</level>
+					<default>none</default>
+					<control type="edit" format="string" />
+				</setting>
+
+				<setting id="random_order_shows" type="string" visible="false">
 					<level>4</level>
 					<default>none</default>
 					<control type="edit" format="string" />
