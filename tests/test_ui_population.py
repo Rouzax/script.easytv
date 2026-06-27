@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Tests for the show-selection read logic in ui/main.py.
+"""Tests for the show-selection and random-order read logic in ui/main.py.
 
-Focuses on _read_selected_shows: verifying that clones use their own
-'selection' setting while the main addon reads the EasyTV.selection
-window property.
+Focuses on _read_selected_shows and _read_random_order_shows: verifying
+that clones use their own settings while the main addon reads shared
+window properties.
 """
 from unittest.mock import MagicMock
 
 from resources.lib.ui import main as ui_main
-from resources.lib.ui.main import _read_selected_shows
+from resources.lib.ui.main import _read_random_order_shows, _read_selected_shows
 
 
 def _addon(addon_id, settings=None):
@@ -42,3 +42,16 @@ def test_clone_reads_its_own_setting_not_window_property(monkeypatch):
 
 def test_clone_empty_selection_is_empty_list():
     assert _read_selected_shows(_addon('script.easytv.kids', {'selection': "none"})) == []
+
+
+def test_clone_reads_its_own_random_order_setting(monkeypatch):
+    monkeypatch.setattr('resources.lib.ui.main.xbmcgui.Window',
+                        lambda _id: _FakeWindow({"EasyTV.random_order_shows": "[1, 2]"}))
+    addon = _addon('script.easytv.kids', {'random_order_shows': "{'9': 'Bluey'}"})
+    assert _read_random_order_shows(addon) == [9]   # own setting, not window [1,2]
+
+
+def test_main_addon_random_order_from_window_property(monkeypatch):
+    monkeypatch.setattr('resources.lib.ui.main.xbmcgui.Window',
+                        lambda _id: _FakeWindow({"EasyTV.random_order_shows": "[1, 2]"}))
+    assert sorted(_read_random_order_shows(_addon('script.easytv'))) == [1, 2]

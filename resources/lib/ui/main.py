@@ -24,7 +24,6 @@ Logging:
         - service.missing (WARNING): EasyTV service not running
 """
 
-import ast
 import os
 import sys
 from typing import List
@@ -133,6 +132,22 @@ def _read_selected_shows(addon) -> List[int]:
         return []
 
 
+def _read_random_order_shows(addon) -> List[int]:
+    """Return the random-order show list for this addon instance.
+
+    Clones read their own 'random_order_shows' setting; the main addon
+    reads the EasyTV.random_order_shows window property (written by the
+    service). Empty or invalid input yields [] (no shows).
+    """
+    if is_clone(addon):
+        return parse_show_id_list(addon.getSetting('random_order_shows'))
+    try:
+        raw = xbmcgui.Window(KODI_HOME_WINDOW_ID).getProperty("EasyTV.random_order_shows")
+        return parse_show_id_list(raw)
+    except (ValueError, SyntaxError):
+        return []
+
+
 def main_entry(addon, log):
     """Main entry point - determines mode and launches appropriate functionality."""
     log.debug("Main entry point")
@@ -163,11 +178,7 @@ def main_entry(addon, log):
 
     selected_shows = _read_selected_shows(addon)
 
-    try:
-        random_order_shows = ast.literal_eval(window.getProperty("EasyTV.random_order_shows"))
-    except (ValueError, SyntaxError) as e:
-        log.warning("Failed to parse random_order_shows property", event="ui.parse_error", error=str(e))
-        random_order_shows = []
+    random_order_shows = _read_random_order_shows(addon)
 
     population = _get_population(
         filter_enabled, addon.getSetting('populate_by'),
