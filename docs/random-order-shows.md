@@ -208,10 +208,12 @@ When you remove a show from random order:
 ### "Kids Cartoon Channel"
 
 1. Create EasyTV clone called "Kids TV"
-2. Add all cartoons to random-order
-3. Filter to Animation genre
+2. Open the clone's own settings and add all cartoons to its random-order shows list
+3. Filter to Animation genre (using the clone's own show filter)
 4. Set to Random Playlist on launch
 5. Kids press one button, random cartoons play
+
+The clone uses its own random-order shows list, configured under its own settings. This list is separate from the main addon's and does not inherit from it. Any changes to the main addon's random-order shows do not affect the clone, and vice versa.
 
 ---
 

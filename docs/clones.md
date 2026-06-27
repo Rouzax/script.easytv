@@ -48,6 +48,10 @@ Each clone has its own:
 - Random playlist configuration
 - All playback settings
 
+The show filter and random-order shows list are each clone's own. They are configured in the clone's settings and do not inherit from the main addon or from other clones. A clone's show filter controls which shows the clone includes; its random-order shows list controls which of those shows use random episode selection. Both must be configured separately in the clone's own settings.
+
+**Performance note:** In Browse Mode, a clone with random-order shows performs a brief per-show metadata lookup on window open for each random-order show whose selected episode differs from the main addon's cached pick (approximately 85 ms per such show). Very large random-order lists make a clone's Browse Mode open slower. Random Playlist mode is not affected.
+
 ### Custom Icons for Clones
 
 Each clone can have its own custom icon, making them visually distinct in Kodi menus:
@@ -75,6 +79,20 @@ Clones do NOT:
 - Affect each other's settings or the main addon's settings
 - Participate in [multi-instance sync](multi-instance-sync.md). Clones use the main addon's local data only.
 - Run their own background service. The main EasyTV addon handles all background work for every clone.
+
+### Clone Random-Order Limitations
+
+The following limitations apply when a clone uses its own random-order shows list:
+
+**Browse Mode performance.** Opening Browse Mode triggers a brief per-show metadata lookup for each random-order show whose clone pick differs from the main addon's cached episode (approximately 85 ms per show). Very large random-order lists will slow the clone's Browse Mode open noticeably. Random Playlist mode is not affected.
+
+**"Both" mode with "Allow multiple episodes" (lazy queue).** When a clone's Episode Selection is set to "Both" and "Allow multiple episodes of same TV show" is also enabled, playlist replenishment runs through a lazy queue managed by the background service. On this path the clone's random-order selection is not applied; random-order shows follow the service's shared episode tracking instead. All other mode combinations apply the clone's random-order selection correctly.
+
+**Premiere filter with random-order shows.** When premiere filtering is active (Skip or Only premieres), the premiere check uses the main addon's cached episode for each random-order show rather than the clone's random pick. A show could be included or excluded based on the wrong episode. This is a non-default setting and affects only random-order shows that are also subject to premiere filtering.
+
+**"Allow multiple episodes" with random-order shows (Unwatched mode).** When "Allow multiple episodes of same TV show" is enabled and Episode Selection is Unwatched, subsequent episode picks for a random-order show are anchored to the service's cached episode rather than the clone's actual first pick. Rarely, the same episode may appear more than once within a single playlist build.
+
+**Browse episode changes on refresh.** A random-order show in a clone's Browse list may display a different episode after a manual refresh or an in-list update. The episode is re-selected randomly each time the row is rendered. This is expected behavior and consistent with how random-order shows work throughout EasyTV.
 
 ---
 
