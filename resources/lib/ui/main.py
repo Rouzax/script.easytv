@@ -237,7 +237,8 @@ def main_entry(addon, log):
                 duration_max=get_int_setting('duration_max')
             ),
             logger=log,
-            addon_id=addon.getAddonInfo('id')
+            addon_id=addon.getAddonInfo('id'),
+            clone_mode=is_clone(addon),
         )
     else:
         # Browse mode - data fetching and filtering handled internally by build_episode_list

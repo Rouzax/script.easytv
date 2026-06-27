@@ -66,6 +66,7 @@ from resources.lib.data.shows import (
     fetch_unwatched_shows,
     filter_shows_by_duration,
     find_next_episode,
+    resolve_ondeck_episode,
     sync_show_list_from_shared_db,
     validate_duration_settings,
 )
@@ -144,6 +145,33 @@ class RandomPlaylistConfig:
     duration_filter_enabled: bool = False
     duration_min: int = 0
     duration_max: int = 0
+
+
+def _resolve_clone_ondeck(show_id: int, random_order_shows: List[int]) -> Optional[int]:
+    """Resolve a clone's on-deck episode id from the broadcast pools.
+
+    Reads ondeck_list / offdeck_list from the module-global WINDOW (written
+    by the service daemon) and delegates to resolve_ondeck_episode, which
+    applies random vs sequential logic based on whether the show is in
+    random_order_shows.
+
+    Args:
+        show_id: The TV show ID.
+        random_order_shows: Show IDs configured for random episode order.
+
+    Returns:
+        Episode id, or None if both pools are empty.
+    """
+    try:
+        ondeck: List[int] = ast.literal_eval(
+            WINDOW.getProperty(f"EasyTV.{show_id}.ondeck_list") or "[]"
+        )
+        offdeck: List[int] = ast.literal_eval(
+            WINDOW.getProperty(f"EasyTV.{show_id}.offdeck_list") or "[]"
+        )
+    except (ValueError, SyntaxError):
+        ondeck, offdeck = [], []
+    return resolve_ondeck_episode(ondeck, offdeck, show_id in random_order_shows)
 
 
 def _serialize_playlist_config(config: RandomPlaylistConfig) -> Dict[str, Any]:
@@ -590,7 +618,8 @@ def _process_tv_candidate(
     random_order_shows: List[int],
     config: RandomPlaylistConfig,
     logger: StructuredLogger,
-    partial_episode_map: Optional[Dict[int, int]] = None
+    partial_episode_map: Optional[Dict[int, int]] = None,
+    clone_mode: bool = False,
 ) -> Tuple[Optional[int], bool]:
     """
     Process a TV show candidate for playlist addition.
@@ -602,9 +631,12 @@ def _process_tv_candidate(
         random_order_shows: List of show IDs with random episode order
         config: Playlist configuration (includes episode_selection)
         logger: Logger instance
-        partial_episode_map: Optional map of show_id → episode_id for shows
+        partial_episode_map: Optional map of show_id -> episode_id for shows
             with genuinely in-progress episodes. On first encounter, the
             specific partial episode is served directly.
+        clone_mode: When True, resolves the first-episode pick from the
+            show's ondeck_list / offdeck_list broadcast pools instead of
+            reading the service's pre-cached EpisodeID window property.
 
     Returns:
         Tuple of (episode_id, is_multi_episode) or (None, False) if skipped.
@@ -715,13 +747,22 @@ def _process_tv_candidate(
 
         # Get episode based on selection mode
         if config.episode_selection == EPISODE_SELECTION_UNWATCHED:
-            # Use cached next unwatched episode from service
-            episode_id_str = WINDOW.getProperty(f"EasyTV.{show_id}.EpisodeID")
-            if not episode_id_str:
-                if candidate_tag in candidate_list:
-                    candidate_list.remove(candidate_tag)
-                return None, False
-            tmp_episode_id = int(episode_id_str)
+            if clone_mode:
+                # Clone: resolve from the show's broadcast pools (ondeck/offdeck)
+                # instead of the service's pre-cached EpisodeID.
+                tmp_episode_id = _resolve_clone_ondeck(show_id, random_order_shows)
+                if tmp_episode_id is None:
+                    if candidate_tag in candidate_list:
+                        candidate_list.remove(candidate_tag)
+                    return None, False
+            else:
+                # Main addon: use cached next unwatched episode from service
+                episode_id_str = WINDOW.getProperty(f"EasyTV.{show_id}.EpisodeID")
+                if not episode_id_str:
+                    if candidate_tag in candidate_list:
+                        candidate_list.remove(candidate_tag)
+                    return None, False
+                tmp_episode_id = int(episode_id_str)
         elif config.episode_selection == EPISODE_SELECTION_WATCHED:
             # Query library for a random watched episode
             tmp_episode_id = _fetch_random_episode_for_show(
@@ -734,13 +775,21 @@ def _process_tv_candidate(
         else:
             # BOTH mode: randomly choose between on-deck unwatched OR random watched
             # This preserves sequential order for unwatched episodes
-            episode_id_str = WINDOW.getProperty(f"EasyTV.{show_id}.EpisodeID")
-            has_unwatched = bool(episode_id_str)
-            
+            if clone_mode:
+                # Clone: resolve from broadcast pools instead of EpisodeID cache.
+                clone_ondeck_id = _resolve_clone_ondeck(show_id, random_order_shows)
+                has_unwatched = clone_ondeck_id is not None
+            else:
+                episode_id_str = WINDOW.getProperty(f"EasyTV.{show_id}.EpisodeID")
+                has_unwatched = bool(episode_id_str)
+
             # Use unwatched_ratio setting (0-100) to determine choice
             if has_unwatched and random.randint(1, 100) <= config.unwatched_ratio:
-                # Use the next sequential unwatched episode
-                tmp_episode_id = int(episode_id_str)
+                # Use the next sequential/random unwatched episode
+                if clone_mode:
+                    tmp_episode_id = clone_ondeck_id  # type: ignore[assignment]
+                else:
+                    tmp_episode_id = int(episode_id_str)  # type: ignore[assignment]
             else:
                 # Query for a random watched episode
                 tmp_episode_id = _fetch_random_episode_for_show(
@@ -749,7 +798,10 @@ def _process_tv_candidate(
                 if tmp_episode_id is None:
                     # No watched episodes, fall back to unwatched if available
                     if has_unwatched:
-                        tmp_episode_id = int(episode_id_str)
+                        if clone_mode:
+                            tmp_episode_id = clone_ondeck_id  # type: ignore[assignment]
+                        else:
+                            tmp_episode_id = int(episode_id_str)  # type: ignore[assignment]
                     else:
                         if candidate_tag in candidate_list:
                             candidate_list.remove(candidate_tag)
@@ -1053,7 +1105,8 @@ def build_random_playlist(
     random_order_shows: List[int],
     config: RandomPlaylistConfig,
     logger: Optional[StructuredLogger] = None,
-    addon_id: Optional[str] = None
+    addon_id: Optional[str] = None,
+    clone_mode: bool = False,
 ) -> None:
     """
     Build and play a randomized playlist of TV episodes and optionally movies.
@@ -1110,7 +1163,13 @@ def build_random_playlist(
         random_order_shows: List of show IDs with random episode ordering
         config: RandomPlaylistConfig with all playlist settings (including episode_selection)
         logger: Optional logger instance
-    
+        addon_id: Optional addon ID for playlist continuation state
+        clone_mode: When True, first-episode picks are resolved from each
+            show's ondeck_list / offdeck_list broadcast pools instead of
+            the service's pre-cached EpisodeID window property. Has no
+            effect on the lazy-queue path (BOTH mode + multiple_shows),
+            which is handled by the service's playback monitor.
+
     Side Effects:
         - Clears existing video playlist
         - Sets 'EasyTV.playlist_running' to 'true'
@@ -1289,9 +1348,13 @@ def build_random_playlist(
         
         # Both mode with multiple_shows uses lazy queue for on-deck progression
         # This allows the same show to appear multiple times with its on-deck
-        # episode advancing naturally as content is watched (S02E05 → S02E06 → ...)
-        if (config.episode_selection == EPISODE_SELECTION_BOTH and 
-            config.multiple_shows and 
+        # episode advancing naturally as content is watched (S02E05 -> S02E06 -> ...)
+        # NOTE: clone_mode random-order resolution does NOT apply on this lazy-queue
+        # path. Replenishment is handled by the service's playback monitor, which
+        # uses the shared EpisodeID cache. Per-clone random-order in BOTH +
+        # multiple_shows mode is a known v1 limitation.
+        if (config.episode_selection == EPISODE_SELECTION_BOTH and
+            config.multiple_shows and
             config.playlist_content != CONTENT_MOVIES_ONLY):
             log.debug("Using lazy queue for Both mode",
                       event="playlist.lazy_queue_mode",
@@ -1337,7 +1400,8 @@ def build_random_playlist(
                 episode_id, is_multi = _process_tv_candidate(
                     candidate_id, added_ep_dict, candidate_list,
                     random_order_shows, config, log,
-                    partial_episode_map=partial_episode_map
+                    partial_episode_map=partial_episode_map,
+                    clone_mode=clone_mode,
                 )
                 
                 if episode_id is None:
