@@ -27,6 +27,7 @@ Logging:
 import ast
 import os
 import sys
+from typing import List
 
 import xbmc
 import xbmcaddon
@@ -56,7 +57,9 @@ from resources.lib.utils import (
     get_bool_setting,
     get_int_setting,
     get_logger,
+    is_clone,
     lang,
+    parse_show_id_list,
     parse_version,
     restart_addon,
 )
@@ -114,6 +117,22 @@ def _signal_force_sync_on_open(window):
         window.setProperty(PROP_FORCE_SYNC, '1')
 
 
+def _read_selected_shows(addon) -> List[int]:
+    """Return the show-filter selection for this addon instance.
+
+    Clones read their own 'selection' setting; the main addon reads the
+    EasyTV.selection window property (written by the service).
+    Empty or invalid input yields [] (no shows).
+    """
+    if is_clone(addon):
+        return parse_show_id_list(addon.getSetting('selection'))
+    try:
+        raw = xbmcgui.Window(KODI_HOME_WINDOW_ID).getProperty("EasyTV.selection")
+        return parse_show_id_list(raw)
+    except (ValueError, SyntaxError):
+        return []
+
+
 def main_entry(addon, log):
     """Main entry point - determines mode and launches appropriate functionality."""
     log.debug("Main entry point")
@@ -142,11 +161,7 @@ def main_entry(addon, log):
     sort_by = get_int_setting('sort_by')
     sort_reverse = get_bool_setting('sort_reverse')
 
-    try:
-        selected_shows = ast.literal_eval(window.getProperty("EasyTV.selection"))
-    except (ValueError, SyntaxError) as e:
-        log.warning("Failed to parse selection property", event="ui.parse_error", error=str(e))
-        selected_shows = []
+    selected_shows = _read_selected_shows(addon)
 
     try:
         random_order_shows = ast.literal_eval(window.getProperty("EasyTV.random_order_shows"))
