@@ -477,7 +477,7 @@ msgid "Select a Kodi smart playlist (.xsp) file."
 msgstr ""
 
 msgctxt "#32406"
-msgid "Select shows where episode order doesn't matter."
+msgid "Select shows where episode order doesn't matter. These are a subset of your included shows: if 'Use only selected shows' is enabled, a show must also be in that list to play here."
 msgstr ""
 
 msgctxt "#32407"

@@ -60,6 +60,24 @@ The settings show how many shows are marked for random order:
 
 ---
 
+## Random-Order Shows Are a Subset of Your Included Shows
+
+Random-order is not a separate list of shows that plays alongside a "sequential" list. It is a *flag* on shows EasyTV already includes. Marking a show for random order only changes **how** its episodes are picked (randomly instead of in sequence). It does not, by itself, add the show to EasyTV.
+
+This only matters if you turn on the show filter (**Settings → Shows → Show Filter → "Use only selected shows"**):
+
+- **Filter off (the default):** EasyTV uses your whole library, so any show you mark for random order is already included and will play.
+- **Filter on:** EasyTV uses only the shows you picked under **"Select shows..."**. A show marked for random order that is **not** in that included list is left out entirely; the random-order flag does not pull it back in.
+
+So when the filter is on, a random-order show must be in **both** places:
+
+1. Included under **Show Filter → Select shows...**
+2. Marked under **Random Episode Order → Select shows for random order...**
+
+If you marked a show for random order and it never appears, this mismatch is the most common cause.
+
+---
+
 ## How Random Order Works
 
 ### In Browse Mode
@@ -243,6 +261,7 @@ When using "Both" with "Allow multiple episodes" enabled, random-order shows in 
 
 - Check if "Hide random-order shows" is enabled in Browse Mode settings
 - The show should still appear in random playlists
+- If you use the show filter ("Use only selected shows"), confirm the show is also included under **Show Filter → Select shows...**. Random-order shows are a subset of your included shows, so a show that is marked random-order but not included is left out entirely (see [Random-Order Shows Are a Subset of Your Included Shows](#random-order-shows-are-a-subset-of-your-included-shows))
 
 ---
 
