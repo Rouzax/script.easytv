@@ -1,8 +1,11 @@
 """Tests for resources/lib/utils.py — core utilities."""
+from unittest.mock import MagicMock
+
 import pytest
 
 from resources.lib.utils import (
     compare_versions,
+    is_clone,
     parse_lastplayed_date,
     parse_version,
     runtime_converter,
@@ -232,3 +235,22 @@ class TestSetCustomIcon:
 
         assert result is True
         mock_browse_dialog.browse.assert_called_once()
+
+
+# ── is_clone ─────────────────────────────────────────────────────────
+
+def _addon(addon_id):
+    """Create a mock addon with a specific id."""
+    a = MagicMock()
+    a.getAddonInfo.return_value = addon_id
+    return a
+
+
+def test_is_clone_false_for_main_addon():
+    """is_clone returns False for the main addon."""
+    assert is_clone(_addon('script.easytv')) is False
+
+
+def test_is_clone_true_for_clone_addon():
+    """is_clone returns True for a clone addon."""
+    assert is_clone(_addon('script.easytv.kids')) is True

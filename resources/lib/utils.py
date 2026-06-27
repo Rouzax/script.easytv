@@ -154,15 +154,28 @@ def get_float_setting(setting_id: str, addon_id: Optional[str] = None, default: 
 def lang(string_id: int, addon_id: Optional[str] = None) -> str:
     """
     Get localized string.
-    
+
     Args:
         string_id: The string ID from strings.po.
         addon_id: Optional addon ID for cloned addons.
-    
+
     Returns:
         The localized string.
     """
     return get_addon(addon_id).getLocalizedString(string_id)
+
+
+def is_clone(addon: "xbmcaddon.Addon") -> bool:
+    """
+    Return True if this addon is a clone (id differs from the main addon).
+
+    Args:
+        addon: The addon instance to check.
+
+    Returns:
+        True if the addon ID differs from the main addon ID, False otherwise.
+    """
+    return addon.getAddonInfo('id') != DEFAULT_ADDON_ID
 
 
 class StructuredLogger:
