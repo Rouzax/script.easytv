@@ -32,11 +32,12 @@ Logging:
 """
 from __future__ import annotations
 
+import ast
 import os
 import time
 from dataclasses import dataclass
 from datetime import date
-from typing import TYPE_CHECKING, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 
 import xbmc
 import xbmcaddon
@@ -60,6 +61,8 @@ from resources.lib.constants import (
     THEME_COLORS,
     THEME_NAMES,
 )
+from resources.lib.data.queries import build_episode_details_query
+from resources.lib.data.shows import resolve_ondeck_episode
 from resources.lib.data.storage import get_storage
 from resources.lib.utils import format_duration, get_logger, json_query, lang
 
@@ -81,6 +84,56 @@ def _get_log() -> StructuredLogger:
 
 # Shared window reference for property access
 WINDOW = xbmcgui.Window(KODI_HOME_WINDOW_ID)
+
+
+def _clone_row_overrides(
+    show_id: int,
+    random_order_shows: List[int],
+) -> Optional[Dict[str, Any]]:
+    """For a clone: if the locally resolved on-deck episode differs from the
+    cached pick, fetch its metadata and return row override fields. Returns
+    None when the cache is already correct (no query needed)."""
+    try:
+        ondeck = ast.literal_eval(
+            WINDOW.getProperty(f"EasyTV.{show_id}.ondeck_list") or "[]"
+        )
+        offdeck = ast.literal_eval(
+            WINDOW.getProperty(f"EasyTV.{show_id}.offdeck_list") or "[]"
+        )
+    except (ValueError, SyntaxError):
+        ondeck, offdeck = [], []
+
+    resolved = resolve_ondeck_episode(ondeck, offdeck, show_id in random_order_shows)
+    if resolved is None:
+        return None
+
+    cached = WINDOW.getProperty(f"EasyTV.{show_id}.EpisodeID")
+    if cached and int(cached) == resolved:
+        return None
+
+    details = (
+        json_query(build_episode_details_query(resolved)) or {}
+    ).get('episodedetails')
+    if not details:
+        return None
+
+    season = int(details.get('season', 0) or 0)
+    episode = int(details.get('episode', 0) or 0)
+    res = details.get('resume', {}) or {}
+    total = res.get('total', 0) or 0
+    pct = int((res.get('position', 0) or 0) * 100 / total) if total else 0
+
+    return {
+        'episode_id': resolved,
+        'title': details.get('title', ''),
+        'season': season,
+        'episode': episode,
+        'episodeno': "s%02de%02d" % (season, episode),
+        'plot': details.get('plot', ''),
+        'file': details.get('file', ''),
+        'percentplayed': pct,
+        'resume': res,
+    }
 
 
 @dataclass
@@ -128,6 +181,8 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         kwargs.pop('config', None)
         kwargs.pop('script_path', None)
         kwargs.pop('logger', None)
+        kwargs.pop('clone_mode', None)
+        kwargs.pop('random_order_shows', None)
         return super().__new__(cls, *args, **kwargs)
     
     def __init__(self, *args, **kwargs):
@@ -137,7 +192,9 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         self._config = kwargs.pop('config', BrowseWindowConfig())
         self._script_path = kwargs.pop('script_path', '')
         self._log = kwargs.pop('logger', None) or _get_log()
-        
+        self._clone_mode: bool = kwargs.pop('clone_mode', False)
+        self._random_order_shows: List[int] = kwargs.pop('random_order_shows', [])
+
         # Call parent init
         super().__init__(*args, **kwargs)
         
@@ -239,7 +296,7 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
             Configured ListItem for the show
         """
         prop_prefix = f"EasyTV.{show_id}"
-        
+
         # Get episode properties
         pct_played = WINDOW.getProperty(f"{prop_prefix}.PercentPlayed")
         poster = WINDOW.getProperty(f"{prop_prefix}.Art(tvshow.poster)")
@@ -257,6 +314,20 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         genre = WINDOW.getProperty(f"{prop_prefix}.Genre")
         duration_secs = WINDOW.getProperty(f"{prop_prefix}.Duration")
         ep_runtime = WINDOW.getProperty(f"{prop_prefix}.EpRuntime")
+
+        # For clones: override episode fields if the local random-order pick
+        # diverges from the shared cached pick (no shared prop writes).
+        if self._clone_mode:
+            override = _clone_row_overrides(show_id, self._random_order_shows)
+            if override is not None:
+                episode_id = str(override['episode_id'])
+                eptitle = override['title']
+                season = str(override['season'])
+                episode = str(override['episode'])
+                ep_no = override['episodeno']
+                plot = override['plot']
+                file_path = override['file']
+                pct_played = str(override['percentplayed'])
 
         # Calculate time since last watched (calendar-day aware)
         if lastplayed == 0:
@@ -339,6 +410,20 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         ep_no = WINDOW.getProperty(f"{prop_prefix}.EpisodeNo")
         num_watched = WINDOW.getProperty(f"{prop_prefix}.CountWatchedEps")
         num_ondeck = WINDOW.getProperty(f"{prop_prefix}.CountonDeckEps")
+
+        # For clones: override episode fields if the local random-order pick
+        # diverges from the shared cached pick (no shared prop writes).
+        if self._clone_mode:
+            override = _clone_row_overrides(show_id, self._random_order_shows)
+            if override is not None:
+                episode_id = str(override['episode_id'])
+                eptitle = override['title']
+                season = str(override['season'])
+                episode = str(override['episode'])
+                ep_no = override['episodeno']
+                plot = override['plot']
+                file_path = override['file']
+                pct_played = str(override['percentplayed'])
 
         # Calculate skipped episodes
         try:

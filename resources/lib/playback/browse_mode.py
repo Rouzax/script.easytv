@@ -185,6 +185,7 @@ class EpisodeListConfig:
     language: str = 'English'
     series_premieres: int = PREMIERE_MIX_IN
     season_premieres: int = PREMIERE_MIX_IN
+    clone_mode: bool = False
 
 
 def build_episode_list(
@@ -351,7 +352,9 @@ def build_episode_list(
         data=filtered_data,
         config=browse_config,
         script_path=config.script_path,
-        logger=log
+        logger=log,
+        clone_mode=config.clone_mode,
+        random_order_shows=random_order_shows,
     )
     
     # Create player that coordinates with the window

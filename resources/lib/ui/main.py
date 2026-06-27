@@ -259,7 +259,8 @@ def main_entry(addon, log):
                 sort_reverse=sort_reverse,
                 language=language,
                 series_premieres=get_int_setting('premieres'),
-                season_premieres=get_int_setting('season_premieres')
+                season_premieres=get_int_setting('season_premieres'),
+                clone_mode=is_clone(addon),
             ),
             monitor=xbmc.Monitor(),
             logger=log
