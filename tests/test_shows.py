@@ -12,6 +12,7 @@ from resources.lib.constants import (
 )
 from resources.lib.data.shows import (
     _get_playlist_filename,
+    fetch_shows_with_watched_episodes,
     generate_sort_key,
     get_episode_sort_key,
     get_premiere_category,
@@ -371,3 +372,58 @@ class TestSyncShowListFromSharedDb:
         sync_show_list_from_shared_db(storage)
 
         storage.sync_tracked_shows.assert_not_called()
+
+
+# ── fetch_shows_with_watched_episodes ────────────────────────────────
+class TestFetchShowsWithWatchedEpisodes:
+    """A show is a Watched/Both candidate when it has >=1 WATCHED episode.
+
+    Kodi's show-level ``playcount`` is a *fully-watched* flag (1 only when
+    every episode is watched, computed as ``episode <= watchedepisodes`` -
+    which is also 1 for a 0-episode show), NOT "has a watched episode". The
+    real watched count is the ``watchedepisodes`` property. Selecting on
+    ``playcount>0`` therefore drops partially-watched shows and pulls in
+    empty shows. This test simulates Kodi faithfully so it fails against the
+    playcount-based query and passes against a watchedepisodes-based one.
+    """
+
+    # (tvshowid, label, lastplayed, watchedepisodes, episode)
+    LIBRARY = [
+        (1, "Partial Show", "2026-01-01 10:00:00", 5, 15),   # partial -> include
+        (2, "Done Show", "2026-01-02 10:00:00", 15, 15),     # fully watched -> include
+        (3, "Fresh Show", "", 0, 10),                        # unwatched -> exclude
+        # 0-episode show: watchedepisodes=0 but Kodi's playcount is 1 (0<=0),
+        # so the old playcount-based query wrongly included it.
+        (4, "Empty Show", "", 0, 0),                         # 0 episodes -> exclude
+    ]
+
+    def _fake_jsonrpc(self, request):
+        import json
+        params = json.loads(request).get("params", {})
+        filt = params.get("filter") or {}
+        rows = []
+        for sid, label, lastplayed, watched, episode in self.LIBRARY:
+            if filt.get("field") == "playcount":
+                # Server-side playcount>0 = Kodi's fully-watched flag.
+                if episode <= watched:
+                    rows.append({"tvshowid": sid, "label": label,
+                                 "lastplayed": lastplayed})
+            else:
+                rows.append({"tvshowid": sid, "label": label,
+                             "lastplayed": lastplayed,
+                             "watchedepisodes": watched, "episode": episode})
+        return json.dumps({"result": {"tvshows": rows}})
+
+    def test_includes_partially_watched_excludes_unwatched_and_empty(self):
+        with patch("xbmc.executeJSONRPC", side_effect=self._fake_jsonrpc):
+            result = fetch_shows_with_watched_episodes(
+                sort_by=1, sort_reverse=False
+            )
+        ids = {row[1] for row in result}
+        assert 1 in ids, (
+            "partially-watched show dropped: selection uses show playcount "
+            "(fully-watched flag) instead of watchedepisodes>0"
+        )
+        assert 2 in ids, "fully-watched show should be included"
+        assert 3 not in ids, "unwatched show must not be a watched candidate"
+        assert 4 not in ids, "empty (0-episode) show must not be included"

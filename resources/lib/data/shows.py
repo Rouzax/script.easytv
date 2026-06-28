@@ -593,23 +593,31 @@ def fetch_shows_with_watched_episodes(
     with log_timing(log, "fetch_shows_with_watched_episodes", sort_by=sort_by) as timer:
         log.debug("Fetching shows with watched episodes", sort_by=sort_by)
         
-        # Query Kodi for shows with watched episodes (playcount > 0)
+        # Query Kodi for all shows with their watched-episode counts. We cannot
+        # filter server-side on watchedepisodes (GetTVShows rejects it), and the
+        # show-level "playcount" field is NOT usable here: Kodi derives it as a
+        # *fully-watched* flag (1 only when every episode is watched, computed as
+        # episode <= watchedepisodes, which is also 1 for a 0-episode show). A
+        # partially-watched show therefore has playcount 0. Select on the real
+        # watched count (watchedepisodes > 0) in Python instead.
         query = {
             "jsonrpc": "2.0",
             "method": "VideoLibrary.GetTVShows",
             "params": {
-                "filter": {"field": "playcount", "operator": "greaterthan", "value": "0"},
-                "properties": ["lastplayed"],
+                "properties": ["lastplayed", "watchedepisodes"],
                 "sort": {"order": "descending", "method": "lastplayed"}
             },
             "id": "1"
         }
-        
+
         response = xbmc.executeJSONRPC(json.dumps(query))
         data = json.loads(response)
-        
-        if 'result' in data and 'tvshows' in data['result'] and data['result']['tvshows']:
-            shows_from_query = data['result']['tvshows']
+
+        all_shows = data.get('result', {}).get('tvshows') or []
+        shows_from_query = [
+            show for show in all_shows if show.get('watchedepisodes', 0) > 0
+        ]
+        if shows_from_query:
             log.debug("Shows with watched episodes found", count=len(shows_from_query))
         else:
             log.debug("No shows with watched episodes found")
