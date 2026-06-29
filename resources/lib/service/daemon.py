@@ -1048,7 +1048,11 @@ class ServiceDaemon:
             self.refresh_show_episodes(showids=sorted(added), bulk=False)
 
         if removed:
-            kodi_ids = set(self._all_shows_list)
+            # Keep iff the show still has unwatched episodes in THIS library
+            # (C1: a peer dropping its row must not remove a show we still own).
+            # Use the fresh predicate, NOT the stale _all_shows_list, and do not
+            # mutate _all_shows_list here.
+            kodi_ids = query_unwatched_show_ids()
             safe_to_remove = removed - kodi_ids
             if safe_to_remove:
                 self._log.info(

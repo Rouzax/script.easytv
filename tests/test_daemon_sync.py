@@ -149,15 +149,17 @@ class TestCheckSharedDbSync:
         assert mock_refresh.call_args[1]['bulk'] is False
         assert daemon._last_sync_rev == 11
 
+    @patch('resources.lib.service.daemon.query_unwatched_show_ids')
     @patch('resources.lib.service.daemon.get_storage')
-    def test_removes_shows_not_in_db(self, mock_get_storage):
+    def test_removes_shows_not_in_db(self, mock_get_storage, mock_unwatched):
         """Should remove shows from daemon state when gone from DB
-        and not in Kodi library."""
+        and fully watched (no unwatched episodes remain)."""
         daemon = _make_daemon()
         daemon._sync_tick_counter = SYNC_CHECK_INTERVAL_TICKS
         daemon._last_sync_rev = 10
         daemon._state.shows_with_next_episodes = [1, 2, 3]
-        daemon._all_shows_list = [1, 2]  # show 3 not in Kodi either
+        # Show 3 has no unwatched episodes (gone from Kodi or fully watched).
+        mock_unwatched.return_value = {1, 2}
 
         storage = MagicMock(spec=SharedDatabaseStorage)
         storage.is_available.return_value = True
@@ -175,15 +177,17 @@ class TestCheckSharedDbSync:
 
         mock_remove.assert_called_once_with(3)
 
+    @patch('resources.lib.service.daemon.query_unwatched_show_ids')
     @patch('resources.lib.service.daemon.get_storage')
-    def test_keeps_shows_still_in_kodi(self, mock_get_storage):
-        """Should NOT remove a show from daemon if it still has episodes in Kodi,
-        even when missing from shared DB."""
+    def test_keeps_shows_still_in_kodi(self, mock_get_storage, mock_unwatched):
+        """Should NOT remove a show from daemon if it still has unwatched
+        episodes, even when the peer dropped it from the shared DB."""
         daemon = _make_daemon()
         daemon._sync_tick_counter = SYNC_CHECK_INTERVAL_TICKS
         daemon._last_sync_rev = 10
         daemon._state.shows_with_next_episodes = [1, 2, 3]
-        daemon._all_shows_list = [1, 2, 3]  # show 3 still in Kodi
+        # Show 3 still has unwatched episodes in this library (C1: keep it).
+        mock_unwatched.return_value = {1, 2, 3}
 
         storage = MagicMock(spec=SharedDatabaseStorage)
         storage.is_available.return_value = True
@@ -200,6 +204,47 @@ class TestCheckSharedDbSync:
                 daemon._check_shared_db_sync()
 
         mock_remove.assert_not_called()
+
+    @patch('resources.lib.service.daemon.query_unwatched_show_ids')
+    @patch('resources.lib.service.daemon.get_storage')
+    def test_keeps_still_unwatched_drops_fully_watched(
+        self, mock_get_storage, mock_unwatched
+    ):
+        """Sync removal must keep shows with local unwatched episodes (C1)
+        and drop only fully-watched ones.
+
+        Scenario: peer removes both show 11 and 12 from shared DB.
+        Show 11 still has unwatched episodes here (keep); show 12 is fully
+        watched (drop). Only show 12 must be removed from the local list.
+        """
+        daemon = _make_daemon()
+        daemon._sync_tick_counter = SYNC_CHECK_INTERVAL_TICKS
+        daemon._last_sync_rev = 10
+        daemon._state.shows_with_next_episodes = [11, 12]
+        # Show 11 still unwatched in this library; 12 is fully watched.
+        mock_unwatched.return_value = {11}
+
+        storage = MagicMock(spec=SharedDatabaseStorage)
+        storage.is_available.return_value = True
+        storage.db = MagicMock()
+        storage.db.get_global_rev.return_value = 11
+        storage.sync_tracked_shows.return_value = SyncResult(
+            added=set(), removed={11, 12}, revision=11
+        )
+        storage.db.get_show_ids_updated_since.return_value = (set(), None)
+        mock_get_storage.return_value = storage
+
+        with patch.object(daemon, 'refresh_show_episodes'):
+            with patch.object(
+                daemon, '_remove_from_shows_with_next_episodes'
+            ) as mock_remove:
+                daemon._check_shared_db_sync()
+
+        # Show 12 (fully watched) must be removed.
+        mock_remove.assert_called_once_with(12)
+        # Show 11 (still unwatched) must not be removed.
+        for call in mock_remove.call_args_list:
+            assert call.args[0] != 11
 
     @patch('resources.lib.service.daemon.get_storage')
     def test_skips_when_storage_unavailable(self, mock_get_storage):
