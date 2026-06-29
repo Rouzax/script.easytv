@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <addon id="script.easytv"
        name="EasyTV"
-       version="1.5.6"
+       version="1.5.7"
        provider-name="Rouzax">
     <requires>
         <import addon="xbmc.python" version="3.0.1"/>
@@ -25,10 +25,11 @@
         <forum>https://forum.kodi.tv/showthread.php?tid=383902</forum>
         <website>https://rouzax.github.io/script.easytv/</website>
         <source>https://github.com/Rouzax/script.easytv</source>
-        <news>v1.5.6 (2026-06-27)
-- Clones now use their own selected shows instead of the main EasyTV's list
-- Clones can have their own random episode order, in both Browse and Random Playlist
-- Clearer help and docs: random-order shows are a subset of your included shows</news>
+        <news>v1.5.7 (2026-06-29)
+- Watched and Both playlist modes now correctly include partially-watched shows and skip empty ones
+- Finished shows are removed from your next-episode list promptly, instead of lingering until the next library scan
+- Multi-instance sync no longer clears the next episode for a show you still have unwatched
+- The "you missed an earlier episode" warning now actually pauses playback while it is shown</news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>

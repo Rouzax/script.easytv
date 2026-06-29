@@ -1,6 +1,33 @@
 EasyTV Changelog
 ================
 
+v1.5.7 (2026-06-29)
+-------------------
+Bug Fixes:
+  - Fixed: Watched/Both playlist modes selected candidate shows by Kodi's
+    show-level playcount (a fully-watched flag: 1 only when every episode is
+    watched, and 1 for 0-episode shows). Partially-watched shows were dropped
+    and empty shows pulled in. Selection now uses watchedepisodes > 0.
+  - Fixed: Multi-instance sync cleared a show's stored next episode when a peer
+    dropped its shared-DB row, even when this instance still had the show with
+    unwatched episodes. Removal is now gated on "no unwatched episodes in this
+    library" on both the daemon and clone sync paths.
+  - Fixed: The "you missed an earlier episode" warning fired from
+    onPlayBackStarted while the player was still loading, so its pause was lost
+    and the warning showed over playing video. It now defers to onAVStarted
+    (matching the resume-seek path) so playback pauses as intended.
+  - Fixed: A fully-watched show lingered in next-episode tracking until the next
+    full library refresh, and across instances could persist indefinitely.
+    refresh_show_episodes now drops shows with no next episode and deletes their
+    shared-DB row (bumping the sync revision so peers reconcile), in both the
+    per-episode watched path and bulk refresh.
+
+Internal:
+  - New data-layer predicate query_unwatched_show_ids() is the single source of
+    "still has a next episode", routed through by the producer drop-detection
+    and both sync consumers. delete_show_tracking now bumps the sync revision on
+    actual deletions (including orphan cleanup) so removals propagate to peers.
+
 v1.5.6 (2026-06-27)
 -------------------
 New Features:
