@@ -1612,7 +1612,7 @@ class ServiceDaemon:
                     ))
                     
                     # Remove duplicate files (double episodes) using set for O(1) lookup
-                    seen_files: set[str] = set()
+                    seen_files: Set[str] = set()
                     unique_unplayed = []
                     for ep in all_unplayed:
                         if ep['file'] and ep['file'] not in seen_files:

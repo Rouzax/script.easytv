@@ -79,6 +79,8 @@ class TestProducerDropAndDelete:
         remove.assert_any_call(11)
         storage.db.delete_show_tracking.assert_called_once()
         assert set(storage.db.delete_show_tracking.call_args.args[0]) == {11}
+        # Self-sync suppression: the local rev is advanced after the delete.
+        storage.mark_refreshed.assert_called_once()
 
     def test_eject_offdeck_show_row_not_deleted(self, mocker, make_daemon):
         """A show with offdeck-only unwatched episodes stays in the unwatched set.
