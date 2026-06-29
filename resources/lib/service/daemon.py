@@ -127,6 +127,7 @@ from resources.lib.data.shows import (
     get_episode_sort_key,
     get_premiere_category,
     get_show_category,
+    query_unwatched_show_ids,
 )
 from resources.lib.data.smart_playlists import (
     delete_easytv_playlists,
@@ -138,7 +139,12 @@ from resources.lib.data.smart_playlists import (
     start_playlist_batch,
     update_show_in_playlists,
 )
-from resources.lib.data.storage import SharedDatabaseStorage, get_storage, reset_storage
+from resources.lib.data.storage import (
+    SharedDatabaseStorage,
+    get_storage,
+    is_shared_storage,
+    reset_storage,
+)
 from resources.lib.data.streamdetails_cache import (
     build_updated_streamdetails_cache,
     extract_episode_streamdetails,
@@ -1510,7 +1516,18 @@ class ServiceDaemon:
                 self._window.setProperty(
                     f"EasyTV.{show_id}.{PROP_GENRE}", genre
                 )
-            
+
+            # Shows that were tracked but no longer have a next episode.
+            # Per-show: requested ids that fell out of show_lw (fully watched).
+            # Bulk: tracked minus the fresh unwatched set (bulk's `showids`
+            # IS the playcount=0 set, so intersecting with it yields nothing).
+            tracked_now: Set[int] = set(self._state.shows_with_next_episodes)
+            if bulk:
+                dropped: Set[int] = tracked_now - query_unwatched_show_ids()
+            else:
+                dropped = (tracked_now & set(showids)) - set(show_lw)
+            to_delete: Set[int] = set(dropped)
+
             # Mark end of show query phase
             if timer is not None:
                 timer.mark("show_query")
@@ -1633,6 +1650,7 @@ class ServiceDaemon:
                     if not ondeck_eps and not offdeck_eps:
                         if my_showid in self._state.shows_with_next_episodes:
                             self._remove_from_shows_with_next_episodes(my_showid)
+                        to_delete.add(my_showid)
                         continue
                     
                     # Determine if this is a skipped episode selection
@@ -1689,7 +1707,20 @@ class ServiceDaemon:
                     # Add to tracked shows
                     if my_showid not in self._state.shows_with_next_episodes:
                         self._state.shows_with_next_episodes.append(my_showid)
-            
+
+            # Drop fully-watched shows from the local list (the no-episodes
+            # branch already removed its own shows inside the loop).
+            for show_id in dropped:
+                self._remove_from_shows_with_next_episodes(show_id)
+
+            # Delete the shared rows once, outside the batch transaction, only
+            # on the shared backend. Then advance our local sync revision so the
+            # delete's rev bump does not trigger a spurious self-sync.
+            if to_delete and is_shared_storage():
+                shared_storage = cast(SharedDatabaseStorage, storage)
+                shared_storage.db.delete_show_tracking(list(to_delete))
+                storage.mark_refreshed(shared_storage.db.get_global_rev())
+
             # Log processing breakdown
             if bulk:
                 self._log.debug(
