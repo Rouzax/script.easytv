@@ -465,13 +465,16 @@ def sync_show_list_from_shared_db(storage, logger=None):
             log_inner.exception("Failed to fetch added shows",
                                 event="sync.add_error")
 
-    # Handle removals: remove from list and clear key window property
+    # Handle removals: drop from the tracked list, but do NOT blank the show's
+    # on-deck. A "removed" show (in the shared DB's removed set) may still be in
+    # THIS instance's Kodi library - a peer dropped its shared-DB row (orphan
+    # cleanup elsewhere / clear_sync_data / not-yet-advertised), not this
+    # library. Clearing EpisodeID wiped the on-deck of a show the user still
+    # owns (the C1 finding). Display comes from live Kodi queries that exclude
+    # genuinely-gone shows, so there is nothing to blank here.
     if sync_result.removed:
         for show_id in sync_result.removed:
             updated_ids.discard(show_id)
-            # Clear the EpisodeID property so the show can't be looked up
-            # (remaining props are harmless and cleared on next full refresh)
-            WINDOW.clearProperty("EasyTV.%s.EpisodeID" % show_id)
         log_inner.info("Shows removed per shared DB",
                        event="sync.removed",
                        show_ids=sorted(sync_result.removed),

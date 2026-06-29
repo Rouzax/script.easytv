@@ -1,4 +1,5 @@
 """Tests for resources/lib/data/shows.py — show data logic."""
+import ast
 import random
 from unittest.mock import MagicMock, patch
 
@@ -254,6 +255,36 @@ class TestSyncShowListFromSharedDb:
         assert call_args[0][0] == PROP_SHOWS_WITH_NEXT_EPISODES
         updated_ids = eval(call_args[0][1])
         assert set(updated_ids) == {10, 20, 30, 40}
+
+    @patch('resources.lib.data.shows.WINDOW')
+    def test_removed_show_dropped_from_list_but_not_blanked(self, mock_window):
+        """A removed show leaves the tracked list but its EpisodeID is NOT
+        cleared.
+
+        A show in sync_result.removed (absent from the shared DB) may still be
+        in THIS instance's Kodi library - a peer dropped its row, not this
+        library. Clearing its EpisodeID wiped the on-deck of a show the user
+        still owns (the C1 finding). Display comes from live Kodi queries that
+        exclude genuinely-gone shows, so there is nothing to blank here.
+        """
+        mock_window.getProperty.return_value = '[10, 20, 30]'
+        storage = self._make_storage()
+        storage.sync_tracked_shows.return_value = SyncResult(
+            added=set(), removed={20}, revision=5
+        )
+
+        sync_show_list_from_shared_db(storage, self._make_logger())
+
+        cleared = [c.args[0] for c in mock_window.clearProperty.call_args_list]
+        assert "EasyTV.20.EpisodeID" not in cleared, (
+            f"removed show 20 was blanked (clearProperty calls: {cleared}); a "
+            "show still in the local library must keep its on-deck"
+        )
+        # Still dropped from the tracked-shows list.
+        call_args = mock_window.setProperty.call_args
+        assert call_args[0][0] == PROP_SHOWS_WITH_NEXT_EPISODES
+        # ast.literal_eval: the value is a list literal string ("[10, 30]").
+        assert set(ast.literal_eval(call_args[0][1])) == {10, 30}
 
     @patch('resources.lib.data.shows.WINDOW')
     def test_sets_pending_flag_on_add(self, mock_window):

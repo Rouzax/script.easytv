@@ -291,6 +291,34 @@ class TestGetOndeckBulkBoundedRefresh:
         mres.assert_not_called()
 
     @patch('resources.lib.data.storage.WINDOW')
+    def test_absent_from_db_show_keeps_props_not_blanked(self, mock_window):
+        """A show in show_ids but ABSENT from the shared DB must KEEP its window
+        props, not be blanked.
+
+        show_ids always comes from live Kodi queries (fetch_unwatched/watched),
+        so an absent row never means "gone from my library" - it means "still
+        mine, just removed elsewhere or not yet advertised." Blanking it wiped
+        the on-deck of a show the user still owns (the C1 finding). The clear is
+        removed; the show keeps its props.
+        """
+        storage, mock_db = self._make_storage()
+        # DB has a row for 42, but NOT for 99 (its row was deleted elsewhere).
+        mock_db.get_show_tracking_bulk_with_rev.return_value = ({42: self._row()}, 5)
+        props = {
+            _build_property_key(42, "SyncedAt"): "2026-06-24 10:00:00",
+            _build_property_key(99, "EpisodeID"): "16",
+        }
+        mock_window.getProperty.side_effect = lambda k: props.get(k, '')
+        with patch.object(storage, '_fetch_and_set_display_properties'), \
+             patch.object(storage, '_refresh_resume_state'):
+            storage.get_ondeck_bulk([42, 99], refresh_display=True)
+        cleared = [c.args[0] for c in mock_window.clearProperty.call_args_list]
+        assert _build_property_key(99, "EpisodeID") not in cleared, (
+            f"absent-from-DB show 99 was blanked (clearProperty calls: {cleared}); "
+            "a show still in the local library must keep its on-deck"
+        )
+
+    @patch('resources.lib.data.storage.WINDOW')
     def test_first_encounter_seeds_marker_without_kodi_call(self, mock_window):
         storage, mock_db = self._make_storage()
         mock_db.get_show_tracking_bulk_with_rev.return_value = ({42: self._row(ondeck=100)}, 5)

@@ -78,32 +78,6 @@ WINDOW = xbmcgui.Window(KODI_HOME_WINDOW_ID)
 # Property prefix for EasyTV window properties
 PROPERTY_PREFIX = "EasyTV"
 
-# All window properties that need to be managed for a show
-# These match the properties defined in episode_tracker.py
-SHOW_PROPERTIES = [
-    "Title",
-    "Episode",
-    "EpisodeNo",
-    "Season",
-    "TVshowTitle",
-    "Art(tvshow.poster)",
-    "Resume",
-    "PercentPlayed",
-    "CountWatchedEps",
-    "CountUnwatchedEps",
-    "CountonDeckEps",
-    "EpisodeID",
-    "ondeck_list",
-    "offdeck_list",
-    "File",
-    "Art(tvshow.fanart)",
-    "Premiered",
-    "Plot",
-    "IsSkipped",
-    "Duration",
-]
-
-
 def _build_property_key(show_id: Union[int, str], prop_name: str) -> str:
     """Build a window property key for a show."""
     return f"{PROPERTY_PREFIX}.{show_id}.{prop_name}"
@@ -506,11 +480,15 @@ class SharedDatabaseStorage(StorageBackend):
                      event="storage.display_refresh",
                      shows_refreshed=display_refreshed)
         
-        # Clear window properties for shows NOT in DB (deleted elsewhere)
-        for show_id in show_ids:
-            if show_id not in data:
-                self._clear_window_properties(show_id)
-        
+        # A show in show_ids but absent from the shared DB is NOT blanked here.
+        # show_ids always comes from live Kodi queries (fetch_unwatched_shows /
+        # fetch_shows_with_watched_episodes), so an absent row never means "gone
+        # from this library" - it means the show is still ours but its row was
+        # removed on another instance (orphan cleanup / clear_sync_data) or not
+        # yet advertised. Clearing wiped the on-deck of a show the user still
+        # owns; we keep the props instead. Genuinely-removed shows are dropped
+        # from tracking by the daemon and never reach show_ids. INVARIANT: do not
+        # pass stale/non-library ids here, and do not reintroduce a clear.
         return data, revision
     
     def set_ondeck(self, show_id: int, data: Dict[str, Any]) -> None:
@@ -780,20 +758,6 @@ class SharedDatabaseStorage(StorageBackend):
         WINDOW.setProperty(_build_property_key(show_id, "Resume"), resume)
         WINDOW.setProperty(_build_property_key(show_id, "PercentPlayed"), percent_played)
         return True
-
-    def _clear_window_properties(self, show_id: int) -> None:
-        """
-        Clear window properties for a show deleted on another instance.
-        
-        Clears all properties to ensure the show doesn't appear in the
-        local instance's browse window or playlists.
-        """
-        for prop_name in SHOW_PROPERTIES:
-            WINDOW.clearProperty(_build_property_key(show_id, prop_name))
-        
-        log.debug("Cleared stale window properties",
-                 event="storage.clear_stale",
-                 show_id=show_id)
 
 
 # =============================================================================
