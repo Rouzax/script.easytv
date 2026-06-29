@@ -474,12 +474,18 @@ def sync_show_list_from_shared_db(storage, logger=None):
     # owns (the C1 finding). Display comes from live Kodi queries that exclude
     # genuinely-gone shows, so there is nothing to blank here.
     if sync_result.removed:
-        for show_id in sync_result.removed:
+        # Keep a removed show if it still has unwatched episodes in THIS
+        # library (C1); drop only genuinely fully-watched/gone shows. Display
+        # is list-gated, so dropping hides it; keeping preserves the on-deck.
+        unwatched = query_unwatched_show_ids()
+        dropped = {sid for sid in sync_result.removed if sid not in unwatched}
+        for show_id in dropped:
             updated_ids.discard(show_id)
         log_inner.info("Shows removed per shared DB",
                        event="sync.removed",
-                       show_ids=sorted(sync_result.removed),
-                       count=len(sync_result.removed))
+                       show_ids=sorted(dropped),
+                       kept_unwatched=sorted(sync_result.removed - dropped),
+                       count=len(dropped))
 
     # Update the window property
     WINDOW.setProperty(PROP_SHOWS_WITH_NEXT_EPISODES, str(sorted(updated_ids)))

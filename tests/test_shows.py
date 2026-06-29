@@ -405,6 +405,37 @@ class TestSyncShowListFromSharedDb:
         storage.sync_tracked_shows.assert_not_called()
 
 
+# ── sync_show_list_from_shared_db: keep-iff-unwatched ────────────────
+
+class TestSyncShowListKeepsUnwatched:
+    """Removed shows that still have unwatched episodes are kept in the list."""
+
+    @patch('resources.lib.data.shows.query_unwatched_show_ids')
+    @patch('resources.lib.data.shows.WINDOW')
+    def test_keeps_unwatched_drops_fully_watched_on_removal(
+        self, mock_window, mock_unwatched
+    ):
+        """Shows in removed set are kept if still unwatched, dropped if fully watched.
+
+        tracked: {11, 12}; shared DB removed both;
+        query_unwatched_show_ids returns {11} -> 11 kept, 12 dropped.
+        """
+        mock_window.getProperty.return_value = '[11, 12]'
+        storage = MagicMock()
+        storage.sync_tracked_shows.return_value = SyncResult(
+            added=set(), removed={11, 12}, revision=11
+        )
+        mock_unwatched.return_value = {11}
+
+        sync_show_list_from_shared_db(storage, MagicMock())
+
+        call_args = mock_window.setProperty.call_args
+        assert call_args[0][0] == PROP_SHOWS_WITH_NEXT_EPISODES
+        updated_ids = set(ast.literal_eval(call_args[0][1]))
+        assert 11 in updated_ids, "show 11 (still unwatched) must be kept"
+        assert 12 not in updated_ids, "show 12 (fully watched) must be dropped"
+
+
 # ── fetch_shows_with_watched_episodes ────────────────────────────────
 class TestFetchShowsWithWatchedEpisodes:
     """A show is a Watched/Both candidate when it has >=1 WATCHED episode.
