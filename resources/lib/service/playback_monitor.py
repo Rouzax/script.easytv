@@ -25,7 +25,7 @@ import json
 import os
 import random
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, Union
 
 import xbmc
 import xbmcaddon
@@ -168,6 +168,11 @@ class PlaybackMonitor(xbmc.Player):
         self._pl_running_local: str = ''
         self._pending_movie_random_start: bool = False
         self._pending_resume_seek: Optional[int] = None
+        # Deferred missed-episode warning (show_id, episode_id, showtitle): set in
+        # onPlayBackStarted, consumed in onAVStarted once the stream is actually
+        # playing, so the pause (Player.PlayPause play=false) is not lost while
+        # the player is still loading.
+        self._pending_missed_check: Optional[Tuple[int, int, str]] = None
         self._on_last_playlist_item: bool = False
     
     def onPlayBackStarted(self) -> None:
@@ -233,8 +238,18 @@ class PlaybackMonitor(xbmc.Player):
         
         This fires when the actual A/V stream begins, at which point
         video metadata like duration is available. Used for deferred
-        seeking operations (resume points, movie random start).
+        seeking operations (resume points, movie random start) and the
+        missed-episode warning (pause only sticks once the stream is playing).
         """
+        # Handle the deferred missed-episode warning (set in onPlayBackStarted).
+        # Runs first: it pauses and may replace playback, and the pause only
+        # takes effect now that the stream is actually playing.
+        if self._pending_missed_check is not None:
+            show_id, episode_id, showtitle = self._pending_missed_check
+            self._pending_missed_check = None
+            self._check_previous_episode(show_id, episode_id, showtitle)
+            return
+
         # Handle pending resume seek (uses absolute time)
         if self._pending_resume_seek is not None:
             seek_seconds = self._pending_resume_seek
@@ -313,10 +328,14 @@ class PlaybackMonitor(xbmc.Player):
                     self._log.warning("Refresh failed, using cached data",
                                      event="playback.refresh_error", error=str(e))
             
-            self._check_previous_episode(
+            # Defer the warning to onAVStarted: at onPlayBackStarted the player
+            # is still loading, so pausing here (Player.PlayPause play=false) is
+            # lost when playback begins. onAVStarted fires once the stream plays,
+            # where the pause sticks (same deferral pattern as the resume seek).
+            self._pending_missed_check = (
                 now_playing_show_id, now_playing_episode_id, showtitle
             )
-        
+
         # Show playlist notification
         if self._pl_running_local == 'true' and settings.playlist_notifications:
             source_id = self._window.getProperty(PROP_SOURCE_ADDON_ID) or None
