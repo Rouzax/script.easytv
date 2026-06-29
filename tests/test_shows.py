@@ -458,3 +458,25 @@ class TestFetchShowsWithWatchedEpisodes:
         assert 2 in ids, "fully-watched show should be included"
         assert 3 not in ids, "unwatched show must not be a watched candidate"
         assert 4 not in ids, "empty (0-episode) show must not be included"
+
+
+# -- query_unwatched_show_ids --------------------------------------------
+
+class TestQueryUnwatchedShowIds:
+    def test_returns_set_of_playcount_zero_show_ids(self, mocker):
+        from resources.lib.data import shows
+        mocker.patch.object(
+            shows, "json_query",
+            return_value={"tvshows": [
+                {"tvshowid": 11, "playcount": 0},
+                {"tvshowid": 12, "playcount": 0},
+            ]},
+        )
+        result = shows.query_unwatched_show_ids()
+        assert result == {11, 12}
+        assert isinstance(result, set)
+
+    def test_empty_when_no_unwatched(self, mocker):
+        from resources.lib.data import shows
+        mocker.patch.object(shows, "json_query", return_value={})
+        assert shows.query_unwatched_show_ids() == set()

@@ -30,7 +30,7 @@ from __future__ import annotations
 import ast
 import os
 import random
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 import xbmc
 import xbmcgui
@@ -51,6 +51,7 @@ from resources.lib.data.queries import (
     build_show_details_query,
     build_show_episodes_query,
     get_all_shows_query,
+    get_unwatched_shows_query,
 )
 from resources.lib.service.episode_tracker import PROP_DURATION
 from resources.lib.utils import (
@@ -482,6 +483,24 @@ def sync_show_list_from_shared_db(storage, logger=None):
 
     # Update the window property
     WINDOW.setProperty(PROP_SHOWS_WITH_NEXT_EPISODES, str(sorted(updated_ids)))
+
+
+def query_unwatched_show_ids() -> Set[int]:
+    """
+    Show IDs that still have a next unwatched episode (Kodi playcount=0).
+
+    Single source of truth for "is this show still tracked?". Routed through
+    by the producer drop-detection and both sync consumers.
+
+    Note: Kodi sets show-level playcount=1 only when fully watched
+    (episode <= watchedepisodes); a show with only skipped/offdeck-unwatched
+    episodes is still playcount=0 and IS in this set. File-less-only and
+    0-episode shows are also playcount=0 here; the producer reconciles those
+    via its no-episodes branch (it does not make this predicate do per-episode
+    file checks).
+    """
+    result = json_query(get_unwatched_shows_query(), True)
+    return {s["tvshowid"] for s in result.get("tvshows", [])}
 
 
 def fetch_unwatched_shows(sort_by: int, sort_reverse: bool, language: str = 'English') -> List[list]:
