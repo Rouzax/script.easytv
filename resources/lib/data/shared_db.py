@@ -1222,6 +1222,15 @@ class SharedDatabase:
             """, show_ids)
             
             deleted = cursor.rowcount
+            if deleted > 0:
+                # A deletion changes shared state; bump the revision so
+                # peer daemons (rev-gated sync) reconcile. Gated on rowcount
+                # so a no-op delete cannot sustain a cross-instance cascade.
+                cursor.execute(f"""
+                    UPDATE {self._table('sync_metadata')}
+                    SET int_value = LAST_INSERT_ID(int_value + 1)
+                    WHERE key_name = 'global_rev'
+                """)
             conn.commit()
             
             log.debug("Deleted show tracking",

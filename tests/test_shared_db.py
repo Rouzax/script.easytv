@@ -366,3 +366,39 @@ class TestGetShowTrackingBulkWithRev:
         assert rev == 7
         assert data[42]['updated_at'] == '2026-06-24 10:00:00'
         assert data[42]['ondeck_episode_id'] == 100
+
+
+class TestDeleteBumpsRevision:
+    """Tests that delete_show_tracking bumps global_rev when rows are deleted."""
+
+    def test_bumps_global_rev_when_rows_deleted(self):
+        db, mock_conn = _make_shared_db()
+        mock_cursor = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+
+        mock_cursor.rowcount = 2
+        db.delete_show_tracking([11, 12])
+
+        sql_calls = " ".join(c.args[0] for c in mock_cursor.execute.call_args_list)
+        assert "global_rev" in sql_calls
+
+    def test_no_rev_bump_when_no_rows_deleted(self):
+        db, mock_conn = _make_shared_db()
+        mock_cursor = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+
+        mock_cursor.rowcount = 0
+        db.delete_show_tracking([99])
+
+        sql_calls = " ".join(c.args[0] for c in mock_cursor.execute.call_args_list)
+        assert "global_rev" not in sql_calls
+
+    def test_returns_deleted_count(self):
+        db, mock_conn = _make_shared_db()
+        mock_cursor = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+
+        mock_cursor.rowcount = 3
+        result = db.delete_show_tracking([1, 2, 3])
+
+        assert result == 3
