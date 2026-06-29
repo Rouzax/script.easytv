@@ -16,16 +16,23 @@ def patch_window(mocker):
         'resources.lib.playback.random_player.WINDOW'
     )
 
-    def setup(episode_map):
-        """Set up episode_no values for show IDs.
+    def setup(episode_map, resume_map=None):
+        """Set up episode_no (and optional resume) values for show IDs.
 
         Args:
             episode_map: dict of show_id -> episode_no string (e.g. {1: 's01e01'})
+            resume_map: optional dict of show_id -> resume string ('true'/'false').
+                Unset show IDs return '' for their Resume prop.
         """
+        resumes = resume_map or {}
+
         def get_prop(key):
             for show_id, ep_no in episode_map.items():
                 if key == f"EasyTV.{show_id}.EpisodeNo":
                     return ep_no
+            for show_id, resume in resumes.items():
+                if key == f"EasyTV.{show_id}.Resume":
+                    return resume
             return ''
         mock_window.getProperty.side_effect = get_prop
 
@@ -211,3 +218,51 @@ class TestCheckPremiereExclusionEdgeCases:
         config = RandomPlaylistConfig(premieres=PREMIERE_ONLY, season_premieres=PREMIERE_MIX_IN)
         candidates = ['t1']
         assert _check_premiere_exclusion(1, candidates, config) is True
+
+
+class TestCheckPremiereExclusionResumeOverride:
+    """In-progress premieres (Resume=='true') are always kept, mirroring
+    browse_mode.should_include. The user has started the show, so the
+    premiere SKIP/ONLY filter must not drop it."""
+
+    def test_skip_series_keeps_inprogress_series_premiere(self, patch_window):
+        # The reported bug: started S01E01 (resume point) under premieres=SKIP
+        # must NOT be excluded, and must stay in the candidate list.
+        patch_window({1: 's01e01'}, resume_map={1: 'true'})
+        config = RandomPlaylistConfig(
+            premieres=PREMIERE_SKIP, season_premieres=PREMIERE_MIX_IN
+        )
+        candidates = ['t1']
+        assert _check_premiere_exclusion(1, candidates, config) is False
+        assert candidates == ['t1']
+
+    def test_skip_series_excludes_not_inprogress_premiere(self, patch_window):
+        # Contrast: same premiere, not in progress -> still excluded under SKIP.
+        patch_window({1: 's01e01'}, resume_map={1: 'false'})
+        config = RandomPlaylistConfig(
+            premieres=PREMIERE_SKIP, season_premieres=PREMIERE_MIX_IN
+        )
+        candidates = ['t1']
+        assert _check_premiere_exclusion(1, candidates, config) is True
+        assert candidates == []
+
+    def test_skip_season_keeps_inprogress_season_premiere(self, patch_window):
+        # In-progress SxxE01 under season_premieres=SKIP is kept too.
+        patch_window({1: 's02e01'}, resume_map={1: 'true'})
+        config = RandomPlaylistConfig(
+            premieres=PREMIERE_MIX_IN, season_premieres=PREMIERE_SKIP
+        )
+        candidates = ['t1']
+        assert _check_premiere_exclusion(1, candidates, config) is False
+        assert candidates == ['t1']
+
+    def test_only_mode_keeps_inprogress_premiere_under_skip(self, patch_window):
+        # ONLY mode with series SKIP would normally drop S01E01; in-progress
+        # keeps it, matching Browse's override firing before the only_mode branch.
+        patch_window({1: 's01e01'}, resume_map={1: 'true'})
+        config = RandomPlaylistConfig(
+            premieres=PREMIERE_SKIP, season_premieres=PREMIERE_ONLY
+        )
+        candidates = ['t1']
+        assert _check_premiere_exclusion(1, candidates, config) is False
+        assert candidates == ['t1']
