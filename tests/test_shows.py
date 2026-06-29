@@ -486,7 +486,12 @@ class TestFetchShowsWithWatchedEpisodes:
             "partially-watched show dropped: selection uses show playcount "
             "(fully-watched flag) instead of watchedepisodes>0"
         )
-        assert 2 in ids, "fully-watched show should be included"
+        # Cross-feature invariant (fully-watched-removal design): Watched/Both
+        # candidacy is derived purely from this Kodi query, with no setup of
+        # PROP_SHOWS_WITH_NEXT_EPISODES / show_tracking here. So removing a
+        # fully-watched show from next-episode tracking cannot hide it as a
+        # rewatch candidate.
+        assert 2 in ids, "fully-watched show must remain a Watched/Both candidate"
         assert 3 not in ids, "unwatched show must not be a watched candidate"
         assert 4 not in ids, "empty (0-episode) show must not be included"
 
