@@ -1,6 +1,30 @@
 EasyTV Changelog
 ================
 
+v1.5.8 (2026-07-04)
+-------------------
+Bug Fixes:
+  - Fixed: Selecting an in-progress episode in Browse started it from the
+    beginning instead of resuming when the previous-episode ("missed") warning
+    was enabled (the default). In listview/browse mode the service queued both
+    a deferred missed-episode check and a resume seek for the same on-deck
+    episode; onAVStarted ran the check and returned unconditionally, dropping
+    the resume seek even when the check did nothing. _check_previous_episode now
+    reports whether it replaced playback, and onAVStarted only returns early in
+    that case. Random-playlist mode was unaffected.
+  - Fixed: A premiere (S01E01) already in progress was excluded from the random
+    playlist under premiere Skip or Only modes. In-progress premieres
+    (Resume == "true") are now always kept in _check_premiere_exclusion,
+    matching Browse mode's should_include behavior.
+
+Internal:
+  - Consolidated the deferred playback-handoff state (missed-episode check,
+    resume seek, movie random start) into _reset_pending_deferrals(), reset
+    from both onPlayBackStarted and onPlayBackStopped. Previously each field
+    followed a different reset rule, so a missed check queued for a stream that
+    never reached onAVStarted (aborted or failed playback) could leak into a
+    later, unrelated item and run the check against the wrong show.
+
 v1.5.7 (2026-06-29)
 -------------------
 Bug Fixes:
