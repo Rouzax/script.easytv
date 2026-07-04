@@ -178,7 +178,7 @@ class PlaybackMonitor(xbmc.Player):
     def onPlayBackStarted(self) -> None:
         """
         Handle playback start events.
-        
+
         Detects what is playing (episode or movie) and:
         - Checks for previous episode warnings
         - Shows playlist notifications
@@ -243,12 +243,16 @@ class PlaybackMonitor(xbmc.Player):
         """
         # Handle the deferred missed-episode warning (set in onPlayBackStarted).
         # Runs first: it pauses and may replace playback, and the pause only
-        # takes effect now that the stream is actually playing.
+        # takes effect now that the stream is actually playing. If it replaced
+        # playback with an earlier episode, it has already dropped the now-stale
+        # resume seek, so we just stop. Otherwise fall through so a pending
+        # resume seek still runs for the episode that is actually playing
+        # (browse mode queues both for the same on-deck episode).
         if self._pending_missed_check is not None:
             show_id, episode_id, showtitle = self._pending_missed_check
             self._pending_missed_check = None
-            self._check_previous_episode(show_id, episode_id, showtitle)
-            return
+            if self._check_previous_episode(show_id, episode_id, showtitle):
+                return
 
         # Handle pending resume seek (uses absolute time)
         if self._pending_resume_seek is not None:
@@ -379,23 +383,30 @@ class PlaybackMonitor(xbmc.Player):
         )
     
     def _check_previous_episode(
-        self, 
-        show_id: int, 
-        episode_id: int, 
+        self,
+        show_id: int,
+        episode_id: int,
         showtitle: str
-    ) -> None:
+    ) -> bool:
         """
         Check if user is playing a later episode than the stored next episode.
-        
+
         If so, offer to play the stored (earlier) episode instead.
-        
+
         Args:
             show_id: The TV show ID.
             episode_id: The currently playing episode ID.
             showtitle: The show title for display.
+
+        Returns:
+            True if playback was replaced (current episode stopped and the
+            stored earlier episode opened instead), False otherwise. On replace
+            this also clears any resume seek queued for the abandoned episode.
+            When False, playback continues unchanged and any pending resume seek
+            still applies, so the caller can fall through to run it.
         """
         self._log.debug("Previous episode check passed, checking ondeck")
-        
+
         try:
             ondeck_list = ast.literal_eval(
                 self._window.getProperty(f"EasyTV.{show_id}.ondeck_list")
@@ -410,8 +421,8 @@ class PlaybackMonitor(xbmc.Player):
                 int(self._window.getProperty(f"EasyTV.{show_id}.Episode"))
             )
         except (ValueError, SyntaxError):
-            return
-        
+            return False
+
         if episode_id in ondeck_list[1:] and stored_epid:
             # Pause playback
             xbmc.executeJSONRPC(
@@ -457,13 +468,18 @@ class PlaybackMonitor(xbmc.Player):
             self._log.debug("User dialog result", result=dialog_result)
 
             if not dialog_result:
-                # User chose to continue with current episode - unpause
+                # User chose to continue with current episode - unpause. The
+                # episode keeps playing, so any pending resume seek still applies.
                 xbmc.executeJSONRPC(
                     '{"jsonrpc":"2.0","method":"Player.PlayPause",'
                     '"params":{"playerid":1,"play":true},"id":1}'
                 )
+                return False
             else:
-                # User chose to play stored episode
+                # User chose to play stored episode - replace playback. The new
+                # Player.Open resumes the stored episode itself, so the seek
+                # queued for the now-abandoned episode is invalid: drop it here,
+                # co-located with the stop/open that invalidated it.
                 xbmc.executeJSONRPC(
                     '{"jsonrpc": "2.0", "method": "Player.Stop", '
                     '"params": { "playerid": 1 }, "id": 1}'
@@ -474,6 +490,10 @@ class PlaybackMonitor(xbmc.Player):
                     '"params": { "item": { "episodeid": %d }, '
                     '"options":{ "resume": true }  }, "id": 1 }' % stored_epid
                 )
+                self._pending_resume_seek = None
+                return True
+
+        return False
     
     def _handle_resume_point(self) -> None:
         """Handle resuming playback from a saved position with slight rewind."""
