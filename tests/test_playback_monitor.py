@@ -89,3 +89,37 @@ class TestResumeSeekSurvivesMissedCheck:
         # episode must not fire, and the callee already cleared it.
         jq.assert_not_called()
         assert monitor._pending_resume_seek is None
+
+
+class TestPendingDeferralReset:
+    """The onPlayBackStarted -> onAVStarted handoff fields reset together.
+
+    All three ``_pending_*`` deferrals must clear at every playback boundary so
+    a value queued for one item cannot leak into a later, unrelated playback
+    when the stream that queued it never reached onAVStarted (aborted/failed
+    playback). A leaked ``_pending_missed_check`` is the worst case: it would run
+    the missed-episode check against the wrong show and could pause/replace an
+    unrelated item.
+    """
+
+    def test_reset_clears_all_pending_handoff_state(self):
+        monitor = _make_monitor()
+        monitor._pending_movie_random_start = True
+        monitor._pending_resume_seek = 900
+        monitor._pending_missed_check = (7, 16, "Barry")
+        monitor._reset_pending_deferrals()
+        assert monitor._pending_movie_random_start is False
+        assert monitor._pending_resume_seek is None
+        assert monitor._pending_missed_check is None
+
+    def test_stop_clears_leaked_missed_check(self):
+        monitor = _make_monitor()
+        monitor._pending_missed_check = (7, 16, "Barry")
+        monitor._pending_resume_seek = 900
+        monitor._pending_movie_random_start = True
+        with patch.object(monitor, '_handle_playback_end'):
+            monitor.onPlayBackStopped()
+        # A stop must not leave a missed check queued for the next playback.
+        assert monitor._pending_missed_check is None
+        assert monitor._pending_resume_seek is None
+        assert monitor._pending_movie_random_start is False

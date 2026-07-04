@@ -175,6 +175,20 @@ class PlaybackMonitor(xbmc.Player):
         self._pending_missed_check: Optional[Tuple[int, int, str]] = None
         self._on_last_playlist_item: bool = False
     
+    def _reset_pending_deferrals(self) -> None:
+        """Clear all onPlayBackStarted -> onAVStarted handoff state.
+
+        The three ``_pending_*`` fields defer work from ``onPlayBackStarted`` to
+        ``onAVStarted`` (missed-episode check, resume seek, movie random start).
+        They must be reset together at every playback boundary so a value queued
+        for one item cannot leak into a later one when the stream that queued it
+        never reaches ``onAVStarted`` (aborted/failed playback). Each is
+        re-queued within the same ``onPlayBackStarted`` when it still applies.
+        """
+        self._pending_movie_random_start = False
+        self._pending_resume_seek = None
+        self._pending_missed_check = None
+
     def onPlayBackStarted(self) -> None:
         """
         Handle playback start events.
@@ -186,7 +200,7 @@ class PlaybackMonitor(xbmc.Player):
         - Sets up episode tracking
         """
         self._log.debug("Playback started")
-        self._pending_movie_random_start = False  # Reset for new playback
+        self._reset_pending_deferrals()  # Clear stale handoff state for new playback
         settings = self._get_settings()
         
         self._clear_target()
@@ -550,8 +564,7 @@ class PlaybackMonitor(xbmc.Player):
     
     def onPlayBackStopped(self) -> None:
         """Handle playback stopped events (user-initiated stop)."""
-        self._pending_movie_random_start = False  # Reset any pending random start
-        self._pending_resume_seek = None  # Reset any pending resume seek
+        self._reset_pending_deferrals()  # Drop any unconsumed handoff state
         self._handle_playback_end(user_stopped=True)
 
     def onPlayBackEnded(self) -> None:
