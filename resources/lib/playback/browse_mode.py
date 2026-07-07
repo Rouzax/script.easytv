@@ -33,6 +33,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
 import xbmc
+import xbmcaddon
 import xbmcgui
 
 from resources.lib.constants import (
@@ -346,12 +347,20 @@ def build_episode_list(
         skin_return=config.skin_return
     )
     
+    # KODI-FONT-WORKAROUND (kodi#28534): adapt dialog fonts to the active skin.
+    # The generated path is used both as the WindowXMLDialog scriptPath (so the
+    # browse XML loads adapted) and as script_path= (so the child context menu
+    # inherits it). Non-skin resources load via a fresh Addon() lookup elsewhere.
+    from resources.lib.ui.skin_fonts import ensure_generated
+    _browse_addon_id = xbmcaddon.Addon().getAddonInfo('id')   # executing addon (main/clone)
+    _gen_path = ensure_generated(_browse_addon_id)
+
     # Create the browse window
     list_window = BrowseWindow(
-        xmlfile, config.script_path, 'Default',
+        xmlfile, _gen_path, 'Default',
         data=filtered_data,
         config=browse_config,
-        script_path=config.script_path,
+        script_path=_gen_path,
         logger=log,
         clone_mode=config.clone_mode,
         random_order_shows=random_order_shows,
