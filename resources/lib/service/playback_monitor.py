@@ -449,7 +449,9 @@ class PlaybackMonitor(xbmc.Player):
 
             source_addon_id = self._window.getProperty(PROP_SOURCE_ADDON_ID) or None
             source_addon = xbmcaddon.Addon(source_addon_id) if source_addon_id else xbmcaddon.Addon()
-            addon_path = source_addon.getAddonInfo('path')
+            # KODI-FONT-WORKAROUND (kodi#28534): adapt dialog fonts to the active skin.
+            from resources.lib.ui.skin_fonts import ensure_generated
+            addon_path = ensure_generated(source_addon_id or source_addon.getAddonInfo('id'))
             heading = source_addon.getAddonInfo('name')
 
             # Get show poster
@@ -818,6 +820,9 @@ class PlaybackMonitor(xbmc.Player):
         else:
             subtitle = '%s[CR][B]%s[/B]' % (lang(32165), next_se)
         addon_path, addon_name, addon_id = self._get_source_addon_info()
+        # KODI-FONT-WORKAROUND (kodi#28534): adapt dialog fonts to the active skin.
+        from resources.lib.ui.skin_fonts import ensure_generated
+        addon_path = ensure_generated(addon_id)
 
         # Get show poster from cached window property
         # Use ended_showid (captured before sleep) to avoid reading the NEW episode's show
@@ -978,6 +983,9 @@ class PlaybackMonitor(xbmc.Player):
         self._log.debug("Showing playlist continuation prompt",
                         default_action=default_action)
         addon_path, addon_name, addon_id = self._get_source_addon_info()
+        # KODI-FONT-WORKAROUND (kodi#28534): adapt dialog fonts to the active skin.
+        from resources.lib.ui.skin_fonts import ensure_generated
+        addon_path = ensure_generated(addon_id)
 
         # Always: Yes="Generate", No="Stop"
         # default_yes = True when Generate is the default on timeout
