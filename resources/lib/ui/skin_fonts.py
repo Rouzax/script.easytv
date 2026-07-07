@@ -50,7 +50,7 @@ log = get_logger('ui')
 # XML metacharacter. Allowlist at parse time: a hostile or metacharacter-bearing
 # name is dropped (never mapped), which both blocks markup/action injection and
 # guarantees the generated XML stays well-formed (so the fallback invariant holds).
-_VALID_FONT_NAME = re.compile(r"^[A-Za-z0-9_.]{1,64}$")  # bounded length: a
+_VALID_FONT_NAME = re.compile(r"^[A-Za-z0-9_.]{1,64}\Z")  # bounded length: a
 # multi-KB font name would be spliced into every <font> occurrence (font10 is
 # used 48x), amplifying the generated tree to tens of MB from a sub-cap input.
 # Real skin fontsets are a few KB; cap input to avoid a flat-XML resource bomb.
@@ -478,7 +478,7 @@ def ensure_generated(addon_id: str) -> str:
     allowlists font names.
     """
     try:
-        if not _VALID_ID.match(addon_id or ""):
+        if not _VALID_ID.match(addon_id or "") or addon_id in (".", ".."):
             log.warning("Rejected invalid addon_id", event="skinfont.bad_id",
                        addon=addon_id)
             return _safe_shipped(addon_id)

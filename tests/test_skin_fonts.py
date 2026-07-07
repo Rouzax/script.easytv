@@ -473,3 +473,19 @@ def test_read_font_xml_reads_small(tmp_path):
     small = tmp_path / "Font.xml"
     small.write_text("<fonts/>", encoding="utf-8")
     assert sf._read_font_xml(str(small)) == "<fonts/>"
+
+
+def test_valid_font_name_rejects_trailing_newline():
+    assert sf._VALID_FONT_NAME.match("font10") is not None
+    assert sf._VALID_FONT_NAME.match("font10\n") is None
+
+
+def test_ensure_generated_rejects_dotdot_addon_id(monkeypatch):
+    called = {}
+    def mock_safe_shipped(aid):
+        called["id"] = aid
+        return "/shipped"
+    monkeypatch.setattr(sf, "_safe_shipped", mock_safe_shipped)
+    assert sf.ensure_generated("..") == "/shipped"
+    assert sf.ensure_generated(".") == "/shipped"
+    assert called["id"] in (".", "..")
