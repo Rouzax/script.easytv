@@ -386,19 +386,30 @@ def _read_font_xml(path: str) -> Optional[str]:
         return None
 
 
-def _load_skin_includes(skin_xml_dir: str) -> Dict[str, "ET.Element"]:
-    """Build the include table from every *.xml in the skin's resolution dir
-    (where Arctic-family skins keep Includes_Font.xml). Best-effort: unreadable
-    or oversized files are skipped. Returns {} if the directory cannot be
-    listed."""
-    texts: List[str] = []
-    try:
-        names = sorted(os.listdir(skin_xml_dir))
-    except OSError:
-        return {}
-    for entry in names:
-        if not entry.lower().endswith(".xml"):
+def _font_relevant_xml(names: List[str]) -> List[str]:
+    """Files in a skin resolution dir that can define fonts: Font.xml plus any
+    XML whose name contains 'font' or starts with 'includes' (Arctic-family
+    keeps font <include>s in Includes_Font.xml). Narrows both the mtime cache
+    key and the include-table parse so unrelated dialog XML edits neither
+    invalidate the cache nor get parsed."""
+    out: List[str] = []
+    for n in names:
+        low = n.lower()
+        if not low.endswith(".xml"):
             continue
+        if low == "font.xml" or "font" in low or low.startswith("includes"):
+            out.append(n)
+    return out
+
+
+def _load_skin_includes(skin_xml_dir: str, names: List[str]) -> Dict[str, "ET.Element"]:
+    """Build the include table from the font-relevant files in `names` (a
+    precomputed listing of the skin's resolution dir, where Arctic-family
+    skins keep Includes_Font.xml). Best-effort: unreadable or oversized files
+    are skipped. `names` is the caller's single os.listdir of skin_xml_dir, so
+    this does not scan the directory again."""
+    texts: List[str] = []
+    for entry in _font_relevant_xml(names):
         text = _read_font_xml(os.path.join(skin_xml_dir, entry))
         if text is None:
             continue
@@ -502,11 +513,15 @@ def _compute_generated_path(addon_id: str, skin_id: str) -> str:
     if not font_xml_path:
         return shipped                          # cannot adapt; shipped is valid
     skin_xml_dir = os.path.dirname(font_xml_path)
+    try:
+        skin_dir_names = sorted(os.listdir(skin_xml_dir))
+    except OSError:
+        skin_dir_names = []
+    relevant_names = _font_relevant_xml(skin_dir_names)
     mtimes = [os.path.getmtime(font_xml_path)]
     try:
-        for entry in os.listdir(skin_xml_dir):
-            if entry.lower().endswith(".xml"):
-                mtimes.append(os.path.getmtime(os.path.join(skin_xml_dir, entry)))
+        for entry in relevant_names:
+            mtimes.append(os.path.getmtime(os.path.join(skin_xml_dir, entry)))
     except OSError:
         pass
     font_mtime = int(max(mtimes))
@@ -528,7 +543,7 @@ def _compute_generated_path(addon_id: str, skin_id: str) -> str:
     if _fresh():
         return out_base
 
-    includes = _load_skin_includes(skin_xml_dir)
+    includes = _load_skin_includes(skin_xml_dir, skin_dir_names)
     font_xml_text = _read_font_xml(font_xml_path)
     if font_xml_text is None:
         return shipped                          # unreadable/oversized; shipped is valid

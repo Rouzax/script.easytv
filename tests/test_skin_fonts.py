@@ -1,4 +1,6 @@
 """Tests for skin-adaptive font mapping."""
+import os
+
 import pytest
 
 import resources.lib.ui.skin_fonts as sf
@@ -378,6 +380,18 @@ def test_parse_fontset_inline_and_include_merge_inline_wins():
     assert fonts["font10"] == 21
 
 
+def test_font_relevant_xml_filters():
+    names = ["Font.xml", "Includes_Font.xml", "Includes.xml", "Home.xml",
+             "DialogSelect.xml", "font_extra.xml", "notxml.txt"]
+    got = set(sf._font_relevant_xml(names))
+    assert "Font.xml" in got
+    assert "Includes_Font.xml" in got
+    assert "Includes.xml" in got            # starts with "includes"
+    assert "font_extra.xml" in got
+    assert "Home.xml" not in got            # unrelated dialog XML excluded
+    assert "notxml.txt" not in got
+
+
 def test_load_skin_includes_reads_sibling_xml(tmp_path):
     d = tmp_path / "1080i"
     d.mkdir()
@@ -386,29 +400,32 @@ def test_load_skin_includes_reads_sibling_xml(tmp_path):
         "<includes><include name='Font_Default'><definition>"
         "<font><name>font13</name><size>28</size></font></definition></include></includes>")
     (d / "notxml.txt").write_text("ignore me")
-    tbl = sf._load_skin_includes(str(d))
+    names = os.listdir(str(d))
+    tbl = sf._load_skin_includes(str(d), names)
     assert "Font_Default" in tbl
 
 
-def test_load_skin_includes_dir_unreadable_returns_empty(monkeypatch):
-    # If the skin resolution dir itself cannot be listed (permissions, removed
-    # mid-scan, etc.), the loader must degrade to {} rather than raise.
-    monkeypatch.setattr(sf.os, "listdir",
-                        lambda path: (_ for _ in ()).throw(OSError("no access")))
-    assert sf._load_skin_includes("/whatever") == {}
+def test_load_skin_includes_empty_names_returns_empty():
+    # Caller passes [] when the directory listing itself failed (see the
+    # os.listdir try/except in _compute_generated_path); the loader must
+    # degrade to {} rather than raise.
+    assert sf._load_skin_includes("/whatever", []) == {}
 
 
 def test_load_skin_includes_skips_unreadable_file(tmp_path):
     # One sibling file that cannot be opened must not block the rest: a
-    # directory named "bad.xml" makes open() raise IsADirectoryError (an
-    # OSError subclass), while "good.xml" still resolves normally.
+    # directory named "BadFont.xml" makes open() raise IsADirectoryError (an
+    # OSError subclass), while "GoodFont.xml" still resolves normally. Both
+    # names must be font-relevant (contain "font") or _font_relevant_xml
+    # would exclude them before either is ever opened.
     d = tmp_path / "1080i"
     d.mkdir()
-    (d / "bad.xml").mkdir()
-    (d / "good.xml").write_text(
+    (d / "BadFont.xml").mkdir()
+    (d / "GoodFont.xml").write_text(
         "<includes><include name='Font_Default'><definition>"
         "<font><name>font13</name><size>28</size></font></definition></include></includes>")
-    tbl = sf._load_skin_includes(str(d))
+    names = os.listdir(str(d))
+    tbl = sf._load_skin_includes(str(d), names)
     assert "Font_Default" in tbl
 
 
