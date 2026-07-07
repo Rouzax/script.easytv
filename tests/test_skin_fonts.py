@@ -489,3 +489,18 @@ def test_ensure_generated_rejects_dotdot_addon_id(monkeypatch):
     assert sf.ensure_generated("..") == "/shipped"
     assert sf.ensure_generated(".") == "/shipped"
     assert called["id"] in (".", "..")
+
+
+def test_cleanup_orphans_removes_stale_new_and_old(tmp_path):
+    import os
+
+    import resources.lib.ui.skin_fonts as sf
+    out_base = str(tmp_path / "skingen")
+    os.makedirs(out_base + ".new.99999")   # orphan from a dead pid
+    os.makedirs(out_base + ".old")
+    keep = out_base + ".new." + str(os.getpid())
+    os.makedirs(keep)
+    sf._cleanup_orphans(out_base, keep)
+    assert not os.path.isdir(out_base + ".new.99999")
+    assert not os.path.isdir(out_base + ".old")
+    assert os.path.isdir(keep)             # our own tmp is preserved

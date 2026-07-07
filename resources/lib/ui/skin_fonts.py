@@ -30,6 +30,7 @@ Logging:
 """
 from __future__ import annotations
 
+import glob
 import os
 import re
 import shutil
@@ -462,6 +463,16 @@ def _swap_into_place(tmp: str, out_base: str) -> None:
         shutil.rmtree(old, ignore_errors=True)
 
 
+def _cleanup_orphans(out_base: str, keep_tmp: str) -> None:
+    """Remove leftover build dirs from crashed/killed builders: every
+    out_base + '.new.*' except keep_tmp, plus a stale out_base + '.old'.
+    Best-effort; never raises."""
+    for path in glob.glob(out_base + ".new.*"):
+        if path != keep_tmp:
+            shutil.rmtree(path, ignore_errors=True)
+    shutil.rmtree(out_base + ".old", ignore_errors=True)
+
+
 def ensure_generated(addon_id: str) -> str:
     """Return a scriptPath whose dialog XML is adapted to the active skin.
 
@@ -536,6 +547,7 @@ def ensure_generated(addon_id: str) -> str:
             # its own temp, output is identical for the same skin+fonts, and the
             # atomic rename-swap means a racing loser at worst falls back to the
             # shipped path for that one open.
+            _cleanup_orphans(out_base, out_base + ".new." + str(os.getpid()))
             tmp = out_base + ".new." + str(os.getpid())
             if os.path.isdir(tmp):
                 shutil.rmtree(tmp, ignore_errors=True)
