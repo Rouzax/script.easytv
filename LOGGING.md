@@ -401,6 +401,21 @@ The following operations are instrumented with `log_timing`:
 
 ---
 
+## Skin-Adaptive Font Events
+
+Font-substitution workaround for the Estuary-only skin font bug ([kodi#28534](https://github.com/xbmc/xbmc/issues/28534)); generates a per-skin adapted dialog XML on demand.
+
+### skinfont Events (Logger: 'ui')
+
+| Event | Level | Description |
+|-------|-------|-------------|
+| `skinfont.generate` | INFO | Generated adapted dialog XML for a skin |
+| `skinfont.fallback` | WARNING | Generation unavailable, using shipped path |
+| `skinfont.error` | ERROR | Unexpected font generation error, using shipped path |
+| `skinfont.bad_id` | WARNING | Rejected invalid addon_id |
+
+---
+
 ## Troubleshooting
 
 ### Log File Not Created
