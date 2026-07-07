@@ -73,7 +73,7 @@
                 <height>40</height>
                 <align>center</align>
                 <textcolor>$INFO[Window.Property(EasyTV.Accent)]</textcolor>
-                <font>font14_title</font>
+                <font>font36_title</font>
                 <label>-</label>
             </control>
 

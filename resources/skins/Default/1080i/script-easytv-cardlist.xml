@@ -71,7 +71,7 @@
                     <top>13</top>
                     <width>1340</width>
                     <height>40</height>
-                    <font>font14_title</font>
+                    <font>font36_title</font>
                     <textcolor>$INFO[Window.Property(EasyTV.Accent)]</textcolor>
                     <label>$INFO[Window.Property(EasyTV.AddonName)]</label>
                 </control>
