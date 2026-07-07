@@ -55,6 +55,7 @@ from resources.lib.constants import (
     COUNTDOWN_SUBTITLE,
     COUNTDOWN_TIMER_LABEL,
     COUNTDOWN_YES_BUTTON,
+    DEFAULT_ADDON_ID,
     SECONDS_TO_MS_MULTIPLIER,
     SELECT_HEADING,
     SELECT_LIST,
@@ -75,6 +76,14 @@ from resources.lib.utils import get_logger, json_query, lang
 
 if TYPE_CHECKING:
     from resources.lib.utils import StructuredLogger
+
+
+# KODI-FONT-WORKAROUND (kodi#28534): route dialog scriptPaths through the
+# skin-adaptive font generator so <font> anchors map to the active skin. See
+# resources/lib/ui/skin_fonts.py DELETION GUIDE to remove this wholesale.
+def _dialog_script_path(addon_id: Optional[str]) -> str:
+    from resources.lib.ui.skin_fonts import ensure_generated
+    return ensure_generated(addon_id or DEFAULT_ADDON_ID)
 
 
 # Prefix for auto-generated EasyTV TVShow playlists (excluded from selector)
@@ -511,9 +520,7 @@ def show_confirm(
     Returns:
         True if the user clicked Yes, False otherwise.
     """
-    import xbmcaddon
-    addon = xbmcaddon.Addon(addon_id) if addon_id else xbmcaddon.Addon()
-    addon_path = addon.getAddonInfo('path')
+    addon_path = _dialog_script_path(addon_id)
 
     dlg = ConfirmDialog(
         'script-easytv-confirm.xml', addon_path, 'Default',
@@ -604,9 +611,7 @@ def show_select(
     Returns:
         Selected item index, or -1 if cancelled.
     """
-    import xbmcaddon
-    addon = xbmcaddon.Addon(addon_id) if addon_id else xbmcaddon.Addon()
-    addon_path = addon.getAddonInfo('path')
+    addon_path = _dialog_script_path(addon_id)
 
     dlg = SelectDialog(
         'script-easytv-select.xml', addon_path, 'Default',
