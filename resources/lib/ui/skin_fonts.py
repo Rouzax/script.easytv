@@ -434,21 +434,34 @@ def _fsync_path(path: str) -> None:
 def _try_lock(lock_path: str) -> Optional[int]:
     """Acquire an exclusive lockfile fd, or None if another process holds it.
 
-    A lock older than _LOCK_STALE_SECS is reclaimed once (crashed writer), via
-    an atomic rename claim: the stale lock is renamed to a pid-unique name
-    first, so only one racing reclaimer can win the rename, then the loser's
-    O_EXCL create fails safely instead of two builders both proceeding."""
+    A lock older than _LOCK_STALE_SECS is reclaimed once (crashed writer).
+    Reclaim proceeds ONLY if THIS process's rename of the stale path succeeds
+    (rename-by-name acts on whatever currently sits at lock_path): of N racers
+    that all saw the same stale file, only one rename can move that inode
+    away, and the losers get an OSError and back off (return None) instead of
+    also proceeding. This closes the common same-stale-lock race, but not
+    every interleaving: if a concurrent reclaimer already recreated a fresh
+    lock by the time this rename runs, the rename can move that fresh file
+    instead (MERGED-8, rated LOW). Even then the final O_EXCL create below
+    still refuses to steal a lock another racer just created, so the worst
+    outcome is a redundant build (PID-unique temps, idempotent output), never
+    corruption or a broken dialog."""
     try:
         return os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
     except FileExistsError:
         try:
-            if time.time() - os.path.getmtime(lock_path) > _LOCK_STALE_SECS:
-                claim = lock_path + ".reclaim." + str(os.getpid())
-                os.rename(lock_path, claim)   # atomic: only one racer wins
-                os.remove(claim)
-                return os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            if time.time() - os.path.getmtime(lock_path) <= _LOCK_STALE_SECS:
+                return None
+            claim = lock_path + ".reclaim." + str(os.getpid())
+            os.rename(lock_path, claim)
+            os.remove(claim)
         except (OSError, FileExistsError):
             return None
+        try:
+            return os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except OSError:
+            return None  # another racer recreated it first: do not steal
+    except OSError:
         return None
 
 

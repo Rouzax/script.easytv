@@ -608,3 +608,22 @@ def test_try_lock_atomic_reclaim(tmp_path):
     fd = sf._try_lock(lock)
     assert fd is not None                    # stale lock reclaimed
     sf._release_lock(fd, lock)
+
+
+def test_try_lock_non_stale_not_reclaimed(tmp_path):
+    lock = str(tmp_path / "x.lock")
+    open(lock, "w").close()                 # fresh mtime: not stale
+    assert sf._try_lock(lock) is None
+
+
+def test_try_lock_failed_rename_backs_off(tmp_path, monkeypatch):
+    lock = str(tmp_path / "x.lock")
+    open(lock, "w").close()
+    old = time.time() - (sf._LOCK_STALE_SECS + 5)
+    os.utime(lock, (old, old))              # make it stale
+
+    def _boom(_src, _dst):
+        raise OSError("simulated: another racer already reclaimed it")
+
+    monkeypatch.setattr(sf.os, "rename", _boom)
+    assert sf._try_lock(lock) is None       # loses the race: does not steal
