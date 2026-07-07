@@ -157,9 +157,13 @@ def Main():
 
         from resources.lib.ui.dialogs import ShowSelectorDialog
 
+        # KODI-FONT-WORKAROUND (kodi#28534): adapt dialog fonts to the active skin.
+        from resources.lib.ui.skin_fonts import ensure_generated
+        gen_path = ensure_generated(__addonid__)
+
         creation = ShowSelectorDialog(
             "script-easytv-showselector.xml",
-            scriptPath,
+            gen_path,
             'Default',
             heading=heading,
             all_shows_data=all_variables,
