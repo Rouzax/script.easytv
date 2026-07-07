@@ -413,6 +413,7 @@ Font-substitution workaround for the Estuary-only skin font bug ([kodi#28534](ht
 | `skinfont.fallback` | WARNING | Generation unavailable, using shipped path |
 | `skinfont.error` | ERROR | Unexpected font generation error, using shipped path |
 | `skinfont.bad_id` | WARNING | Rejected invalid addon_id |
+| `skinfont.skip` | DEBUG | Skin Font.xml unreadable or oversized, using shipped path |
 
 ---
 

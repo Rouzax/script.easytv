@@ -26,6 +26,8 @@ Logging:
     Key events:
         - skinfont.generate (INFO): Generated adapted XML for a skin
         - skinfont.fallback (WARNING): Generation failed; using shipped path
+        - skinfont.skip (DEBUG): Skin Font.xml unreadable or oversized; using
+          shipped path
     See LOGGING.md for full guidelines.
 """
 from __future__ import annotations
@@ -500,12 +502,17 @@ def _swap_into_place(tmp: str, out_base: str) -> None:
     """Replace out_base with the freshly built tmp tree via renames (near-atomic).
 
     There is a sub-millisecond window between the first rename (out_base ->
-    .old) and the second (tmp -> out_base) where out_base does not exist; a
-    reader landing in that window falls back to the shipped path (see
-    ensure_generated), never a crash. On Windows, a rename that targets a path
-    with an open file handle can fail; this is not exercised here because
-    _compute_generated_path returns before any dialog is constructed, so no
-    reader holds a handle into out_base during the swap."""
+    .old) and the second (tmp -> out_base) where out_base does not exist. A
+    dialog whose load happens to land in that window can fail to construct
+    (the accepted MERGED-6 case); it does NOT silently fall back to the
+    shipped path, since a reader that already holds out_base as its
+    scriptPath does not re-consult ensure_generated at load time. The
+    fallback-to-shipped behavior applies to the NEXT call into
+    ensure_generated, not to a dialog already mid-load against out_base. On
+    Windows, a rename that targets a path with an open file handle can fail;
+    this is not exercised here because _compute_generated_path returns before
+    any dialog is constructed, so no reader holds a handle into out_base
+    during the swap."""
     old = out_base + ".old"
     if os.path.isdir(old):
         shutil.rmtree(old, ignore_errors=True)
@@ -544,6 +551,12 @@ def _cleanup_orphans(out_base: str, keep_tmp: str) -> None:
 # probe (JSON-RPC fontset lookup + full skin-dir mtime scan, in
 # _compute_generated_path) while the memo is fresh, so a dialog re-opened
 # moments after the last one skips straight to the cached path.
+#
+# Keyed on skin_id only, NOT (skin_id, fontset): reading the active fontset
+# requires the JSON-RPC call that this cheap probe exists to avoid. A fontset
+# change with no skin change is picked up once the memo entry ages out (within
+# _MEMO_TTL below), not immediately; that lag is the accepted tradeoff for
+# skipping the RPC on every dialog open.
 _MEMO: Dict[str, Tuple[str, str, float]] = {}   # addon_id -> (skin_id, path, ts)
 _MEMO_TTL = 30.0  # seconds; a skin change flips getSkinDir immediately so a
 # stale memo self-heals within this window even without the skin-id check.
@@ -601,6 +614,8 @@ def _compute_generated_path(addon_id: str, skin_id: str) -> str:
     includes = _load_skin_includes(skin_xml_dir, skin_dir_names)
     font_xml_text = _read_font_xml(font_xml_path)
     if font_xml_text is None:
+        log.debug("Skin Font.xml unreadable or oversized; using shipped path",
+                 event="skinfont.skip", skin=skin_id)
         return shipped                          # unreadable/oversized; shipped is valid
     font_map = build_font_map(parse_fontset(font_xml_text, fontset, includes))
     if all(anchor == mapped for anchor, mapped in font_map.items()):
