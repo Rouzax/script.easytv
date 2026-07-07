@@ -417,16 +417,35 @@ def _load_skin_includes(skin_xml_dir: str, names: List[str]) -> Dict[str, "ET.El
     return build_include_table(texts)
 
 
+def _fsync_path(path: str) -> None:
+    """Best-effort fsync of a file or directory; never raises."""
+    try:
+        fd = os.open(path, os.O_RDONLY)
+    except OSError:
+        return
+    try:
+        os.fsync(fd)
+    except OSError:
+        pass
+    finally:
+        os.close(fd)
+
+
 def _try_lock(lock_path: str) -> Optional[int]:
     """Acquire an exclusive lockfile fd, or None if another process holds it.
 
-    A lock older than _LOCK_STALE_SECS is reclaimed once (crashed writer)."""
+    A lock older than _LOCK_STALE_SECS is reclaimed once (crashed writer), via
+    an atomic rename claim: the stale lock is renamed to a pid-unique name
+    first, so only one racing reclaimer can win the rename, then the loser's
+    O_EXCL create fails safely instead of two builders both proceeding."""
     try:
         return os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
     except FileExistsError:
         try:
             if time.time() - os.path.getmtime(lock_path) > _LOCK_STALE_SECS:
-                os.remove(lock_path)
+                claim = lock_path + ".reclaim." + str(os.getpid())
+                os.rename(lock_path, claim)   # atomic: only one racer wins
+                os.remove(claim)
                 return os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
         except (OSError, FileExistsError):
             return None
@@ -456,14 +475,24 @@ def _generate_into(shipped_path: str, out_base: str, font_map: Dict[str, str]) -
             continue
         with open(os.path.join(src_xml, name), "r", encoding="utf-8") as fh:
             text = fh.read()
-        with open(os.path.join(dst_xml, name), "w", encoding="utf-8") as fh:
+        dst_path = os.path.join(dst_xml, name)
+        with open(dst_path, "w", encoding="utf-8") as fh:
             fh.write(substitute_fonts(text, font_map))
+        _fsync_path(dst_path)
     shutil.copytree(os.path.join(shipped_path, _MEDIA_DIR),
                     os.path.join(out_base, _MEDIA_DIR))
 
 
 def _swap_into_place(tmp: str, out_base: str) -> None:
-    """Replace out_base with the freshly built tmp tree via renames (near-atomic)."""
+    """Replace out_base with the freshly built tmp tree via renames (near-atomic).
+
+    There is a sub-millisecond window between the first rename (out_base ->
+    .old) and the second (tmp -> out_base) where out_base does not exist; a
+    reader landing in that window falls back to the shipped path (see
+    ensure_generated), never a crash. On Windows, a rename that targets a path
+    with an open file handle can fail; this is not exercised here because
+    _compute_generated_path returns before any dialog is constructed, so no
+    reader holds a handle into out_base during the swap."""
     old = out_base + ".old"
     if os.path.isdir(old):
         shutil.rmtree(old, ignore_errors=True)
@@ -475,11 +504,24 @@ def _swap_into_place(tmp: str, out_base: str) -> None:
 
 
 def _cleanup_orphans(out_base: str, keep_tmp: str) -> None:
-    """Remove leftover build dirs from crashed/killed builders: every
+    """Remove leftover build dirs from crashed/killed builders: every stale
     out_base + '.new.*' except keep_tmp, plus a stale out_base + '.old'.
-    Best-effort; never raises."""
+    Best-effort; never raises.
+
+    A '.new.*' candidate is only removed once it is older than
+    _LOCK_STALE_SECS: a fresh one may belong to a live concurrent builder
+    (its lock has not gone stale yet), and rmtree-ing that out from under it
+    would corrupt an in-progress build. A leftover '.old' only exists after a
+    completed-or-crashed swap, so it is always safe to remove unconditionally.
+    """
     for path in glob.glob(out_base + ".new.*"):
-        if path != keep_tmp:
+        if path == keep_tmp:
+            continue
+        try:
+            age = time.time() - os.path.getmtime(path)
+        except OSError:
+            continue                        # gone or unreadable; skip, not fatal
+        if age > _LOCK_STALE_SECS:
             shutil.rmtree(path, ignore_errors=True)
     shutil.rmtree(out_base + ".old", ignore_errors=True)
 
@@ -569,9 +611,16 @@ def _compute_generated_path(addon_id: str, skin_id: str) -> str:
             shutil.rmtree(tmp, ignore_errors=True)
         try:
             _generate_into(shipped, tmp, font_map)
-            with open(os.path.join(tmp, _MARKER), "w", encoding="utf-8") as fh:
+            marker_path = os.path.join(tmp, _MARKER)
+            with open(marker_path, "w", encoding="utf-8") as fh:
                 fh.write(key)
+            # Marker is written into tmp before the swap, so a surviving
+            # marker after a crash implies the XML it names was flushed too:
+            # fsync the marker file and the tmp dir entry it lives in first.
+            _fsync_path(marker_path)
+            _fsync_path(tmp)
             _swap_into_place(tmp, out_base)
+            _fsync_path(os.path.dirname(out_base))
         except Exception:
             shutil.rmtree(tmp, ignore_errors=True)  # no partial tmp left behind
             raise

@@ -1,5 +1,6 @@
 """Tests for skin-adaptive font mapping."""
 import os
+import time
 
 import pytest
 
@@ -555,10 +556,13 @@ def test_ensure_generated_rejects_dotdot_addon_id(monkeypatch):
 
 def test_cleanup_orphans_removes_stale_new_and_old(tmp_path):
     import os
+    import time
 
     import resources.lib.ui.skin_fonts as sf
     out_base = str(tmp_path / "skingen")
     os.makedirs(out_base + ".new.99999")   # orphan from a dead pid
+    old = time.time() - (sf._LOCK_STALE_SECS + 5)
+    os.utime(out_base + ".new.99999", (old, old))  # age it past the stale threshold
     os.makedirs(out_base + ".old")
     keep = out_base + ".new." + str(os.getpid())
     os.makedirs(keep)
@@ -566,3 +570,41 @@ def test_cleanup_orphans_removes_stale_new_and_old(tmp_path):
     assert not os.path.isdir(out_base + ".new.99999")
     assert not os.path.isdir(out_base + ".old")
     assert os.path.isdir(keep)             # our own tmp is preserved
+
+
+def test_cleanup_orphans_preserves_fresh_foreign_new(tmp_path):
+    """A fresh .new.<otherpid> may belong to a live concurrent builder; only a
+    stale one (older than _LOCK_STALE_SECS) is safe to sweep."""
+    import os
+
+    import resources.lib.ui.skin_fonts as sf
+    out_base = str(tmp_path / "skingen")
+    fresh_foreign = out_base + ".new.12345"
+    os.makedirs(fresh_foreign)             # freshly created: mtime is "now"
+    stale_foreign = out_base + ".new.99999"
+    os.makedirs(stale_foreign)
+    old = time.time() - (sf._LOCK_STALE_SECS + 5)
+    os.utime(stale_foreign, (old, old))
+    os.makedirs(out_base + ".old")
+    keep = out_base + ".new." + str(os.getpid())
+    os.makedirs(keep)
+    sf._cleanup_orphans(out_base, keep)
+    assert os.path.isdir(fresh_foreign)    # live concurrent builder: preserved
+    assert not os.path.isdir(stale_foreign)  # crashed builder: removed
+    assert not os.path.isdir(out_base + ".old")
+    assert os.path.isdir(keep)             # our own tmp is preserved
+
+
+def test_fsync_path_best_effort_never_raises(tmp_path):
+    # _fsync_path must swallow errors on a path that cannot be fsynced.
+    sf._fsync_path(str(tmp_path / "does-not-exist"))   # must not raise
+
+
+def test_try_lock_atomic_reclaim(tmp_path):
+    lock = str(tmp_path / "x.lock")
+    open(lock, "w").close()
+    old = time.time() - (sf._LOCK_STALE_SECS + 5)
+    os.utime(lock, (old, old))              # make it stale
+    fd = sf._try_lock(lock)
+    assert fd is not None                    # stale lock reclaimed
+    sf._release_lock(fd, lock)
