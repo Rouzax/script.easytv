@@ -103,6 +103,33 @@ def test_shipped_templates_only_use_anchor_fonts():
         "templates use non-anchor fonts: %s" % (used - set(ANCHOR_SIZES)))
 
 
+def test_every_font_tag_uses_bare_form():
+    # substitute_fonts only rewrites the exact <font>NAME</font> byte form (no
+    # attributes, no surrounding whitespace/newline). A shipped dialog XML that
+    # drifts from that bare form would silently never get font-adapted.
+    import glob
+    import re as _re
+    files = glob.glob("resources/skins/Default/1080i/*.xml")
+    assert files, "no shipped dialog XML found"
+    for path in files:
+        with open(path, "r", encoding="utf-8") as fh:
+            text = fh.read()
+        assert _re.search(r"<font\s", text) is None, "%s has attributed <font>" % path
+        assert _re.search(r"<font>\s|\s</font>", text) is None, "%s has padded <font>" % path
+
+
+def test_generate_into_copies_all_shipped_subdirs():
+    # _generate_into only copies the 1080i XML dir and the media dir (see
+    # skin_fonts._XML_DIR / _MEDIA_DIR). If Default/ ever ships a third subdir,
+    # _generate_into would silently drop it from the adapted tree.
+    skin_dir = os.path.join("resources", "skins", "Default")
+    subdirs = {d for d in os.listdir(skin_dir)
+               if os.path.isdir(os.path.join(skin_dir, d))}
+    assert subdirs == {"1080i", "media"}, (
+        "Default/ ships %s; _generate_into only copies {1080i, media}. Add the "
+        "new subdir to _generate_into or this feature silently drops it." % subdirs)
+
+
 def test_build_font_map_identity_when_anchor_present():
     # A skin that defines our anchor names maps each to itself.
     skin = {"font36_title": 36, "font13": 30, "font12": 25, "font10": 23}
