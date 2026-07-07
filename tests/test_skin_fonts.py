@@ -1,4 +1,6 @@
 """Tests for skin-adaptive font mapping."""
+import pytest
+
 import resources.lib.ui.skin_fonts as sf
 from resources.lib.ui.skin_fonts import (
     ANCHOR_SIZES,
@@ -7,6 +9,14 @@ from resources.lib.ui.skin_fonts import (
     parse_fontset,
     substitute_fonts,
 )
+
+
+@pytest.fixture(autouse=True)
+def _reset_skin_fonts_memo():
+    """ensure_generated memoizes per addon_id; clear it so one test's cached
+    path can never leak into the next test's assertions."""
+    sf.reset_memo()
+    yield
 
 _SAMPLE = """<?xml version="1.0"?>
 <fonts>
@@ -181,6 +191,41 @@ def test_ensure_generated_fallback_never_raises(monkeypatch):
 def test_ensure_generated_rejects_bad_addon_id(monkeypatch):
     monkeypatch.setattr(sf, "_safe_shipped", lambda a: "/ship")
     assert sf.ensure_generated("../evil") == "/ship"
+
+
+def test_memo_skips_probe_within_ttl(monkeypatch):
+    sf.reset_memo()
+    calls = {"fontset": 0}
+    monkeypatch.setattr(sf.xbmc, "getSkinDir", lambda: "skin.estuary")
+    monkeypatch.setattr(sf, "_active_fontset", lambda: (calls.__setitem__("fontset", calls["fontset"] + 1) or "Default"))
+    # Make the full path return a known value the first time. It stands in for
+    # the real _compute_generated_path, which is what actually calls
+    # _active_fontset (the RPC probe) on a genuine cache miss.
+    monkeypatch.setattr(sf, "_compute_generated_path",
+                        lambda addon_id, skin_id: sf._active_fontset() and "/gen")
+    t = {"v": 1000.0}
+    monkeypatch.setattr(sf.time, "monotonic", lambda: t["v"])
+    assert sf.ensure_generated("script.easytv") == "/gen"
+    assert sf.ensure_generated("script.easytv") == "/gen"   # within TTL
+    assert calls["fontset"] == 1                            # probe ran once
+    t["v"] += sf._MEMO_TTL + 1                              # expire
+    assert sf.ensure_generated("script.easytv") == "/gen"
+    assert calls["fontset"] == 2                            # re-probed after TTL
+
+
+def test_memo_invalidates_on_skin_change(monkeypatch):
+    sf.reset_memo()
+    skin = {"v": "skin.estuary"}
+    monkeypatch.setattr(sf.xbmc, "getSkinDir", lambda: skin["v"])
+    monkeypatch.setattr(sf, "_active_fontset", lambda: "Default")
+    seen = []
+    monkeypatch.setattr(sf, "_compute_generated_path",
+                        lambda addon_id, skin_id: seen.append(skin_id) or ("/gen/" + skin_id))
+    monkeypatch.setattr(sf.time, "monotonic", lambda: 1000.0)
+    assert sf.ensure_generated("script.easytv") == "/gen/skin.estuary"
+    skin["v"] = "skin.arctic"
+    assert sf.ensure_generated("script.easytv") == "/gen/skin.arctic"
+    assert seen == ["skin.estuary", "skin.arctic"]
 
 
 def test_resolve_params_literal_passthrough():

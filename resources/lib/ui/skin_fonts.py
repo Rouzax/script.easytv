@@ -473,16 +473,111 @@ def _cleanup_orphans(out_base: str, keep_tmp: str) -> None:
     shutil.rmtree(out_base + ".old", ignore_errors=True)
 
 
+# Session memo: addon_id -> (skin_id, resolved scriptPath, monotonic timestamp).
+# ensure_generated's cheap probe (getSkinDir only) short-circuits the expensive
+# probe (JSON-RPC fontset lookup + full skin-dir mtime scan, in
+# _compute_generated_path) while the memo is fresh, so a dialog re-opened
+# moments after the last one skips straight to the cached path.
+_MEMO: Dict[str, Tuple[str, str, float]] = {}   # addon_id -> (skin_id, path, ts)
+_MEMO_TTL = 30.0  # seconds; a skin change flips getSkinDir immediately so a
+# stale memo self-heals within this window even without the skin-id check.
+
+
+def reset_memo() -> None:
+    """Test/utility hook: clear the in-process memo."""
+    _MEMO.clear()
+
+
+def _compute_generated_path(addon_id: str, skin_id: str) -> str:
+    """The expensive probe + generate-on-miss body: freshness check (fontset RPC
+    + Font.xml mtime scan + marker read), and generation when stale. Called by
+    `ensure_generated` only on a memo miss/expiry; `skin_id` is already known
+    (from the cheap `xbmc.getSkinDir()` probe) so it is not re-derived here.
+    """
+    addon = xbmcaddon.Addon(addon_id)          # inside try: a bad id -> fallback
+    shipped = addon.getAddonInfo('path')
+    _, skin_version = _active_skin()
+    fontset = _active_fontset()
+    font_xml_path = _find_skin_font_xml()
+    if not font_xml_path:
+        return shipped                          # cannot adapt; shipped is valid
+    skin_xml_dir = os.path.dirname(font_xml_path)
+    mtimes = [os.path.getmtime(font_xml_path)]
+    try:
+        for entry in os.listdir(skin_xml_dir):
+            if entry.lower().endswith(".xml"):
+                mtimes.append(os.path.getmtime(os.path.join(skin_xml_dir, entry)))
+    except OSError:
+        pass
+    font_mtime = int(max(mtimes))
+    key = cache_key(skin_id, skin_version, fontset,
+                    addon.getAddonInfo('version'), font_mtime)
+
+    out_base = xbmcvfs.translatePath(
+        "special://profile/addon_data/%s/skingen" % addon_id)
+    os.makedirs(os.path.dirname(out_base), exist_ok=True)
+    marker = os.path.join(out_base, _MARKER)
+
+    def _fresh() -> bool:
+        try:
+            with open(marker, "r", encoding="utf-8") as fh:
+                return fh.read().strip() == key
+        except OSError:
+            return False
+
+    if _fresh():
+        return out_base
+
+    includes = _load_skin_includes(skin_xml_dir)
+    font_xml_text = _read_font_xml(font_xml_path)
+    if font_xml_text is None:
+        return shipped                          # unreadable/oversized; shipped is valid
+    font_map = build_font_map(parse_fontset(font_xml_text, fontset, includes))
+    if all(anchor == mapped for anchor, mapped in font_map.items()):
+        return shipped                          # identity skin: no rewrite needed
+
+    lock_path = out_base + ".lock"
+    fd = _try_lock(lock_path)
+    if fd is None:
+        return shipped                          # another process building; do not block
+    try:
+        if _fresh():                            # built while we waited for the lock
+            return out_base
+        # The lock above is best-effort (see _try_lock's stale-reclaim). A
+        # PID-unique temp dir makes a lock race benign: each builder writes
+        # its own temp, output is identical for the same skin+fonts, and the
+        # atomic rename-swap means a racing loser at worst falls back to the
+        # shipped path for that one open.
+        _cleanup_orphans(out_base, out_base + ".new." + str(os.getpid()))
+        tmp = out_base + ".new." + str(os.getpid())
+        if os.path.isdir(tmp):
+            shutil.rmtree(tmp, ignore_errors=True)
+        try:
+            _generate_into(shipped, tmp, font_map)
+            with open(os.path.join(tmp, _MARKER), "w", encoding="utf-8") as fh:
+                fh.write(key)
+            _swap_into_place(tmp, out_base)
+        except Exception:
+            shutil.rmtree(tmp, ignore_errors=True)  # no partial tmp left behind
+            raise
+        log.info("Generated adapted dialog XML", event="skinfont.generate",
+                 skin=skin_id, mapped=str(font_map))
+    finally:
+        _release_lock(fd, lock_path)
+    return out_base
+
+
 def ensure_generated(addon_id: str) -> str:
     """Return a scriptPath whose dialog XML is adapted to the active skin.
 
     EVERYTHING runs inside one try, and every fallback return uses `_safe_shipped`
     so the fallback itself cannot raise (this is what actually holds the "never
-    break a dialog" invariant). The freshness check (getSkinDir + fontset +
-    Font.xml mtime + marker read) runs per open; it is cheap (one RPC + a few
-    stats) and generation happens only on a genuine cache miss. Identity skins
-    (Estuary and any skin defining all anchor names) skip generation entirely and
-    return the shipped path unchanged.
+    break a dialog" invariant). A cheap probe (`xbmc.getSkinDir()` only) is
+    checked against a short-lived in-process memo first; only on a memo
+    miss/expiry does the expensive probe run (`_compute_generated_path`: fontset
+    RPC + Font.xml mtime scan + marker read), with generation on a genuine cache
+    miss. Identity skins (Estuary and any skin defining all anchor names) skip
+    generation entirely and return the shipped path unchanged.
 
     The fallback is a RELIABILITY mechanism, not a security boundary: a
     successfully generated tree is always well-formed because parse_fontset
@@ -493,77 +588,14 @@ def ensure_generated(addon_id: str) -> str:
             log.warning("Rejected invalid addon_id", event="skinfont.bad_id",
                        addon=addon_id)
             return _safe_shipped(addon_id)
-        addon = xbmcaddon.Addon(addon_id)          # inside try: a bad id -> fallback
-        shipped = addon.getAddonInfo('path')
-        skin_id, skin_version = _active_skin()
-        fontset = _active_fontset()
-        font_xml_path = _find_skin_font_xml()
-        if not font_xml_path:
-            return shipped                          # cannot adapt; shipped is valid
-        skin_xml_dir = os.path.dirname(font_xml_path)
-        mtimes = [os.path.getmtime(font_xml_path)]
-        try:
-            for entry in os.listdir(skin_xml_dir):
-                if entry.lower().endswith(".xml"):
-                    mtimes.append(os.path.getmtime(os.path.join(skin_xml_dir, entry)))
-        except OSError:
-            pass
-        font_mtime = int(max(mtimes))
-        key = cache_key(skin_id, skin_version, fontset,
-                        addon.getAddonInfo('version'), font_mtime)
-
-        out_base = xbmcvfs.translatePath(
-            "special://profile/addon_data/%s/skingen" % addon_id)
-        os.makedirs(os.path.dirname(out_base), exist_ok=True)
-        marker = os.path.join(out_base, _MARKER)
-
-        def _fresh() -> bool:
-            try:
-                with open(marker, "r", encoding="utf-8") as fh:
-                    return fh.read().strip() == key
-            except OSError:
-                return False
-
-        if _fresh():
-            return out_base
-
-        includes = _load_skin_includes(skin_xml_dir)
-        font_xml_text = _read_font_xml(font_xml_path)
-        if font_xml_text is None:
-            return shipped                          # unreadable/oversized; shipped is valid
-        font_map = build_font_map(parse_fontset(font_xml_text, fontset, includes))
-        if all(anchor == mapped for anchor, mapped in font_map.items()):
-            return shipped                          # identity skin: no rewrite needed
-
-        lock_path = out_base + ".lock"
-        fd = _try_lock(lock_path)
-        if fd is None:
-            return shipped                          # another process building; do not block
-        try:
-            if _fresh():                            # built while we waited for the lock
-                return out_base
-            # The lock above is best-effort (see _try_lock's stale-reclaim). A
-            # PID-unique temp dir makes a lock race benign: each builder writes
-            # its own temp, output is identical for the same skin+fonts, and the
-            # atomic rename-swap means a racing loser at worst falls back to the
-            # shipped path for that one open.
-            _cleanup_orphans(out_base, out_base + ".new." + str(os.getpid()))
-            tmp = out_base + ".new." + str(os.getpid())
-            if os.path.isdir(tmp):
-                shutil.rmtree(tmp, ignore_errors=True)
-            try:
-                _generate_into(shipped, tmp, font_map)
-                with open(os.path.join(tmp, _MARKER), "w", encoding="utf-8") as fh:
-                    fh.write(key)
-                _swap_into_place(tmp, out_base)
-            except Exception:
-                shutil.rmtree(tmp, ignore_errors=True)  # no partial tmp left behind
-                raise
-            log.info("Generated adapted dialog XML", event="skinfont.generate",
-                     skin=skin_id, mapped=str(font_map))
-        finally:
-            _release_lock(fd, lock_path)
-        return out_base
+        skin_id = xbmc.getSkinDir()                     # cheap, no RPC
+        now = time.monotonic()
+        cached = _MEMO.get(addon_id)
+        if cached is not None and cached[0] == skin_id and (now - cached[2]) < _MEMO_TTL:
+            return cached[1]
+        result = _compute_generated_path(addon_id, skin_id)
+        _MEMO[addon_id] = (skin_id, result, now)
+        return result
     except (OSError, ET.ParseError):
         log.warning("Font generation unavailable; using shipped path",
                     event="skinfont.fallback", addon=addon_id)
