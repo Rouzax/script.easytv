@@ -335,6 +335,11 @@ def Main(override_addon_id: Optional[str] = None) -> None:
     addon_id = addon.getAddonInfo('id')
     addon_name = addon.getAddonInfo('name')
     script_path = addon.getAddonInfo('path')
+
+    # KODI-FONT-WORKAROUND (kodi#28534): preview with the same skin-adapted
+    # fonts the real dialogs use.
+    from resources.lib.ui.skin_fonts import ensure_generated
+    script_path = ensure_generated(addon_id)
     _notify_title = "%s Preview" % addon_name
 
     # Theme picker — temporarily override for the preview session
