@@ -447,3 +447,29 @@ def test_ensure_generated_survives_listdir_error(tmp_path, monkeypatch):
 
     path = sf.ensure_generated("script.easytv")
     assert isinstance(path, str) and path
+
+
+def test_parse_fontset_rejects_multibyte_over_byte_cap():
+    # len(str) under cap, UTF-8 bytes over cap -> rejected. The ballast lives in
+    # <filename> (unread by parse_fontset) so the extracted font name stays
+    # short and valid; only the byte-length cap check can make this {}. "é" is
+    # 1 codepoint but 2 UTF-8 bytes, so a large-enough repeat count crosses the
+    # byte cap while the codepoint count stays under it.
+    font = ("<font><name>font10</name><filename>" + ("é" * 280000)
+           + "</filename><size>23</size></font>")
+    payload = "<fonts><fontset id='Default'>%s</fontset></fonts>" % font
+    assert len(payload) < sf._MAX_FONT_XML_BYTES
+    assert len(payload.encode("utf-8")) > sf._MAX_FONT_XML_BYTES
+    assert sf.parse_fontset(payload, "Default") == {}
+
+
+def test_read_font_xml_skips_oversized(tmp_path):
+    big = tmp_path / "Font.xml"
+    big.write_bytes(b"x" * (sf._MAX_FONT_XML_BYTES + 1))
+    assert sf._read_font_xml(str(big)) is None
+
+
+def test_read_font_xml_reads_small(tmp_path):
+    small = tmp_path / "Font.xml"
+    small.write_text("<fonts/>", encoding="utf-8")
+    assert sf._read_font_xml(str(small)) == "<fonts/>"

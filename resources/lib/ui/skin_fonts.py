@@ -101,7 +101,7 @@ def build_include_table(xml_texts: Iterable[str]) -> Dict[str, "ET.Element"]:
     adaptation). That is a safe no-op, never a broken dialog."""
     table: Dict[str, "ET.Element"] = {}
     for text in xml_texts:
-        if not text or len(text) > _MAX_FONT_XML_BYTES:
+        if not text or len(text.encode("utf-8", "ignore")) > _MAX_FONT_XML_BYTES:
             continue
         low = text.lower()
         if "<!doctype" in low or "<!entity" in low:
@@ -202,7 +202,7 @@ def parse_fontset(font_xml_text: str, fontset_id: str = "Default",
       metacharacter is dropped, so the downstream text substitution can neither
       be injected nor produce malformed XML (no defusedxml dependency needed).
     """
-    if len(font_xml_text) > _MAX_FONT_XML_BYTES:
+    if len(font_xml_text.encode("utf-8", "ignore")) > _MAX_FONT_XML_BYTES:
         return {}
     lowered = font_xml_text.lower()
     if "<!doctype" in lowered or "<!entity" in lowered:
@@ -373,10 +373,23 @@ def _find_skin_font_xml() -> Optional[str]:
     return None
 
 
+def _read_font_xml(path: str) -> Optional[str]:
+    """Read a skin XML file, or None if missing/unreadable/oversized. Gates on
+    file size BEFORE reading so a hostile skin cannot force a full allocation."""
+    try:
+        if os.path.getsize(path) > _MAX_FONT_XML_BYTES:
+            return None
+        with open(path, "r", encoding="utf-8") as fh:
+            return fh.read()
+    except OSError:
+        return None
+
+
 def _load_skin_includes(skin_xml_dir: str) -> Dict[str, "ET.Element"]:
     """Build the include table from every *.xml in the skin's resolution dir
     (where Arctic-family skins keep Includes_Font.xml). Best-effort: unreadable
-    files are skipped. Returns {} if the directory cannot be listed."""
+    or oversized files are skipped. Returns {} if the directory cannot be
+    listed."""
     texts: List[str] = []
     try:
         names = sorted(os.listdir(skin_xml_dir))
@@ -385,11 +398,10 @@ def _load_skin_includes(skin_xml_dir: str) -> Dict[str, "ET.Element"]:
     for entry in names:
         if not entry.lower().endswith(".xml"):
             continue
-        try:
-            with open(os.path.join(skin_xml_dir, entry), "r", encoding="utf-8") as fh:
-                texts.append(fh.read())
-        except OSError:
+        text = _read_font_xml(os.path.join(skin_xml_dir, entry))
+        if text is None:
             continue
+        texts.append(text)
     return build_include_table(texts)
 
 
@@ -505,8 +517,10 @@ def ensure_generated(addon_id: str) -> str:
             return out_base
 
         includes = _load_skin_includes(skin_xml_dir)
-        with open(font_xml_path, "r", encoding="utf-8") as fh:
-            font_map = build_font_map(parse_fontset(fh.read(), fontset, includes))
+        font_xml_text = _read_font_xml(font_xml_path)
+        if font_xml_text is None:
+            return shipped                          # unreadable/oversized; shipped is valid
+        font_map = build_font_map(parse_fontset(font_xml_text, fontset, includes))
         if all(anchor == mapped for anchor, mapped in font_map.items()):
             return shipped                          # identity skin: no rewrite needed
 
