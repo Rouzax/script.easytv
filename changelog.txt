@@ -1,6 +1,34 @@
 EasyTV Changelog
 ================
 
+v1.6.0 (2026-07-08)
+-------------------
+New Features:
+  - Skin-adaptive dialog fonts: EasyTV's custom dialogs (browse window, context
+    menu, confirm/select, show selector, and the next-episode / missed-episode /
+    playlist-continuation prompts) now map their font roles to the active skin's
+    nearest-size fonts at runtime, restoring the intended title/body/caption
+    hierarchy on non-Estuary skins (Arctic Zephyr, Arctic Fuse, and others). This
+    works around Kodi issue #28534 (addons cannot register fonts for a
+    WindowXMLDialog): the addon parses the active skin's Font.xml, writes
+    font-substituted copies of the dialog XML into addon_data, and loads dialogs
+    from there, with a hard fallback to the shipped path so a dialog can never
+    fail to render. Estuary is unchanged (identity mapping); clone-safe.
+
+Bug Fixes:
+  - Fixed: Dialog titles rendered at body size. The dialog skins referenced a
+    nonexistent font name (font14_title), so Kodi silently fell back to font13
+    (size 30) instead of the intended title size 36. All 11 dialog titles now use
+    the real Estuary title font (font36_title).
+
+Internal:
+  - New module resources/lib/ui/skin_fonts.py (parse_fontset / build_font_map /
+    substitute_fonts / ensure_generated), wired into every WindowXMLDialog call
+    site behind KODI-FONT-WORKAROUND (kodi#28534) markers with a deletion guide.
+    Hardened with a session memo (near-zero per-open cost), byte-bounded reads of
+    untrusted skin Font.xml, orphaned build-dir GC, fsync-before-swap durability,
+    and an atomic stale-lock reclaim.
+
 v1.5.8 (2026-07-04)
 -------------------
 Bug Fixes:

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <addon id="script.easytv"
        name="EasyTV"
-       version="1.5.8"
+       version="1.6.0"
        provider-name="Rouzax">
     <requires>
         <import addon="xbmc.python" version="3.0.1"/>
@@ -25,10 +25,10 @@
         <forum>https://forum.kodi.tv/showthread.php?tid=383902</forum>
         <website>https://rouzax.github.io/script.easytv/</website>
         <source>https://github.com/Rouzax/script.easytv</source>
-        <news>v1.5.8 (2026-07-04)
-- Fixed: starting an in-progress episode from the Browse list now resumes where you left off instead of playing from the beginning
-- Fixed: a premiere you have already started watching now stays in the random playlist when the premiere filter is set to Skip or Only
-- Improved the "you missed an earlier episode" prompt so it no longer lingers onto an unrelated video after a failed playback</news>
+        <news>v1.6.0 (2026-07-08)
+- EasyTV dialogs now match your skin: titles, body text, and captions render at the right sizes on non-Estuary skins like Arctic Zephyr and Arctic Fuse
+- Fixed dialog titles that were rendering too small
+- Estuary users see no change, and clones work too</news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
