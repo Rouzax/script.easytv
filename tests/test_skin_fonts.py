@@ -581,6 +581,30 @@ def test_ensure_generated_rejects_dotdot_addon_id(monkeypatch):
     assert called["id"] in (".", "..")
 
 
+def test_valid_id_accepts_real_clone_ids():
+    """Clone ids come from utils.sanitize_filename, which emits letters, digits
+    and "_ . - ( )". Regression: the hyphen form was rejected, which silently
+    disabled skin-adaptive fonts for clones (skinfont.bad_id)."""
+    for good in ("script.easytv",
+                 "script.easytv.easytv_-_in_progress",
+                 "script.easytv.show_(2024)",
+                 "script.easytv.a-b_c.d"):
+        assert sf._VALID_ID.match(good) is not None, good
+    for bad in ("a/b", "a\\b", "a b", "a;b", "a$b", "script.easytv\n"):
+        assert sf._VALID_ID.match(bad) is None, bad
+
+
+def test_ensure_generated_accepts_hyphenated_clone_id(monkeypatch):
+    """Regression: a hyphenated clone id must reach generation, not the
+    bad_id fallback."""
+    sf.reset_memo()
+    monkeypatch.setattr(sf.xbmc, "getSkinDir", lambda: "skin.arctic")
+    monkeypatch.setattr(sf, "_compute_generated_path", lambda aid, sid: "/gen/" + aid)
+    monkeypatch.setattr(sf, "_safe_shipped", lambda aid: "/shipped")
+    clone_id = "script.easytv.easytv_-_in_progress"
+    assert sf.ensure_generated(clone_id) == "/gen/" + clone_id
+
+
 def test_cleanup_orphans_removes_stale_new_and_old(tmp_path):
     import os
     import time
