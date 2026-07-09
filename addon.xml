@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <addon id="script.easytv"
        name="EasyTV"
-       version="1.6.0"
+       version="1.6.1"
        provider-name="Rouzax">
     <requires>
         <import addon="xbmc.python" version="3.0.1"/>
@@ -25,10 +25,8 @@
         <forum>https://forum.kodi.tv/showthread.php?tid=383902</forum>
         <website>https://rouzax.github.io/script.easytv/</website>
         <source>https://github.com/Rouzax/script.easytv</source>
-        <news>v1.6.0 (2026-07-08)
-- EasyTV dialogs now match your skin: titles, body text, and captions render at the right sizes on non-Estuary skins like Arctic Zephyr and Arctic Fuse
-- Fixed dialog titles that were rendering too small
-- Estuary users see no change, and clones work too</news>
+        <news>v1.6.1 (2026-07-09)
+- Fixed: clones whose name contains a hyphen or brackets (like "EasyTV - In Progress") now get the same skin-matched dialog fonts as the main addon</news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>

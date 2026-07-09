@@ -1,6 +1,20 @@
 EasyTV Changelog
 ================
 
+v1.6.1 (2026-07-09)
+-------------------
+Bug Fixes:
+  - Fixed: Skin-adaptive dialog fonts were skipped for clones whose addon ID
+    contains a hyphen or parentheses (for example the clone "EasyTV - In
+    Progress" becomes script.easytv.easytv_-_in_progress). The _VALID_ID
+    allowlist in skin_fonts only permitted letters, digits, underscores and
+    periods, so ensure_generated rejected those IDs (logged as skinfont.bad_id)
+    and returned the shipped dialog path. Affected clones still rendered their
+    dialogs correctly, but without the v1.6.0 skin-adaptive font mapping. The
+    allowlist now matches the character set sanitize_filename can produce
+    (letters, digits, and "_ . - ( )"); the path-traversal guards are unchanged
+    (separators are stripped by the sanitizer, and "." / ".." remain rejected).
+
 v1.6.0 (2026-07-08)
 -------------------
 New Features:
