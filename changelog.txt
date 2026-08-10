@@ -1,8 +1,8 @@
 EasyTV Changelog
 ================
 
-Unreleased
-----------
+v1.6.2 (2026-08-10)
+-------------------
 Bug Fixes:
   - Fixed: EasyTV dialogs rendered as a white box with near-invisible text and
     invisible buttons under some skins (reported on Arctic Fuse 3). Kodi
