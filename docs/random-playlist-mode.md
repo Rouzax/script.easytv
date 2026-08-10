@@ -102,6 +102,11 @@ Controls the percentage of the playlist devoted to movies (only for "TV and movi
 | **75%** | ~15 movies |
 | **100%** | All movies |
 
+Movies are spread randomly through the playlist rather than grouped, so a 10%
+mix on a 20-item playlist puts its two movies at two random positions, not at
+the end. The count itself is fixed: the playlist always lands on the target
+number of movies as long as enough matching movies exist.
+
 ### Start Watched Movies at Random Point
 
 **Settings → Random Playlist → Content Options → Start watched movies at random point**

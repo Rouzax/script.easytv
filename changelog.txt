@@ -1,6 +1,22 @@
 EasyTV Changelog
 ================
 
+Unreleased
+----------
+Bug Fixes:
+  - Fixed: In "TV and movies" random playlists, movies were appended to the end
+    of the playlist instead of being mixed in. A 5% movie chance on a 20-item
+    playlist put the movie at item #20 almost every time, 10% filled items #19
+    and #20, and 50% filled items #11 through #20. The candidate pool contains
+    every eligible show but only movie_chance-worth of movies, so taking
+    whichever candidate sat at the front of the shuffled pool drew movies far
+    below their configured share; the movie budget was then spent on the final
+    slots once the TV budget ran out. Each playlist slot now rolls its type
+    against the remaining movie/TV budget, so movies are spread across the
+    playlist. The number of movies is unchanged (still the exact target), and
+    "Start playlist with unfinished content" keeps its front-of-playlist
+    priority. Applies to both the batch and lazy-queue build paths.
+
 v1.6.1 (2026-07-09)
 -------------------
 Bug Fixes:

@@ -31,7 +31,7 @@ from __future__ import annotations
 
 import json
 import random
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
 
 import xbmcgui
 
@@ -86,6 +86,79 @@ def calculate_movie_target(movie_chance: int, length: int) -> int:
     return max(int(round(length * movie_chance / 100.0)), 1)
 
 
+def select_next_candidate(
+    candidate_list: List[str],
+    partial_candidates: Optional[Set[str]],
+    movies_remaining: int,
+    shows_remaining: int,
+    rand: Optional[float] = None
+) -> Optional[str]:
+    """Choose which candidate to attempt next, mixing movies through the playlist.
+
+    The candidate pool holds every eligible show but only `movie_target`
+    movies, so picking whichever candidate sits at the front of the shuffled
+    pool draws movies far below their configured share and leaves the movie
+    budget to be spent on the final slots. Instead, the *type* is rolled per
+    slot against the remaining budget (a movie is picked with probability
+    movies_remaining / (movies_remaining + shows_remaining)), which spreads
+    movies evenly across the playlist while still hitting the exact target.
+
+    Prioritised partials keep their front-of-playlist position: when the
+    front candidate is a partial and its type still has budget, it is served
+    before the roll applies.
+
+    Args:
+        candidate_list: Remaining candidates like ['t123', 'm456'], in
+            priority order (partials first, then shuffled).
+        partial_candidates: Candidate tags that were prioritised as
+            in-progress items, or None when partials are disabled.
+        movies_remaining: Movie slots left in the budget.
+        shows_remaining: TV slots left in the budget.
+        rand: Optional roll in [0, 1) for deterministic tests. Defaults to
+            random.random().
+
+    Returns:
+        The candidate tag to attempt, or None if the pool is empty. The
+        caller still handles selection failures (exhausted show, used movie).
+    """
+    if not candidate_list:
+        return None
+
+    movies_left = max(0, movies_remaining)
+    shows_left = max(0, shows_remaining)
+
+    # Partials keep front-of-playlist priority while their type has budget
+    # (or when nothing of the other type is left to defer to)
+    front = candidate_list[0]
+    if partial_candidates and front in partial_candidates:
+        if front[:1] == MOVIE_CANDIDATE_PREFIX:
+            if movies_left > 0 or not any(
+                c[:1] == TV_CANDIDATE_PREFIX for c in candidate_list
+            ):
+                return front
+        elif front[:1] == TV_CANDIDATE_PREFIX:
+            if shows_left > 0 or not any(
+                c[:1] == MOVIE_CANDIDATE_PREFIX for c in candidate_list
+            ):
+                return front
+
+    # Roll the type for this slot against the remaining budget
+    budget = movies_left + shows_left
+    want_movie = budget > 0 and (random.random() if rand is None else rand) < movies_left / budget
+
+    wanted = MOVIE_CANDIDATE_PREFIX if want_movie else TV_CANDIDATE_PREFIX
+    fallback = TV_CANDIDATE_PREFIX if want_movie else MOVIE_CANDIDATE_PREFIX
+
+    for prefix in (wanted, fallback):
+        for candidate in candidate_list:
+            if candidate[:1] == prefix:
+                return candidate
+
+    # Only unknown-type entries left - hand the front one back so the caller
+    # logs and discards it
+    return front
+
+
 class PlaylistSession:
     """
     Manages lazy queue state for Both mode playlists.
@@ -111,6 +184,8 @@ class PlaylistSession:
         movies_used: List of movie IDs already used
         partial_episode_map: Map of show_id → episode_id for shows with
             genuinely in-progress episodes. Used for first-encounter serving.
+        partial_candidates: Set of candidate tags prioritised as in-progress
+            items, which keep front-of-playlist priority over the mix roll.
     """
     
     def __init__(
@@ -123,7 +198,8 @@ class PlaylistSession:
         items_added: int = 0,
         shows_state: Optional[Dict[int, Dict[str, Any]]] = None,
         movies_used: Optional[List[int]] = None,
-        partial_episode_map: Optional[Dict[int, int]] = None
+        partial_episode_map: Optional[Dict[int, int]] = None,
+        partial_candidates: Optional[List[str]] = None
     ) -> None:
         """
         Initialize a PlaylistSession.
@@ -139,6 +215,9 @@ class PlaylistSession:
             movies_used: Movie IDs already used
             partial_episode_map: Optional map of show_id → episode_id for
                 shows with genuinely in-progress episodes
+            partial_candidates: Optional candidate tags that were prioritised
+                as in-progress items, so they keep front-of-playlist priority
+                over the movie/TV mix roll
         """
         self.active = True
         self.config = config
@@ -150,7 +229,8 @@ class PlaylistSession:
         self.shows_state = shows_state if shows_state is not None else {}
         self.movies_used = movies_used if movies_used is not None else []
         self.partial_episode_map = partial_episode_map or {}
-    
+        self.partial_candidates = set(partial_candidates or [])
+
     @classmethod
     def create(
         cls,
@@ -159,7 +239,8 @@ class PlaylistSession:
         random_order_shows: List[int],
         candidate_list: List[str],
         target_length: int,
-        partial_episode_map: Optional[Dict[int, int]] = None
+        partial_episode_map: Optional[Dict[int, int]] = None,
+        partial_candidates: Optional[List[str]] = None
     ) -> 'PlaylistSession':
         """
         Create a new playlist session.
@@ -176,6 +257,8 @@ class PlaylistSession:
             target_length: Target number of items to add
             partial_episode_map: Optional map of show_id → episode_id for
                 shows with genuinely in-progress episodes
+            partial_candidates: Optional candidate tags prioritised as
+                in-progress items
 
         Returns:
             A new PlaylistSession instance
@@ -191,7 +274,8 @@ class PlaylistSession:
             items_added=0,
             shows_state={},
             movies_used=[],
-            partial_episode_map=partial_episode_map
+            partial_episode_map=partial_episode_map,
+            partial_candidates=partial_candidates
         )
         
         session.save()
@@ -241,7 +325,8 @@ class PlaylistSession:
             movies_used=data.get('movies_used', []),
             partial_episode_map=cls._deserialize_partial_map(
                 data.get('partial_episode_map', {})
-            )
+            ),
+            partial_candidates=data.get('partial_candidates', [])
         )
         
         log.debug("Lazy queue session loaded",
@@ -313,6 +398,7 @@ class PlaylistSession:
             'shows_state': self.shows_state,
             'movies_used': self.movies_used,
             'partial_episode_map': self.partial_episode_map,
+            'partial_candidates': sorted(self.partial_candidates),
         }
         
         WINDOW.setProperty(PROP_LAZY_QUEUE_SESSION, json.dumps(data))
@@ -375,7 +461,9 @@ class PlaylistSession:
         
         This is the core selection method for lazy queue. It:
         1. Checks if target length is reached
-        2. Picks from front of candidate list
+        2. Picks a candidate via select_next_candidate (partials keep front
+           priority, every other slot rolls its type against the remaining
+           movie/TV budget)
         3. For TV: applies Both mode ratio logic (on-deck vs watched)
         4. For Movies: checks not already used
         5. Updates state and increments items_added
@@ -407,7 +495,16 @@ class PlaylistSession:
 
         # Try to find a valid item from candidates
         while self.candidate_list:
-            candidate = self.candidate_list[0]
+            # Roll the type for this slot so movies mix through the playlist
+            # instead of being spent on the final slots
+            candidate = select_next_candidate(
+                self.candidate_list,
+                self.partial_candidates,
+                movie_target - movies_added_count,
+                show_target - shows_added_count
+            )
+            if candidate is None:
+                break
 
             # Parse candidate - handle malformed data gracefully
             try:
@@ -420,19 +517,6 @@ class PlaylistSession:
                             candidate=str(candidate)[:50])
                 self.candidate_list.remove(candidate)
                 continue
-
-            # Budget enforcement: defer over-budget type when other type available
-            if candidate_type == MOVIE_CANDIDATE_PREFIX and movies_added_count >= movie_target:
-                if any(c[0] == TV_CANDIDATE_PREFIX for c in self.candidate_list):
-                    self.candidate_list.remove(candidate)
-                    self.candidate_list.append(candidate)
-                    continue
-
-            if candidate_type == TV_CANDIDATE_PREFIX and shows_added_count >= show_target:
-                if any(c[0] == MOVIE_CANDIDATE_PREFIX for c in self.candidate_list):
-                    self.candidate_list.remove(candidate)
-                    self.candidate_list.append(candidate)
-                    continue
 
             if candidate_type == TV_CANDIDATE_PREFIX:
                 result = self._select_tv_episode(candidate_id)

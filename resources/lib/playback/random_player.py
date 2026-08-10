@@ -74,6 +74,7 @@ from resources.lib.data.storage import get_storage
 from resources.lib.playback.playlist_session import (
     PlaylistSession,
     calculate_movie_target,
+    select_next_candidate,
 )
 from resources.lib.utils import busy_progress, get_logger, json_query, log_timing
 
@@ -1005,7 +1006,8 @@ def _build_lazy_queue_playlist(
     candidate_list: list,
     logger: StructuredLogger,
     partial_episode_map: Optional[Dict[int, int]] = None,
-    addon_id: Optional[str] = None
+    addon_id: Optional[str] = None,
+    partial_candidates: Optional[List[str]] = None
 ) -> None:
     """
     Build a lazy queue playlist for Both mode.
@@ -1028,6 +1030,8 @@ def _build_lazy_queue_playlist(
         partial_episode_map: Optional map of show_id → episode_id for shows
             with genuinely in-progress episodes. Passed through to the
             PlaylistSession for first-encounter serving.
+        partial_candidates: Optional candidate tags prioritised as in-progress
+            items, so they keep front-of-playlist priority over the mix roll.
 
     Side Effects:
         - Creates PlaylistSession and saves to window property
@@ -1054,7 +1058,8 @@ def _build_lazy_queue_playlist(
             random_order_shows=random_order_shows,
             candidate_list=candidate_list.copy(),  # Copy to avoid mutation
             target_length=config.length,
-            partial_episode_map=partial_episode_map
+            partial_episode_map=partial_episode_map,
+            partial_candidates=partial_candidates
         )
         timer.mark("session_create")
         
@@ -1142,8 +1147,13 @@ def build_random_playlist(
         - 100%: All movies
 
         Formula: movie_target = round(length * movie_chance / 100)
-        Budget enforcement ensures the final playlist respects this target.
-    
+
+        Only movie_target movies are fetched, so the candidate pool is heavily
+        TV-weighted. Each slot therefore rolls its type against the remaining
+        budget (see select_next_candidate) instead of taking whatever sits at
+        the front of the pool. That spreads movies across the playlist while
+        still hitting the target count exactly.
+
     Candidate Selection:
         1. Filters shows based on population parameter (playlist/user selection)
         2. Retrieves movies based on movie_selection (unwatched/watched/both)
@@ -1308,6 +1318,7 @@ def build_random_playlist(
             
             # Handle partial prioritization - find all partial items and move to front
             partial_episode_map: Dict[int, int] = {}
+            partial_candidate_tags: List[str] = []
             if config.start_partials_tv or config.start_partials_movies:
                 with log_timing(log, "partial_prioritization", 
                                tv_enabled=config.start_partials_tv,
@@ -1344,6 +1355,7 @@ def build_random_playlist(
                         
                         # Remove partial items from shuffled list and prepend sorted partials
                         partial_set = set(sorted_partials)
+                        partial_candidate_tags = list(sorted_partials)
                         non_partial_candidates = [c for c in candidate_list if c not in partial_set]
                         candidate_list = sorted_partials + non_partial_candidates
                         
@@ -1371,7 +1383,8 @@ def build_random_playlist(
             _build_lazy_queue_playlist(
                 population, random_order_shows, config, candidate_list, log,
                 partial_episode_map=partial_episode_map,
-                addon_id=addon_id
+                addon_id=addon_id,
+                partial_candidates=partial_candidate_tags
             )
             return
         
@@ -1381,28 +1394,23 @@ def build_random_playlist(
         shows_added = 0
 
         # Main playlist building loop (batch mode for Unwatched/Watched/Both without multiple_shows)
-        # Candidates are ordered: partials first (priority sorted), then shuffled non-partials
-        # Always pick from front (index 0) to respect this ordering
+        # Candidates are ordered: partials first (priority sorted), then shuffled non-partials.
+        # Prioritised partials are served from the front; every other slot rolls
+        # its type against the remaining budget so movies mix through the
+        # playlist rather than filling the final slots.
+        partial_tag_set = set(partial_candidate_tags)
         while count < config.length and candidate_list:
             iterations += 1
-            
-            # Always pick from front of list (partials are prioritized there)
-            candidate = candidate_list[0]
+
+            candidate = select_next_candidate(
+                candidate_list, partial_tag_set,
+                movie_target - movies_added,
+                show_target - shows_added
+            )
+            if candidate is None:
+                break
             candidate_type = candidate[0]
             candidate_id = int(candidate[1:])
-
-            # Budget enforcement: defer over-budget type when other type available
-            if candidate_type == 'm' and movies_added >= movie_target:
-                if any(c[0] == 't' for c in candidate_list):
-                    candidate_list.remove(candidate)
-                    candidate_list.append(candidate)
-                    continue
-
-            if candidate_type == 't' and shows_added >= show_target:
-                if any(c[0] == 'm' for c in candidate_list):
-                    candidate_list.remove(candidate)
-                    candidate_list.append(candidate)
-                    continue
 
             if candidate_type == 't':
                 # TV episode candidate
