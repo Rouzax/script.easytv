@@ -47,8 +47,18 @@ jobs:
       - name: Vulture
         run: vulture resources/lib --min-confidence 80
 
+      # The checker downloads addons.xml.gz for every Kodi branch from
+      # mirrors.kodi.tv. On a failed fetch, Repository.__init__ returns without
+      # setting self.addons, so a later "addon in repo" test dies with
+      # AttributeError instead of reporting a real finding. Retry so a mirror
+      # blip cannot mask genuine problems. The step stays blocking.
       - name: Kodi addon checker
-        run: kodi-addon-checker --branch omega .
+        run: |
+          for attempt in 1 2 3; do
+            kodi-addon-checker --branch omega . && exit 0
+            echo "::warning::kodi-addon-checker attempt ${attempt} failed, retrying"
+          done
+          exit 1
 
       - name: Tests
         run: python3 -m pytest tests/ -v --cov=resources/lib --cov-report=term
