@@ -24,7 +24,7 @@
             <top>0</top>
             <width>1920</width>
             <height>1080</height>
-            <texture colordiffuse="FF0D1117">common/white.png</texture>
+            <texture colordiffuse="FF0D1117">easytv/white.png</texture>
         </control>
 
         <!-- Main content group -->
@@ -70,7 +70,7 @@
                 <top>60</top>
                 <width>1840</width>
                 <height>2</height>
-                <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">common/line_fade.png</texture>
+                <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">easytv/line_fade.png</texture>
             </control>
 
             <!-- ==================== POSTER FILMSTRIP ==================== -->
@@ -106,7 +106,7 @@
                         <top>262</top>
                         <width>24</width>
                         <height>24</height>
-                        <texture colordiffuse="$INFO[Window.Property(EasyTV.Accent)]">IconWatched.png</texture>
+                        <texture colordiffuse="$INFO[Window.Property(EasyTV.Accent)]">easytv/IconWatched.png</texture>
                         <visible>!String.IsEmpty(ListItem.Property(watched))</visible>
                     </control>
 
@@ -116,7 +116,7 @@
                         <top>258</top>
                         <width>182</width>
                         <height>273</height>
-                        <texture>IconWatched.png</texture>
+                        <texture>easytv/IconWatched.png</texture>
                         <visible>ListItem.IsSelected</visible>
                     </control>
                 </itemlayout>
@@ -137,7 +137,7 @@
                             <top>77</top>
                             <width>426</width>
                             <height>636</height>
-                            <texture border="3" colordiffuse="$INFO[Window.Property(EasyTV.Accent)]">common/white.png</texture>
+                            <texture border="3" colordiffuse="$INFO[Window.Property(EasyTV.Accent)]">easytv/white.png</texture>
                         </control>
 
                         <!-- Poster image -->
@@ -156,7 +156,7 @@
                             <top>84</top>
                             <width>40</width>
                             <height>40</height>
-                            <texture colordiffuse="$INFO[Window.Property(EasyTV.Accent)]">IconWatched.png</texture>
+                            <texture colordiffuse="$INFO[Window.Property(EasyTV.Accent)]">easytv/IconWatched.png</texture>
                             <visible>!String.IsEmpty(ListItem.Property(watched))</visible>
                         </control>
 
@@ -166,7 +166,7 @@
                             <top>80</top>
                             <width>420</width>
                             <height>630</height>
-                            <texture>IconWatched.png</texture>
+                            <texture>easytv/IconWatched.png</texture>
                             <visible>ListItem.IsSelected</visible>
                         </control>
                     </control>
@@ -181,7 +181,7 @@
                 <top>870</top>
                 <width>1840</width>
                 <height>2</height>
-                <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">common/line_fade.png</texture>
+                <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">easytv/line_fade.png</texture>
             </control>
 
             <!-- Show title -->

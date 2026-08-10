@@ -4,6 +4,18 @@ EasyTV Changelog
 Unreleased
 ----------
 Bug Fixes:
+  - Fixed: EasyTV dialogs rendered as a white box with near-invisible text and
+    invisible buttons under some skins (reported on Arctic Fuse 3). Kodi
+    resolves an addon dialog's textures against the active skin before the
+    addon's own media folder, so any skin shipping a texture with the same
+    relative name replaces ours. Arctic Fuse 3 ships media/common/menu.png as
+    an opaque white image, which took the place of EasyTV's near-black dialog
+    panel; the light text and subtle unfocused buttons drawn on top then became
+    unreadable. EasyTV's textures now live in their own media/easytv/ folder so
+    no skin can shadow them. Not specific to Kodi 22: the same lookup order
+    applies on Kodi 21, and the trigger is the skin, not the Kodi version.
+    Also removed three unused image assets (scrim_topleft.png, IconMovieSet.png,
+    imagefade.png).
   - Fixed: In "TV and movies" random playlists, movies were appended to the end
     of the playlist instead of being mixed in. A 5% movie chance on a 20-item
     playlist put the movie at item #20 almost every time, 10% filled items #19

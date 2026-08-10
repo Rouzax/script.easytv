@@ -18,7 +18,7 @@
             <top>0</top>
             <width>1920</width>
             <height>1080</height>
-            <texture colordiffuse="ff000000">common/white.png</texture>
+            <texture colordiffuse="ff000000">easytv/white.png</texture>
         </control>
 
         <!-- Main content group -->
@@ -64,7 +64,7 @@
                 <top>60</top>
                 <width>1840</width>
                 <height>2</height>
-                <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">common/line_fade.png</texture>
+                <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">easytv/line_fade.png</texture>
             </control>
 
             <!-- ==================== LEFT SIDE: INFO PANEL ==================== -->
@@ -91,7 +91,7 @@
                     <top>357</top>
                     <width>620</width>
                     <height>2</height>
-                    <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">common/line_fade.png</texture>
+                    <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">easytv/line_fade.png</texture>
                 </control>
 
                 <!-- Show Title -->
@@ -167,7 +167,7 @@
                     <top>591</top>
                     <width>620</width>
                     <height>2</height>
-                    <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">common/line_fade.png</texture>
+                    <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">easytv/line_fade.png</texture>
                 </control>
 
                 <!-- Plot -->
@@ -215,7 +215,7 @@
                         <top>270</top>
                         <width>30</width>
                         <height>30</height>
-                        <texture>IconWatched.png</texture>
+                        <texture>easytv/IconWatched.png</texture>
                         <visible>ListItem.IsSelected</visible>
                     </control>
                 </itemlayout>
@@ -228,7 +228,7 @@
                         <top>17</top>
                         <width>196</width>
                         <height>291</height>
-                        <texture border="3" colordiffuse="$INFO[Window.Property(EasyTV.Accent)]">common/white.png</texture>
+                        <texture border="3" colordiffuse="$INFO[Window.Property(EasyTV.Accent)]">easytv/white.png</texture>
                     </control>
 
                     <!-- Poster image -->
@@ -247,7 +247,7 @@
                         <top>270</top>
                         <width>30</width>
                         <height>30</height>
-                        <texture>IconWatched.png</texture>
+                        <texture>easytv/IconWatched.png</texture>
                         <visible>ListItem.IsSelected</visible>
                     </control>
                 </focusedlayout>

@@ -46,9 +46,9 @@
     </default>
 
     <default type="progress">
-        <texturebg colordiffuse="1fFFFFFF" border="12,0,12,0">common/white.png</texturebg>
+        <texturebg colordiffuse="1fFFFFFF" border="12,0,12,0">easytv/white.png</texturebg>
         <lefttexture />
-        <midtexture colordiffuse="$INFO[Window.Property(EasyTV.Accent)]" border="12,0,12,0">common/white.png</midtexture>
+        <midtexture colordiffuse="$INFO[Window.Property(EasyTV.Accent)]" border="12,0,12,0">easytv/white.png</midtexture>
         <righttexture />
         <overlaytexture />
     </default>
@@ -111,7 +111,7 @@
             <top>$PARAM[top]</top>
             <width>$PARAM[width]</width>
             <height>2</height>
-            <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">common/line_fade.png</texture>
+            <texture colordiffuse="$INFO[Window.Property(EasyTV.AccentGlow)]">easytv/line_fade.png</texture>
         </control>
     </include>
 </includes>
