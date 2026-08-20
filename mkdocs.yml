@@ -46,6 +46,18 @@ theme:
   icon:
     repo: fontawesome/brands/github
 
+# Renders a small icon row in the footer of every page. Icon names resolve
+# against the sets mkdocs-material bundles under templates/.icons. The pinned
+# 9.7.6 has no fontawesome/brands/ko-fi, so use the Simple Icons set.
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Rouzax/script.easytv
+      name: EasyTV on GitHub
+    - icon: simple/kofi
+      link: https://ko-fi.com/O0W221GBUG
+      name: Support EasyTV on Ko-fi
+
 extra_css:
   - stylesheets/extra.css
 

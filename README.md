@@ -107,6 +107,14 @@ See the [Installation page in the docs](https://rouzax.github.io/script.easytv/d
 
 ---
 
+## Support
+
+Building tools that solve my own problems and sharing them in the hope they solve yours too. If EasyTV has saved you from squinting at season and episode numbers to work out where you left off, a coffee is always welcome.
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/O0W221GBUG)
+
+---
+
 ## Credits & License
 
 EasyTV began in 2024 as a fork of [LazyTV](https://github.com/KODeKarnage/script.lazytv) by KODeKarnage (2013). It has since been completely rewritten.

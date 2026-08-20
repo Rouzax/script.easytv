@@ -1,0 +1,6 @@
+# Renders the "Sponsor" button on the GitHub repository page. Needs the repository's
+# Sponsorships feature enabled (Settings -> General -> Features); with it off this file
+# is ignored entirely and no button appears. The value is the Ko-fi username, not the
+# ko-fi.com page code.
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+ko_fi: rouzax
