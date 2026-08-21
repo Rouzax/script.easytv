@@ -11,4 +11,4 @@ pytest-cov==7.1.0
 coverage==7.15.2
 kodistubs==21.0.0
 kodi-addon-checker==0.0.36
-pre-commit==4.6.1
+pre-commit==4.6.2
