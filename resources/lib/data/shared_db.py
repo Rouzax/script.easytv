@@ -82,6 +82,21 @@ WINDOW = xbmcgui.Window(KODI_HOME_WINDOW_ID)
 SLOW_WRITE_THRESHOLD_MS = 50
 
 
+def _tracking_fields(data: Dict[str, Any]) -> Tuple[Any, ...]:
+    """The fields that decide whether a show's row needs rewriting.
+
+    Uses the same defaults the upsert applies, so a payload that omits an
+    optional field compares equal to a stored row holding that default.
+    """
+    return (
+        data.get('ondeck_episode_id'),
+        list(data.get('ondeck_list') or []),
+        list(data.get('offdeck_list') or []),
+        data.get('watched_count', 0),
+        data.get('unwatched_count', 0),
+    )
+
+
 class SharedDatabase:
     """
     Manages connection to shared MySQL/MariaDB database for multi-instance sync.
@@ -1135,10 +1150,18 @@ class SharedDatabase:
         Raises:
             Exception: If write fails (connection rolls back).
         """
-        # Skip unchanged writes in batch mode with preload
+        # Skip unchanged writes in batch mode with preload.
+        #
+        # Every tracking field is compared, not just ondeck_episode_id: a show
+        # can gain or lose episodes without its on-deck episode moving (a gap
+        # episode scanned in mid-season is the common case). Comparing the id
+        # alone declared those rows unchanged forever, so the new episode never
+        # reached ondeck_list on any instance and random-order shows could never
+        # pick it. show_title/show_year are deliberately excluded: they do not
+        # affect playback and callers do not always carry them.
         if self._batch_active and self._batch_preload is not None:
             existing = self._batch_preload.get(show_id)
-            if existing and existing['ondeck_episode_id'] == data['ondeck_episode_id']:
+            if existing and _tracking_fields(existing) == _tracking_fields(data):
                 self._batch_stats['skipped'] += 1
                 return self._batch_current_rev
         

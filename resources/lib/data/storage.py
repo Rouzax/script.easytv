@@ -311,13 +311,21 @@ class WindowPropertyStorage(StorageBackend):
     
     def set_ondeck(self, show_id: int, data: Dict[str, Any]) -> None:
         """Store ondeck data in window properties."""
+        ondeck_list = data.get('ondeck_list', [])
         WINDOW.setProperty(
             _build_property_key(show_id, "EpisodeID"),
             str(data.get('ondeck_episode_id', ''))
         )
         WINDOW.setProperty(
             _build_property_key(show_id, "ondeck_list"),
-            str(data.get('ondeck_list', []))
+            str(ondeck_list)
+        )
+        # Kept in step with ondeck_list, as episode_tracker does. The skin
+        # renders skipped episodes as CountUnwatchedEps - CountonDeckEps, so a
+        # count left behind while the list is rewritten shows a negative value.
+        WINDOW.setProperty(
+            _build_property_key(show_id, "CountonDeckEps"),
+            str(len(ondeck_list))
         )
         WINDOW.setProperty(
             _build_property_key(show_id, "offdeck_list"),
@@ -676,13 +684,21 @@ class SharedDatabaseStorage(StorageBackend):
         Only updates the core tracking properties, not display properties
         like Title, Plot, etc. which are managed by episode_tracker.
         """
+        ondeck_list = data.get('ondeck_list', [])
         WINDOW.setProperty(
             _build_property_key(show_id, "EpisodeID"),
             str(data.get('ondeck_episode_id', ''))
         )
         WINDOW.setProperty(
             _build_property_key(show_id, "ondeck_list"),
-            str(data.get('ondeck_list', []))
+            str(ondeck_list)
+        )
+        # Kept in step with ondeck_list, as the other writers do. This path
+        # rewrites the list from the shared DB row on every sync; leaving the
+        # count behind made the skin render a negative "skipped" figure.
+        WINDOW.setProperty(
+            _build_property_key(show_id, "CountonDeckEps"),
+            str(len(ondeck_list))
         )
         WINDOW.setProperty(
             _build_property_key(show_id, "offdeck_list"),

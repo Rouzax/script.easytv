@@ -755,3 +755,67 @@ class TestLastRefreshedShowIds:
         storage.get_ondeck_bulk([42], refresh_display=True)
 
         assert storage.last_refreshed_show_ids == set()
+
+
+class TestUpdateWindowPropertiesKeepsCountsConsistent:
+    """Tests for SharedDatabaseStorage._update_window_properties().
+
+    CountonDeckEps must track len(ondeck_list). The skin renders skipped
+    episodes as CountUnwatchedEps - CountonDeckEps, so leaving the count
+    behind while rewriting the list renders a negative number.
+    """
+
+    def _make_storage(self):
+        return SharedDatabaseStorage(MagicMock())
+
+    @patch('resources.lib.data.storage.WINDOW')
+    def test_ondeck_count_matches_the_written_list(self, mock_window):
+        storage = self._make_storage()
+
+        storage._update_window_properties(387, {
+            'ondeck_episode_id': 4153,
+            'ondeck_list': [4153, 4154, 4155],
+            'offdeck_list': [],
+            'watched_count': 0,
+            'unwatched_count': 3,
+        })
+
+        mock_window.setProperty.assert_any_call(
+            _build_property_key(387, "CountonDeckEps"), "3"
+        )
+
+    @patch('resources.lib.data.storage.WINDOW')
+    def test_empty_ondeck_list_writes_zero(self, mock_window):
+        storage = self._make_storage()
+
+        storage._update_window_properties(387, {
+            'ondeck_episode_id': 0,
+            'ondeck_list': [],
+            'offdeck_list': [],
+            'watched_count': 6,
+            'unwatched_count': 0,
+        })
+
+        mock_window.setProperty.assert_any_call(
+            _build_property_key(387, "CountonDeckEps"), "0"
+        )
+
+    @patch('resources.lib.data.storage.WINDOW')
+    def test_window_property_backend_also_keeps_the_count_in_step(
+        self, mock_window
+    ):
+        """The local-only backend writes the same properties and needs the
+        same invariant; fixing one twin and not the other just moves the bug."""
+        storage = WindowPropertyStorage()
+
+        storage.set_ondeck(387, {
+            'ondeck_episode_id': 4153,
+            'ondeck_list': [4153, 4154],
+            'offdeck_list': [],
+            'watched_count': 1,
+            'unwatched_count': 2,
+        })
+
+        mock_window.setProperty.assert_any_call(
+            _build_property_key(387, "CountonDeckEps"), "2"
+        )

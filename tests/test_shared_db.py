@@ -493,3 +493,90 @@ class TestSchemaMillisecondPrecision:
 
         sql = " ".join(c.args[0] for c in cur.execute.call_args_list)
         assert "ALTER TABLE" not in sql
+
+
+class TestSetShowTrackingChangeDetection:
+    """Tests for the batch skip predicate in SharedDatabase.set_show_tracking().
+
+    A show whose episode set changes without its on-deck episode moving (a gap
+    episode scanned in mid-season, say) must still be written. Comparing only
+    ondeck_episode_id froze such rows indefinitely, so the added episode never
+    reached the on-deck list on any instance.
+    """
+
+    def _make_batching_db(self, existing):
+        db, mock_conn = _make_shared_db()
+        mock_cursor = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+        db._batch_active = True
+        db._batch_preload = {387: existing}
+        db._batch_current_rev = 7
+        db._batch_stats = db._reset_batch_stats()
+        db._batch_write_count = 0
+        return db, mock_cursor
+
+    def _existing_row(self):
+        return {
+            'show_title': 'Years and Years',
+            'show_year': 2019,
+            'ondeck_episode_id': 4153,
+            'ondeck_list': [4153, 4154, 4155, 4156, 4157],
+            'offdeck_list': [],
+            'watched_count': 0,
+            'unwatched_count': 5,
+        }
+
+    def _payload(self, **overrides):
+        data = {
+            'show_title': 'Years and Years',
+            'show_year': 2019,
+            'ondeck_episode_id': 4153,
+            'ondeck_list': [4153, 4154, 4155, 4156, 4157],
+            'offdeck_list': [],
+            'watched_count': 0,
+            'unwatched_count': 5,
+        }
+        data.update(overrides)
+        return data
+
+    def test_identical_payload_is_still_skipped(self):
+        """The batching optimisation must survive: no change, no write."""
+        db, mock_cursor = self._make_batching_db(self._existing_row())
+
+        db.set_show_tracking(387, self._payload())
+
+        mock_cursor.execute.assert_not_called()
+        assert db._batch_stats['skipped'] == 1
+
+    def test_new_episode_in_ondeck_list_is_written(self):
+        """A gap episode added mid-season leaves ondeck_episode_id untouched."""
+        db, mock_cursor = self._make_batching_db(self._existing_row())
+
+        db.set_show_tracking(387, self._payload(
+            ondeck_list=[4153, 4154, 4155, 6311, 4156, 4157],
+            unwatched_count=6,
+        ))
+
+        mock_cursor.execute.assert_called_once()
+        assert db._batch_stats['skipped'] == 0
+
+    def test_changed_offdeck_list_is_written(self):
+        db, mock_cursor = self._make_batching_db(self._existing_row())
+
+        db.set_show_tracking(387, self._payload(offdeck_list=[9001]))
+
+        mock_cursor.execute.assert_called_once()
+
+    def test_changed_watched_count_is_written(self):
+        db, mock_cursor = self._make_batching_db(self._existing_row())
+
+        db.set_show_tracking(387, self._payload(watched_count=2))
+
+        mock_cursor.execute.assert_called_once()
+
+    def test_changed_ondeck_episode_is_still_written(self):
+        db, mock_cursor = self._make_batching_db(self._existing_row())
+
+        db.set_show_tracking(387, self._payload(ondeck_episode_id=4154))
+
+        mock_cursor.execute.assert_called_once()
