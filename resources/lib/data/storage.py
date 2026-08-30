@@ -424,8 +424,33 @@ class SharedDatabaseStorage(StorageBackend):
         """
         data, revision = self._db.get_show_tracking_bulk_with_rev(show_ids)
         
-        # Update window properties for found shows
-        display_refreshed = 0
+        # Update window properties for found shows.
+        #
+        # The branch each show takes decides whether the Kodi resume query
+        # runs at all, so it is logged: the fast paths only as counts (a
+        # browse can pass 200 shows, and per-show lines would flood the log),
+        # the refreshing paths per show. A peer stuck on a stale in-progress
+        # percentage is otherwise indistinguishable from one that refreshed.
+        branches = {
+            'skipped_synced': 0,
+            'first_encounter': 0,
+            'display_refresh': 0,
+            'resume_refresh': 0,
+            'refresh_failed': 0,
+        }
+
+        def _log_branch(show_id: int, branch: str, synced: str,
+                        db_updated: str) -> None:
+            branches[branch] += 1
+            log.debug(
+                "Sync refresh branch",
+                event="storage.refresh_show",
+                show_id=show_id,
+                branch=branch,
+                synced=synced,
+                db_updated=db_updated,
+            )
+
         for show_id, show_data in data.items():
             if refresh_display:
                 db_episode_id = show_data.get('ondeck_episode_id')
@@ -435,6 +460,7 @@ class SharedDatabaseStorage(StorageBackend):
 
                 # Already current for this show: no Kodi call needed.
                 if db_updated and synced == db_updated:
+                    branches['skipped_synced'] += 1
                     self._update_window_properties(show_id, show_data)
                     continue
 
@@ -452,6 +478,7 @@ class SharedDatabaseStorage(StorageBackend):
                 # trust startup-populated props and seed the marker, no Kodi call.
                 if (not synced and db_episode_id
                         and db_episode_id == current_episode_id):
+                    branches['first_encounter'] += 1
                     self._update_window_properties(show_id, show_data)
                     if db_updated:
                         WINDOW.setProperty(synced_key, db_updated)
@@ -462,24 +489,33 @@ class SharedDatabaseStorage(StorageBackend):
                     if self._fetch_and_set_display_properties(
                         show_id, db_episode_id, show_data
                     ):
-                        display_refreshed += 1
+                        _log_branch(show_id, 'display_refresh',
+                                    synced, db_updated)
                         if db_updated:
                             WINDOW.setProperty(synced_key, db_updated)
                         continue
                     # Kodi query failed - fall back to tracking properties only
+                    _log_branch(show_id, 'refresh_failed', synced, db_updated)
                 elif db_episode_id:
                     # Same episode but the row changed - refresh resume from Kodi
-                    if self._refresh_resume_state(show_id, db_episode_id) and db_updated:
-                        WINDOW.setProperty(synced_key, db_updated)
+                    if self._refresh_resume_state(show_id, db_episode_id):
+                        _log_branch(show_id, 'resume_refresh',
+                                    synced, db_updated)
+                        if db_updated:
+                            WINDOW.setProperty(synced_key, db_updated)
+                    else:
+                        _log_branch(show_id, 'refresh_failed',
+                                    synced, db_updated)
 
             # Default: just update tracking properties
             self._update_window_properties(show_id, show_data)
-        
-        if display_refreshed > 0:
-            log.debug("Display properties refreshed from Kodi",
-                     event="storage.display_refresh",
-                     shows_refreshed=display_refreshed)
-        
+
+        if refresh_display:
+            log.debug("Sync display refresh complete",
+                      event="storage.refresh_summary",
+                      show_count=len(data),
+                      **branches)
+
         # A show in show_ids but absent from the shared DB is NOT blanked here.
         # show_ids always comes from live Kodi queries (fetch_unwatched_shows /
         # fetch_shows_with_watched_episodes), so an absent row never means "gone
@@ -737,10 +773,21 @@ class SharedDatabaseStorage(StorageBackend):
         """
         try:
             ep_result = json_query(build_episode_details_query(episode_id), True)
-        except Exception:
-            return False  # Query failed, keep existing values
+        except Exception as e:
+            # Keep the existing values, but say so: the caller leaves the
+            # previous PercentPlayed on screen, which looks like a successful
+            # refresh that found no progress.
+            log.warning("Resume refresh failed, keeping stale progress",
+                        event="storage.resume_refresh_failed",
+                        show_id=show_id, episode_id=episode_id,
+                        reason="query_error", error=str(e))
+            return False
 
         if 'episodedetails' not in ep_result:
+            log.warning("Resume refresh failed, keeping stale progress",
+                        event="storage.resume_refresh_failed",
+                        show_id=show_id, episode_id=episode_id,
+                        reason="episode_not_found")
             return False
 
         resume_dict = ep_result['episodedetails'].get('resume', {})

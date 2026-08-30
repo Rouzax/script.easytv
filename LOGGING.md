@@ -351,6 +351,27 @@ Storage abstraction layer.
 | `storage.pymysql_missing` | WARNING | pymysql not installed, falling back |
 | `storage.clear_stale` | DEBUG | Cleared props for show deleted elsewhere |
 | `storage.reset` | INFO | Storage singleton reset |
+| `storage.refresh_show` | DEBUG | Per-show sync refresh branch (see below) |
+| `storage.refresh_summary` | DEBUG | Branch counts for one bounded refresh |
+| `storage.resume_refresh_failed` | WARNING | Resume query failed, stale progress kept |
+
+`get_ondeck_bulk(refresh_display=True)` decides per show whether to query
+Kodi. That decision is what determines whether a peer picks up a resume
+point, so it is logged as a `branch` field:
+
+| Branch | Meaning |
+|--------|---------|
+| `skipped_synced` | `SyncedAt == updated_at`, treated as already current, no Kodi call |
+| `first_encounter` | No marker yet but props already match the DB on-deck, marker seeded, no Kodi call |
+| `display_refresh` | On-deck changed elsewhere, full episode refresh from Kodi |
+| `resume_refresh` | Same episode, row changed, resume and percentage re-read from Kodi |
+| `refresh_failed` | A Kodi query failed, previous properties kept |
+
+Only the refreshing branches emit a per-show `storage.refresh_show` line;
+the two no-op branches appear as counts in `storage.refresh_summary`, so a
+200-show browse stays at one line. A show that repeatedly reports
+`skipped_synced` while its progress looks stale means `updated_at` is not
+advancing on the writing instance.
 
 ### sync Events
 

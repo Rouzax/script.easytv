@@ -544,3 +544,137 @@ class TestGetStorageCloneFallback:
         assert PROP_SHARED_DB_TABLE_PREFIX not in cleared_keys, (
             "Clone must not clear PROP_SHARED_DB_TABLE_PREFIX; owned by main service"
         )
+
+
+class TestGetOndeckBulkRefreshLogging:
+    """get_ondeck_bulk must report which branch each show took.
+
+    The branch decides whether the Kodi resume query runs at all. Without it
+    in the log, a peer showing a stale in-progress percentage is
+    indistinguishable from one that refreshed correctly.
+    """
+
+    def _make_storage(self):
+        mock_db = MagicMock()
+        return SharedDatabaseStorage(mock_db), mock_db
+
+    def _row(self, ondeck=100, updated="2026-06-24 10:00:00"):
+        return {'ondeck_episode_id': ondeck, 'updated_at': updated,
+                'show_title': 'X', 'show_year': 2020, 'ondeck_list': [ondeck],
+                'offdeck_list': [], 'watched_count': 1, 'unwatched_count': 5}
+
+    def _events(self, mock_log):
+        return [c.kwargs.get('event') for c in mock_log.debug.call_args_list]
+
+    @patch('resources.lib.data.storage.log')
+    @patch('resources.lib.data.storage.WINDOW')
+    def test_summary_reports_branch_counts(self, mock_window, mock_log):
+        storage, mock_db = self._make_storage()
+        mock_db.get_show_tracking_bulk_with_rev.return_value = ({42: self._row()}, 5)
+        mock_window.getProperty.side_effect = lambda key: {
+            _build_property_key(42, "SyncedAt"): "2026-06-24 10:00:00",
+        }.get(key, '')
+
+        storage.get_ondeck_bulk([42], refresh_display=True)
+
+        summary = [c for c in mock_log.debug.call_args_list
+                   if c.kwargs.get('event') == 'storage.refresh_summary']
+        assert summary, "expected a storage.refresh_summary line"
+        assert summary[0].kwargs['skipped_synced'] == 1
+
+    @patch('resources.lib.data.storage.log')
+    @patch('resources.lib.data.storage.WINDOW')
+    def test_skipped_show_does_not_get_a_per_show_line(self, mock_window, mock_log):
+        """A 200-show browse where nothing changed must not emit 200 lines."""
+        storage, mock_db = self._make_storage()
+        rows = {i: self._row() for i in range(50)}
+        mock_db.get_show_tracking_bulk_with_rev.return_value = (rows, 5)
+        mock_window.getProperty.side_effect = lambda key: "2026-06-24 10:00:00" \
+            if key.endswith(".SyncedAt") else ''
+
+        storage.get_ondeck_bulk(list(rows), refresh_display=True)
+
+        per_show = [c for c in mock_log.debug.call_args_list
+                    if c.kwargs.get('event') == 'storage.refresh_show']
+        assert per_show == []
+
+    @patch('resources.lib.data.storage.log')
+    @patch('resources.lib.data.storage.WINDOW')
+    def test_resume_refresh_logs_the_show_and_its_markers(
+        self, mock_window, mock_log
+    ):
+        storage, mock_db = self._make_storage()
+        mock_db.get_show_tracking_bulk_with_rev.return_value = (
+            {42: self._row(updated="2026-06-24 10:00:00")}, 5
+        )
+        mock_window.getProperty.side_effect = lambda key: {
+            _build_property_key(42, "SyncedAt"): "2026-06-23 09:00:00",
+            _build_property_key(42, "EpisodeID"): "100",
+        }.get(key, '')
+
+        with patch.object(storage, '_refresh_resume_state', return_value=True):
+            storage.get_ondeck_bulk([42], refresh_display=True)
+
+        per_show = [c for c in mock_log.debug.call_args_list
+                    if c.kwargs.get('event') == 'storage.refresh_show']
+        assert len(per_show) == 1
+        assert per_show[0].kwargs['branch'] == 'resume_refresh'
+        assert per_show[0].kwargs['show_id'] == 42
+        assert per_show[0].kwargs['synced'] == "2026-06-23 09:00:00"
+        assert per_show[0].kwargs['db_updated'] == "2026-06-24 10:00:00"
+
+    @patch('resources.lib.data.storage.log')
+    @patch('resources.lib.data.storage.WINDOW')
+    def test_failed_resume_refresh_is_counted_not_silent(
+        self, mock_window, mock_log
+    ):
+        storage, mock_db = self._make_storage()
+        mock_db.get_show_tracking_bulk_with_rev.return_value = (
+            {42: self._row()}, 5
+        )
+        mock_window.getProperty.side_effect = lambda key: {
+            _build_property_key(42, "SyncedAt"): "2026-06-23 09:00:00",
+            _build_property_key(42, "EpisodeID"): "100",
+        }.get(key, '')
+
+        with patch.object(storage, '_refresh_resume_state', return_value=False):
+            storage.get_ondeck_bulk([42], refresh_display=True)
+
+        summary = [c for c in mock_log.debug.call_args_list
+                   if c.kwargs.get('event') == 'storage.refresh_summary']
+        assert summary[0].kwargs['refresh_failed'] == 1
+
+
+class TestRefreshResumeStateFailureLogging:
+    """A failed resume refresh leaves a stale percentage on screen.
+
+    Returning False silently made that indistinguishable from success.
+    """
+
+    @patch('resources.lib.data.storage.log')
+    @patch('resources.lib.data.storage.WINDOW')
+    @patch('resources.lib.data.storage.json_query')
+    def test_missing_episode_details_is_logged(
+        self, mock_json_query, mock_window, mock_log
+    ):
+        storage = SharedDatabaseStorage(MagicMock())
+        mock_json_query.return_value = {}
+
+        assert storage._refresh_resume_state(42, 100) is False
+
+        events = [c.kwargs.get('event') for c in mock_log.warning.call_args_list]
+        assert 'storage.resume_refresh_failed' in events
+
+    @patch('resources.lib.data.storage.log')
+    @patch('resources.lib.data.storage.WINDOW')
+    @patch('resources.lib.data.storage.json_query')
+    def test_query_exception_is_logged(
+        self, mock_json_query, mock_window, mock_log
+    ):
+        storage = SharedDatabaseStorage(MagicMock())
+        mock_json_query.side_effect = Exception("connection lost")
+
+        assert storage._refresh_resume_state(42, 100) is False
+
+        events = [c.kwargs.get('event') for c in mock_log.warning.call_args_list]
+        assert 'storage.resume_refresh_failed' in events
