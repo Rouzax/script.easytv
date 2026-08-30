@@ -1121,9 +1121,23 @@ class ServiceDaemon:
         # Read-only window-property refresh from the shared Kodi library.
         storage.get_ondeck_bulk(changed_tracked, refresh_display=True)
 
-        # Re-derive smart playlist category from the refreshed window props.
+        # Re-derive smart playlist category, but only for shows whose
+        # properties actually moved. The watermark query is inclusive (>=), so
+        # the show sitting exactly on the watermark is re-consumed on every
+        # sync forever; re-deriving its category costs a full playlist
+        # extraction each time, and a show that was already current cannot
+        # have changed category.
+        refreshed = storage.last_refreshed_show_ids
+        skipped = len(changed_tracked) - len(refreshed)
+        if skipped:
+            self._log.debug(
+                "Consumed shows already current, no re-categorisation",
+                event="sync.daemon_consume_noop",
+                count=skipped,
+            )
         for show_id in changed_tracked:
-            self._update_smartplaylist(show_id, quiet=True)
+            if show_id in refreshed:
+                self._update_smartplaylist(show_id, quiet=True)
 
     def _process_sync_pending_shows(self) -> None:
         """

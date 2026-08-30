@@ -288,6 +288,9 @@ class TestConsumeChangedShows:
         storage.db.get_show_ids_updated_since.return_value = (
             {439}, "2026-06-23 21:00:00"
         )
+        # The refresh genuinely re-read this show from Kodi; only then is
+        # re-deriving its smart playlist category meaningful.
+        storage.last_refreshed_show_ids = {439}
         mock_get_storage.return_value = storage
 
         with patch.object(daemon, '_update_smartplaylist') as mock_sp:
@@ -582,3 +585,69 @@ class TestInitializeStorageWatermark:
             daemon._initialize_storage()
 
         assert daemon._last_sync_updated_at == "2026-06-23 22:00:00"
+
+
+class TestConsumeSkipsNoOpShows:
+    """The watermark query is inclusive (>=), so the show sitting exactly on
+    the watermark is re-consumed on every sync forever. Re-deriving its smart
+    playlist category costs a full playlist extraction each time for nothing.
+    """
+
+    def _storage(self, refreshed):
+        storage = MagicMock(spec=SharedDatabaseStorage)
+        storage.is_available.return_value = True
+        storage.db = MagicMock()
+        storage.db.get_global_rev.return_value = 632
+        storage.sync_tracked_shows.return_value = SyncResult(
+            added=set(), removed=set(), revision=632
+        )
+        storage.db.get_show_ids_updated_since.return_value = (
+            {439}, "2026-06-23 21:00:00"
+        )
+        storage.last_refreshed_show_ids = refreshed
+        return storage
+
+    def _daemon(self):
+        daemon = _make_daemon()
+        daemon._sync_tick_counter = SYNC_CHECK_INTERVAL_TICKS
+        daemon._last_sync_rev = 631
+        daemon._last_sync_updated_at = "2026-06-23 20:00:00"
+        daemon._state.shows_with_next_episodes = [439]
+        return daemon
+
+    @patch('resources.lib.service.daemon.get_storage')
+    def test_no_smartplaylist_work_when_nothing_was_refreshed(
+        self, mock_get_storage
+    ):
+        daemon = self._daemon()
+        mock_get_storage.return_value = self._storage(refreshed=set())
+
+        with patch.object(daemon, '_update_smartplaylist') as mock_sp:
+            daemon._check_shared_db_sync()
+
+        mock_sp.assert_not_called()
+
+    @patch('resources.lib.service.daemon.get_storage')
+    def test_smartplaylist_updated_for_refreshed_show(self, mock_get_storage):
+        daemon = self._daemon()
+        mock_get_storage.return_value = self._storage(refreshed={439})
+
+        with patch.object(daemon, '_update_smartplaylist') as mock_sp:
+            daemon._check_shared_db_sync()
+
+        mock_sp.assert_called_once_with(439, quiet=True)
+
+    @patch('resources.lib.service.daemon.get_storage')
+    def test_only_refreshed_shows_are_re_categorised(self, mock_get_storage):
+        daemon = self._daemon()
+        daemon._state.shows_with_next_episodes = [439, 500]
+        storage = self._storage(refreshed={500})
+        storage.db.get_show_ids_updated_since.return_value = (
+            {439, 500}, "2026-06-23 21:00:00"
+        )
+        mock_get_storage.return_value = storage
+
+        with patch.object(daemon, '_update_smartplaylist') as mock_sp:
+            daemon._check_shared_db_sync()
+
+        mock_sp.assert_called_once_with(500, quiet=True)

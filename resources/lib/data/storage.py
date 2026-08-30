@@ -44,7 +44,7 @@ import ast
 import contextlib
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, Set, Tuple, Union
 
 import xbmcaddon
 import xbmcgui
@@ -388,7 +388,28 @@ class SharedDatabaseStorage(StorageBackend):
         """
         self._db = db
         self._batch_active: bool = False
-    
+        # Shows whose Kodi-backed display properties were actually re-read by
+        # the most recent get_ondeck_bulk(refresh_display=True). Reset at the
+        # start of every such call. See last_refreshed_show_ids.
+        self._last_refreshed_show_ids: Set[int] = set()
+
+    @property
+    def last_refreshed_show_ids(self) -> Set[int]:
+        """
+        Shows re-read from Kodi by the last bounded refresh.
+
+        get_ondeck_bulk(refresh_display=True) skips the Kodi query for shows
+        it considers already current, so "this show was in the changed set"
+        does not mean "this show's properties moved". Callers that do follow
+        up work per show (re-deriving a smart playlist category, for example)
+        should limit it to these ids.
+
+        Valid only until the next get_ondeck_bulk(refresh_display=True) call
+        on this instance. Empty after a refresh that changed nothing.
+        """
+        return self._last_refreshed_show_ids
+
+
     @property
     def db(self) -> Any:
         """
@@ -439,9 +460,14 @@ class SharedDatabaseStorage(StorageBackend):
             'refresh_failed': 0,
         }
 
+        if refresh_display:
+            self._last_refreshed_show_ids = set()
+
         def _log_branch(show_id: int, branch: str, synced: str,
                         db_updated: str) -> None:
             branches[branch] += 1
+            if branch in ('display_refresh', 'resume_refresh'):
+                self._last_refreshed_show_ids.add(show_id)
             log.debug(
                 "Sync refresh branch",
                 event="storage.refresh_show",

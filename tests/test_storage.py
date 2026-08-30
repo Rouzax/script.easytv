@@ -678,3 +678,80 @@ class TestRefreshResumeStateFailureLogging:
 
         events = [c.kwargs.get('event') for c in mock_log.warning.call_args_list]
         assert 'storage.resume_refresh_failed' in events
+
+
+class TestLastRefreshedShowIds:
+    """get_ondeck_bulk must report which shows it actually re-read from Kodi.
+
+    The daemon re-derives smart playlist categories after a consume. That is
+    only meaningful for shows whose properties actually moved.
+    """
+
+    def _make_storage(self):
+        mock_db = MagicMock()
+        return SharedDatabaseStorage(mock_db), mock_db
+
+    def _row(self, ondeck=100, updated="2026-06-24 10:00:00"):
+        return {'ondeck_episode_id': ondeck, 'updated_at': updated,
+                'show_title': 'X', 'show_year': 2020, 'ondeck_list': [ondeck],
+                'offdeck_list': [], 'watched_count': 1, 'unwatched_count': 5}
+
+    @patch('resources.lib.data.storage.WINDOW')
+    def test_empty_when_every_show_was_already_current(self, mock_window):
+        storage, mock_db = self._make_storage()
+        mock_db.get_show_tracking_bulk_with_rev.return_value = ({42: self._row()}, 5)
+        mock_window.getProperty.side_effect = lambda key: "2026-06-24 10:00:00" \
+            if key.endswith(".SyncedAt") else ''
+
+        storage.get_ondeck_bulk([42], refresh_display=True)
+
+        assert storage.last_refreshed_show_ids == set()
+
+    @patch('resources.lib.data.storage.WINDOW')
+    def test_contains_show_whose_resume_was_re_read(self, mock_window):
+        storage, mock_db = self._make_storage()
+        mock_db.get_show_tracking_bulk_with_rev.return_value = ({42: self._row()}, 5)
+        mock_window.getProperty.side_effect = lambda key: {
+            _build_property_key(42, "SyncedAt"): "2026-06-23 09:00:00",
+            _build_property_key(42, "EpisodeID"): "100",
+        }.get(key, '')
+
+        with patch.object(storage, '_refresh_resume_state', return_value=True):
+            storage.get_ondeck_bulk([42], refresh_display=True)
+
+        assert storage.last_refreshed_show_ids == {42}
+
+    @patch('resources.lib.data.storage.WINDOW')
+    def test_contains_show_whose_ondeck_advanced_elsewhere(self, mock_window):
+        storage, mock_db = self._make_storage()
+        mock_db.get_show_tracking_bulk_with_rev.return_value = (
+            {42: self._row(ondeck=200)}, 5
+        )
+        mock_window.getProperty.side_effect = lambda key: {
+            _build_property_key(42, "SyncedAt"): "2026-06-23 09:00:00",
+            _build_property_key(42, "EpisodeID"): "100",
+        }.get(key, '')
+
+        with patch.object(storage, '_fetch_and_set_display_properties',
+                          return_value=True):
+            storage.get_ondeck_bulk([42], refresh_display=True)
+
+        assert storage.last_refreshed_show_ids == {42}
+
+    @patch('resources.lib.data.storage.WINDOW')
+    def test_reset_between_calls(self, mock_window):
+        storage, mock_db = self._make_storage()
+        mock_db.get_show_tracking_bulk_with_rev.return_value = ({42: self._row()}, 5)
+        mock_window.getProperty.side_effect = lambda key: {
+            _build_property_key(42, "SyncedAt"): "2026-06-23 09:00:00",
+            _build_property_key(42, "EpisodeID"): "100",
+        }.get(key, '')
+        with patch.object(storage, '_refresh_resume_state', return_value=True):
+            storage.get_ondeck_bulk([42], refresh_display=True)
+        assert storage.last_refreshed_show_ids == {42}
+
+        mock_window.getProperty.side_effect = lambda key: "2026-06-24 10:00:00" \
+            if key.endswith(".SyncedAt") else ''
+        storage.get_ondeck_bulk([42], refresh_display=True)
+
+        assert storage.last_refreshed_show_ids == set()
