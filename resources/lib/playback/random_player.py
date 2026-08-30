@@ -860,12 +860,16 @@ def _check_premiere_exclusion(
 
     is_premiere = (episode_num == 1)
 
-    # In-progress premieres are always kept (the user is actively watching),
-    # mirroring browse_mode.should_include. Resume is the on-deck episode's
-    # resume state (set by episode_tracker and the shared display refresh), so
-    # "true" means genuinely in-progress. Fires before the only_mode and normal
-    # branches, exactly as Browse's override does.
-    if is_premiere and WINDOW.getProperty(f"EasyTV.{show_id}.Resume") == "true":
+    # In-progress premieres are kept when their type is merely SKIPped (the
+    # user is actively watching), mirroring browse_mode.should_include_show.
+    # Resume is the on-deck episode's resume state (set by episode_tracker and
+    # the shared display refresh), so "true" means genuinely in-progress.
+    #
+    # Excluded in only_mode: an allowed premiere is kept there regardless of
+    # resume state, so the override could only ever admit a premiere of the
+    # type the user excluded.
+    if (is_premiere and not only_mode
+            and WINDOW.getProperty(f"EasyTV.{show_id}.Resume") == "true"):
         return False
 
     if only_mode:

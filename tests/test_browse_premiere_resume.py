@@ -23,55 +23,17 @@ def patch_window(mocker):
 
 
 def _make_should_include(series_premieres, season_premieres):
-    """Create should_include function with given premiere settings.
+    """Bind the production premiere filter to the given settings.
 
-    Mirrors the closure from browse_mode.build_episode_list() so we
-    can test the filtering logic in isolation.
+    Calls the real should_include_show so these tests cannot pass against a
+    mirrored copy of the logic while production behaves differently.
     """
-    from resources.lib.constants import PREMIERE_ONLY, PREMIERE_SKIP
-    from resources.lib.playback.browse_mode import WINDOW
-
-    only_mode = (series_premieres == PREMIERE_ONLY
-                 or season_premieres == PREMIERE_ONLY)
-
-    class _Cfg:
-        pass
-    config = _Cfg()
-    config.series_premieres = series_premieres
-    config.season_premieres = season_premieres
+    from resources.lib.playback.browse_mode import should_include_show
 
     def should_include(show_entry):
-        episode_no = WINDOW.getProperty(f"EasyTV.{show_entry[1]}.EpisodeNo")
-        if not episode_no or len(episode_no) < 6:
-            return not only_mode
-        try:
-            season_num = int(episode_no[1:3])
-            episode_num = int(episode_no[4:6])
-        except (ValueError, IndexError):
-            return not only_mode
-
-        is_premiere = (episode_num == 1)
-
-        # In-progress premieres are always included (user is actively watching)
-        if is_premiere:
-            resume = WINDOW.getProperty(f"EasyTV.{show_entry[1]}.Resume")
-            if resume == "true":
-                return True
-
-        if only_mode:
-            if not is_premiere:
-                return False
-            if season_num == 1 and config.series_premieres == PREMIERE_SKIP:
-                return False
-            if season_num > 1 and config.season_premieres == PREMIERE_SKIP:
-                return False
-            return True
-        else:
-            if not is_premiere:
-                return True
-            if season_num == 1:
-                return config.series_premieres != PREMIERE_SKIP
-            return config.season_premieres != PREMIERE_SKIP
+        return should_include_show(
+            show_entry[1], series_premieres, season_premieres
+        )
 
     return should_include
 
@@ -137,3 +99,68 @@ class TestShouldIncludeResumeState:
         })
         should_include = _make_should_include(PREMIERE_SKIP, PREMIERE_SKIP)
         assert should_include([0, 318, '5996']) is False
+
+
+class TestOnlyModeRespectsPremiereType:
+    """In "premieres only" mode the type IS the list.
+
+    The in-progress override must not smuggle in a premiere of the type the
+    user excluded: a part-watched S01E01 showing up in a season-premiere-only
+    list, or a part-watched S02E01 in a series-premiere-only list.
+    """
+
+    def test_season_only_excludes_in_progress_series_premiere(self, patch_window):
+        from resources.lib.constants import PREMIERE_ONLY, PREMIERE_SKIP
+        patch_window({
+            'EasyTV.347.EpisodeNo': 'S01E01',
+            'EasyTV.347.Resume': 'true',
+        })
+        should_include = _make_should_include(PREMIERE_SKIP, PREMIERE_ONLY)
+        assert should_include([0, 347, '5157']) is False
+
+    def test_series_only_excludes_in_progress_season_premiere(self, patch_window):
+        from resources.lib.constants import PREMIERE_ONLY, PREMIERE_SKIP
+        patch_window({
+            'EasyTV.318.EpisodeNo': 'S02E01',
+            'EasyTV.318.Resume': 'true',
+        })
+        should_include = _make_should_include(PREMIERE_ONLY, PREMIERE_SKIP)
+        assert should_include([0, 318, '5996']) is False
+
+    def test_season_only_keeps_in_progress_season_premiere(self, patch_window):
+        """The allowed type is still kept, resume or not."""
+        from resources.lib.constants import PREMIERE_ONLY, PREMIERE_SKIP
+        patch_window({
+            'EasyTV.318.EpisodeNo': 'S02E01',
+            'EasyTV.318.Resume': 'true',
+        })
+        should_include = _make_should_include(PREMIERE_SKIP, PREMIERE_ONLY)
+        assert should_include([0, 318, '5996']) is True
+
+    def test_series_only_keeps_in_progress_series_premiere(self, patch_window):
+        from resources.lib.constants import PREMIERE_ONLY, PREMIERE_SKIP
+        patch_window({
+            'EasyTV.347.EpisodeNo': 'S01E01',
+            'EasyTV.347.Resume': 'true',
+        })
+        should_include = _make_should_include(PREMIERE_ONLY, PREMIERE_SKIP)
+        assert should_include([0, 347, '5157']) is True
+
+    def test_only_mode_still_excludes_non_premieres(self, patch_window):
+        from resources.lib.constants import PREMIERE_ONLY, PREMIERE_SKIP
+        patch_window({
+            'EasyTV.135.EpisodeNo': 'S02E17',
+            'EasyTV.135.Resume': 'true',
+        })
+        should_include = _make_should_include(PREMIERE_SKIP, PREMIERE_ONLY)
+        assert should_include([0, 135, '6840']) is False
+
+    def test_skip_mode_override_is_unchanged(self, patch_window):
+        """The in-progress clone (SKIP/SKIP) must keep its override."""
+        from resources.lib.constants import PREMIERE_SKIP
+        patch_window({
+            'EasyTV.347.EpisodeNo': 'S01E01',
+            'EasyTV.347.Resume': 'true',
+        })
+        should_include = _make_should_include(PREMIERE_SKIP, PREMIERE_SKIP)
+        assert should_include([0, 347, '5157']) is True

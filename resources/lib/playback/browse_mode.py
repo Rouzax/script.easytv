@@ -189,6 +189,71 @@ class EpisodeListConfig:
     clone_mode: bool = False
 
 
+def should_include_show(
+    show_id: int,
+    series_premieres: int,
+    season_premieres: int,
+) -> bool:
+    """
+    Decide whether a show passes the premiere filter.
+
+    Each premiere type has three modes: SKIP (exclude), MIX_IN (normal),
+    ONLY (premieres-only). When either type is ONLY the filter is in
+    "only mode": non-premieres are excluded and the other selector decides
+    which premiere types survive.
+
+    Evaluates the show's on-deck episode, read from window properties.
+
+    Args:
+        show_id: The TV show ID.
+        series_premieres: Mode for series premieres (SxxE01 where xx == 1).
+        season_premieres: Mode for season premieres (SxxE01 where xx > 1).
+
+    Returns:
+        True if the show should appear in the list.
+    """
+    only_mode = (series_premieres == PREMIERE_ONLY
+                 or season_premieres == PREMIERE_ONLY)
+
+    episode_no = WINDOW.getProperty(f"EasyTV.{show_id}.EpisodeNo")
+    if not episode_no or len(episode_no) < 6:
+        return not only_mode
+    try:
+        season_num = int(episode_no[1:3])
+        episode_num = int(episode_no[4:6])
+    except (ValueError, IndexError):
+        return not only_mode
+
+    is_premiere = (episode_num == 1)
+
+    # An in-progress premiere is kept even when its type is set to SKIP: the
+    # user is part-way through it and needs a route back to it.
+    #
+    # Not in only mode, though. There the premiere type IS the list ("season
+    # premieres only"), and an allowed premiere is already kept below whatever
+    # its resume state is, so this override could only ever admit a premiere of
+    # the type the user excluded. That leaked part-watched series premieres
+    # into the season-premiere list and vice versa.
+    if is_premiere and not only_mode:
+        if WINDOW.getProperty(f"EasyTV.{show_id}.Resume") == "true":
+            return True
+
+    if only_mode:
+        if not is_premiere:
+            return False
+        if season_num == 1 and series_premieres == PREMIERE_SKIP:
+            return False
+        if season_num > 1 and season_premieres == PREMIERE_SKIP:
+            return False
+        return True
+
+    if not is_premiere:
+        return True
+    if season_num == 1:
+        return series_premieres != PREMIERE_SKIP
+    return season_premieres != PREMIERE_SKIP
+
+
 def build_episode_list(
     population: dict,
     random_order_shows: list,
@@ -239,45 +304,16 @@ def build_episode_list(
     mon = monitor or xbmc.Monitor()
     
     # Premiere filter helper (needed by _fetch_data)
-    only_mode = (config.series_premieres == PREMIERE_ONLY
-                 or config.season_premieres == PREMIERE_ONLY)
-    needs_premiere_filter = (only_mode
-                             or config.series_premieres == PREMIERE_SKIP
-                             or config.season_premieres == PREMIERE_SKIP)
+    needs_premiere_filter = (
+        config.series_premieres in (PREMIERE_ONLY, PREMIERE_SKIP)
+        or config.season_premieres in (PREMIERE_ONLY, PREMIERE_SKIP)
+    )
 
     def should_include(show_entry):
         """Check if episode should be included based on premiere settings."""
-        episode_no = WINDOW.getProperty(f"EasyTV.{show_entry[1]}.EpisodeNo")
-        if not episode_no or len(episode_no) < 6:
-            return not only_mode
-        try:
-            season_num = int(episode_no[1:3])
-            episode_num = int(episode_no[4:6])
-        except (ValueError, IndexError):
-            return not only_mode
-
-        is_premiere = (episode_num == 1)
-
-        # In-progress premieres are always included (user is actively watching)
-        if is_premiere:
-            resume = WINDOW.getProperty(f"EasyTV.{show_entry[1]}.Resume")
-            if resume == "true":
-                return True
-
-        if only_mode:
-            if not is_premiere:
-                return False
-            if season_num == 1 and config.series_premieres == PREMIERE_SKIP:
-                return False
-            if season_num > 1 and config.season_premieres == PREMIERE_SKIP:
-                return False
-            return True
-        else:
-            if not is_premiere:
-                return True
-            if season_num == 1:
-                return config.series_premieres != PREMIERE_SKIP
-            return config.season_premieres != PREMIERE_SKIP
+        return should_include_show(
+            show_entry[1], config.series_premieres, config.season_premieres
+        )
 
     def _fetch_data():
         """Fetch, filter, and sort show data from Kodi."""

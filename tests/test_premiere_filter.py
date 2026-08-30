@@ -256,13 +256,48 @@ class TestCheckPremiereExclusionResumeOverride:
         assert _check_premiere_exclusion(1, candidates, config) is False
         assert candidates == ['t1']
 
-    def test_only_mode_keeps_inprogress_premiere_under_skip(self, patch_window):
-        # ONLY mode with series SKIP would normally drop S01E01; in-progress
-        # keeps it, matching Browse's override firing before the only_mode branch.
-        patch_window({1: 's01e01'}, resume_map={1: 'true'})
+
+class TestOnlyModeRespectsPremiereType:
+    """Random-path parity with browse_mode.should_include_show.
+
+    The in-progress override must not admit a premiere of the excluded type.
+    """
+
+    def test_season_only_excludes_in_progress_series_premiere(self, patch_window):
+        patch_window({1: 's01e01'}, {1: 'true'})
         config = RandomPlaylistConfig(
             premieres=PREMIERE_SKIP, season_premieres=PREMIERE_ONLY
         )
         candidates = ['t1']
-        assert _check_premiere_exclusion(1, candidates, config) is False
-        assert candidates == ['t1']
+        assert _check_premiere_exclusion(1, candidates, config) is True
+        assert candidates == []
+
+    def test_series_only_excludes_in_progress_season_premiere(self, patch_window):
+        patch_window({1: 's02e01'}, {1: 'true'})
+        config = RandomPlaylistConfig(
+            premieres=PREMIERE_ONLY, season_premieres=PREMIERE_SKIP
+        )
+        candidates = ['t1']
+        assert _check_premiere_exclusion(1, candidates, config) is True
+        assert candidates == []
+
+    def test_season_only_keeps_in_progress_season_premiere(self, patch_window):
+        patch_window({1: 's02e01'}, {1: 'true'})
+        config = RandomPlaylistConfig(
+            premieres=PREMIERE_SKIP, season_premieres=PREMIERE_ONLY
+        )
+        assert _check_premiere_exclusion(1, ['t1'], config) is False
+
+    def test_series_only_keeps_in_progress_series_premiere(self, patch_window):
+        patch_window({1: 's01e01'}, {1: 'true'})
+        config = RandomPlaylistConfig(
+            premieres=PREMIERE_ONLY, season_premieres=PREMIERE_SKIP
+        )
+        assert _check_premiere_exclusion(1, ['t1'], config) is False
+
+    def test_skip_mode_override_is_unchanged(self, patch_window):
+        patch_window({1: 's01e01'}, {1: 'true'})
+        config = RandomPlaylistConfig(
+            premieres=PREMIERE_SKIP, season_premieres=PREMIERE_SKIP
+        )
+        assert _check_premiere_exclusion(1, ['t1'], config) is False

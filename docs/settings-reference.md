@@ -129,6 +129,14 @@ See [Random-Order Shows](random-order-shows.md) for full details.
 - **Mix in:** Season premieres appear alongside regular episodes (default).
 - **Only:** Restricts the list to premiere episodes only.
 
+**Premieres you have already started are an exception to Skip.** If you began
+watching a premiere and stopped part-way, **Skip** still shows it, so you have a
+route back to finishing it. A premiere you have not started is skipped as normal.
+
+This exception does not apply in **Only** mode. There the premiere type is the
+whole point of the list, so a part-watched series premiere never appears in a
+season-premieres-only list, and vice versa.
+
 When either setting is **Only**, the entire list becomes premieres-only. The other setting then controls which premiere types appear:
 
 | Series premieres | Season premieres | Result |
