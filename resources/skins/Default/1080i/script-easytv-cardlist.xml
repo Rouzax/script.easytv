@@ -115,11 +115,12 @@
                 <left>30</left>
                 <top>122</top>
                 <width>1340</width>
-                <height>624</height>
+                <height>585</height>
                 <orientation>vertical</orientation>
                 <scrolltime tween="sine" easing="out">200</scrolltime>
-                <onleft>655</onleft>
-                <onright>655</onright>
+                <!-- Left/right fire from any row; up/down only at the list ends -->
+                <onleft>10</onleft>
+                <onright>10</onright>
                 <onup>655</onup>
                 <ondown>655</ondown>
 
@@ -278,6 +279,27 @@
                         <label>[COLOR FFCCCCCC]$ADDON[script.easytv 32222][/COLOR]  $INFO[ListItem.Property(percentplayed)]</label>
                     </control>
                 </focusedlayout>
+            </control>
+
+            <!-- Surprise Me Button (ID 10) — centred below the list -->
+            <control type="button" id="10">
+                <left>600</left>
+                <top>725</top>
+                <width>200</width>
+                <height>50</height>
+                <align>center</align>
+                <aligny>center</aligny>
+                <font>font12</font>
+                <textoffsetx>10</textoffsetx>
+                <textcolor>FFFFFFFF</textcolor>
+                <focusedcolor>$INFO[Window.Property(EasyTV.ButtonTextFocused)]</focusedcolor>
+                <label>$ADDON[script.easytv 32227]</label>
+                <onup>655</onup>
+                <ondown>655</ondown>
+                <onleft>655</onleft>
+                <onright>655</onright>
+                <texturefocus border="12" colordiffuse="$INFO[Window.Property(EasyTV.ButtonFocus)]">easytv/white_rounded.png</texturefocus>
+                <texturenofocus border="12" colordiffuse="1fFFFFFF">easytv/white_rounded.png</texturenofocus>
             </control>
         </control>
     </controls>

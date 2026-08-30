@@ -15,6 +15,36 @@ Browse Mode displays all your TV shows with their next episode ready to play. Yo
 
 ---
 
+## Surprise Me
+
+The list answers "what are my options". **Surprise Me** answers "just pick one for me": it chooses a show at random and immediately starts playing its next episode.
+
+The button sits at the bottom of every view style. Starting from the list, one arrow key press moves the focus to it:
+
+| View style | Key to reach the button |
+|------------|-------------------------|
+| Card List | **Left** or **Right** |
+| Split View | **Left** or **Right** |
+| Posters | **Left** (from the left-hand poster column) |
+| Big Screen | **Left** |
+| Showcase | **Down** |
+
+Up and down keep scrolling the list as usual. From the button, any arrow key returns you to the list.
+
+Press Enter and playback begins. There is no confirmation step and no preview of the pick.
+
+What it chooses from:
+
+- Every show in the list, including the ones you would have to scroll down to reach
+- Only shows that have an episode ready to play
+- With **Limit shows displayed** enabled, the list stops at your configured number, so that shorter list is the pool
+
+Every eligible show has the same chance, including the one currently highlighted. Multi-select is ignored: Surprise Me always plays exactly one show, whatever is ticked.
+
+Don't like what you got? Stop playback as usual. If **Return to EasyTV after playback** is enabled you land back on the list and can press the button again.
+
+---
+
 ## View Styles
 
 EasyTV offers five visual layouts. Change via **Settings → Browse Mode → Appearance → View style**.
@@ -305,7 +335,7 @@ This caps how many shows load in the list, improving responsiveness.
 | **Enter** | Play selected episode |
 | **C** | Open context menu |
 | **Backspace** / **Esc** | Close EasyTV |
-| **Arrow keys** | Navigate list |
+| **Arrow keys** | Navigate the list, and move to the Surprise Me button |
 
 ---
 

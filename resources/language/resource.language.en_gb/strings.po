@@ -432,6 +432,10 @@ msgctxt "#32226"
 msgid "Plot"
 msgstr ""
 
+msgctxt "#32227"
+msgid "Surprise Me"
+msgstr ""
+
 
 # =============================================================================
 # ADDON METADATA (32300-32399)

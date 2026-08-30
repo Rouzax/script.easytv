@@ -123,11 +123,32 @@
                     <left>35</left>
                     <top>740</top>
                     <width>1125</width>
-                    <height>160</height>
+                    <height>140</height>
                     <font>font12</font>
                     <textcolor>FFAAAAAA</textcolor>
                     <autoscroll delay="6000" time="3000" repeat="10000">true</autoscroll>
                     <label>$INFO[Container(655).ListItem.Plot]</label>
+                </control>
+
+                <!-- Surprise Me Button (ID 10) — left-aligned below the plot -->
+                <control type="button" id="10">
+                    <left>35</left>
+                    <top>900</top>
+                    <width>200</width>
+                    <height>50</height>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                    <font>font12</font>
+                    <textoffsetx>10</textoffsetx>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <focusedcolor>$INFO[Window.Property(EasyTV.ButtonTextFocused)]</focusedcolor>
+                    <label>$ADDON[script.easytv 32227]</label>
+                    <onup>10</onup>
+                    <ondown>10</ondown>
+                    <onleft>10</onleft>
+                    <onright>655</onright>
+                    <texturefocus border="12" colordiffuse="$INFO[Window.Property(EasyTV.ButtonFocus)]">easytv/white_rounded.png</texturefocus>
+                    <texturenofocus border="12" colordiffuse="1fFFFFFF">easytv/white_rounded.png</texturenofocus>
                 </control>
             </control>
 
@@ -141,7 +162,7 @@
                 <focusposition>4</focusposition>
                 <movement>1</movement>
                 <scrolltime tween="sine" easing="out">200</scrolltime>
-                <onleft>655</onleft>
+                <onleft>10</onleft>
                 <onright>655</onright>
                 <onup>655</onup>
                 <ondown>655</ondown>

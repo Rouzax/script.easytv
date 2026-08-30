@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import ast
 import os
+import random
 import time
 from dataclasses import dataclass
 from datetime import date
@@ -84,6 +85,27 @@ def _get_log() -> StructuredLogger:
 
 # Shared window reference for property access
 WINDOW = xbmcgui.Window(KODI_HOME_WINDOW_ID)
+
+# "Surprise Me" button, present in every browse skin. Kodi reserves control IDs
+# 2-4 in a WindowXMLDialog (ID 3 never forwards onClick), so stay clear of them.
+SURPRISE_BUTTON_ID = 10
+
+
+def pick_surprise_position(episode_ids: List[str]) -> Optional[int]:
+    """
+    Pick a random row for "Surprise Me".
+
+    Args:
+        episode_ids: The EpisodeID property of every row, in list order.
+            Rows with an empty value have nothing on deck to play.
+
+    Returns:
+        Index of the chosen row, or None when no row is playable.
+    """
+    playable = [i for i, episode_id in enumerate(episode_ids) if episode_id]
+    if not playable:
+        return None
+    return random.choice(playable)
 
 
 def _clone_row_overrides(
@@ -556,6 +578,10 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         assert self.name_list is not None
         self._log.debug("Control clicked", control_id=controlID)
 
+        if controlID == SURPRISE_BUTTON_ID:
+            self._play_surprise()
+            return
+
         pos = self.name_list.getSelectedPosition()
         
         if not BrowseWindow._multiselect:
@@ -578,6 +604,35 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
                 selection.select(True)
                 self._log.debug("Item selected", position=pos)
     
+    def _play_surprise(self) -> None:
+        """
+        Play the on-deck episode of a random show from the browse list.
+
+        The pool is every populated row that has an episode to play, including
+        rows the user would have to scroll to. Multiselect state is ignored:
+        the button always plays exactly one show.
+        """
+        assert self.name_list is not None
+        episode_ids = [
+            self.name_list.getListItem(i).getProperty('EpisodeID')
+            for i in range(self.name_list.size())
+        ]
+
+        position = pick_surprise_position(episode_ids)
+        if position is None:
+            self._log.warning("Surprise Me found nothing to play",
+                              event="ui.surprise_empty",
+                              rows=len(episode_ids))
+            return
+
+        self._selected_show = int(episode_ids[position])
+        self._play_requested = True
+        self._log.info("Surprise Me picked a show", event="ui.surprise",
+                       pool=sum(1 for e in episode_ids if e),
+                       position=position,
+                       episode_id=self._selected_show)
+        self.close()
+
     def _toggle_multiselect(self) -> None:
         """Toggle multiselect mode on/off."""
         assert self.name_list is not None
