@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <addon id="script.easytv"
        name="EasyTV"
-       version="1.6.2"
+       version="1.7.0"
        provider-name="Rouzax">
     <requires>
         <import addon="xbmc.python" version="3.0.1"/>
@@ -25,11 +25,13 @@
         <forum>https://forum.kodi.tv/showthread.php?tid=383902</forum>
         <website>https://rouzax.github.io/script.easytv/</website>
         <source>https://github.com/Rouzax/script.easytv</source>
-        <news>v1.6.2 (2026-08-10)
-- Dialogs no longer appear as a white box with unreadable text on skins such as Arctic Fuse 3
-- Movies in "TV and movies" random playlists are now mixed through the playlist instead of added at the end
-- A 5% movie chance now puts the movie anywhere in the list, not always on the last item
-- The number of movies in a playlist is unchanged, only where they appear</news>
+        <news>v1.7.0 (2026-08-30)
+- New "Surprise Me" button in every browse view: picks a show for you and starts its next episode
+- Fixed episodes added to a show later going missing from that show's list on synced devices
+- Fixed a negative "Skipped" count in the browse list
+- Fixed an in-progress episode not showing its progress on your other devices
+- Fixed part-watched premieres of the wrong type appearing in premieres-only lists
+- Faster sync: no longer repeats smart playlist work for shows that did not change</news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>

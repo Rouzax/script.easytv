@@ -1,6 +1,60 @@
 EasyTV Changelog
 ================
 
+v1.7.0 (2026-08-30)
+-------------------
+New Features:
+  - Surprise Me: a button in all five browse views picks a random show from the
+    populated list and plays its on-deck episode immediately, with no
+    confirmation step. The pool is every row holding a playable episode,
+    including rows below the fold; limit_shows already truncates the list in
+    _populate_list, so that cap bounds the pool. Multi-select is ignored.
+    Reuses the existing click path (selected_show, play_requested, close), so
+    browse_mode is unchanged. The pick lives in pick_surprise_position.
+    Control ID 10, string #32227.
+  - Sync refresh branch logging: storage.refresh_show records which of
+    get_ondeck_bulk's five paths each show takes, with the SyncedAt and
+    updated_at values behind the decision. Emitted only for the branches that
+    refresh, so a 200-show browse does not flood the log;
+    storage.refresh_summary carries the per-branch counts.
+
+Bug Fixes:
+  - Fixed: shared-database rows were never rewritten when a show's episode set
+    changed without its on-deck episode moving. set_show_tracking compared only
+    ondeck_episode_id against the preloaded row, so an episode scanned into the
+    middle of a season left the row frozen indefinitely: it never reached
+    ondeck_list and resolve_ondeck_episode could not pick it for a random-order
+    show, on any synced instance. The skip now compares every tracking field
+    (on-deck id, both lists, both counts). Present since v1.3.0~beta1.
+  - Fixed: CountonDeckEps drifted out of step with ondeck_list.
+    _update_window_properties rewrote the list from the shared row on every
+    sync but left the count untouched, so browse rendered
+    CountUnwatchedEps - CountonDeckEps as a negative "Skipped" figure.
+    WindowPropertyStorage.set_ondeck had the same omission; both now write the
+    count alongside the list.
+  - Fixed: updated_at did not advance on a resume-only refresh. The upsert was
+    value-identical, so MariaDB treated the ON DUPLICATE KEY UPDATE as a no-op
+    and never fired ON UPDATE CURRENT_TIMESTAMP. With the row's change signal
+    frozen, a peer's get_ondeck_bulk(refresh_display=True) hit the "already
+    current" gate and kept showing a stale in-progress percentage.
+  - Fixed: in "premieres only" mode the in-progress carve-out fired before the
+    premiere type check, admitting a part-watched premiere of the excluded
+    type. Skip and Mix in are unchanged.
+
+Performance:
+  - Sync no longer re-derives a smart playlist category for shows the refresh
+    left untouched. get_show_ids_updated_since compares with >=, so the show on
+    the watermark was returned by every sync and re-categorised at roughly 1.3s
+    of playlist extraction per consume, every five minutes. Storage reports
+    last_refreshed_show_ids and the daemon limits re-categorisation to those.
+
+Internal:
+  - browse_mode's should_include closure extracted to module-level
+    should_include_show; the premiere test mirrored a copy of that logic and so
+    could not have caught the leak.
+  - Tests added for the batch skip predicate, which had none, and for the
+    CountonDeckEps invariant in both storage backends.
+
 v1.6.2 (2026-08-10)
 -------------------
 Bug Fixes:
