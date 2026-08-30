@@ -513,7 +513,7 @@ EASYTV_DB_PREFIX = "easytv_"
 # Table prefix for fallback when CREATE DATABASE denied
 EASYTV_TABLE_PREFIX = "easytv_"
 # Schema version for migrations (increment when schema changes)
-EASYTV_SCHEMA_VERSION = 1
+EASYTV_SCHEMA_VERSION = 2
 # Backoff period after DB connection failure (seconds)
 EASYTV_DB_BACKOFF_SECONDS = 30
 # Migration lock TTL for crash recovery (minutes)

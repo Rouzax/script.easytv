@@ -402,3 +402,94 @@ class TestDeleteBumpsRevision:
         result = db.delete_show_tracking([1, 2, 3])
 
         assert result == 3
+
+
+class TestSetShowTrackingChangeSignal:
+    """set_show_tracking must make updated_at a reliable change signal.
+
+    MariaDB skips an ON DUPLICATE KEY UPDATE whose values are all identical
+    to the stored row, so ON UPDATE CURRENT_TIMESTAMP never fires. A
+    resume-only refresh rewrites the same on-deck id, lists and counts, so
+    without an explicit assignment the row looks unchanged to every peer and
+    the resume point never propagates.
+    """
+
+    def _write(self, db, mock_conn):
+        cur = MagicMock()
+        mock_conn.cursor.return_value = cur
+        cur.fetchone.return_value = (42,)
+        db.set_show_tracking(1, {
+            'show_title': 'All Her Fault',
+            'show_year': 2025,
+            'ondeck_episode_id': 5947,
+            'ondeck_list': [5947],
+            'offdeck_list': [],
+            'watched_count': 7,
+            'unwatched_count': 1,
+        })
+        return cur
+
+    def test_upsert_forces_updated_at_to_advance(self):
+        db, mock_conn = _make_shared_db()
+        db._batch_active = False
+        db._batch_preload = None
+
+        cur = self._write(db, mock_conn)
+
+        upsert = cur.execute.call_args_list[0].args[0]
+        assert "updated_at = CURRENT_TIMESTAMP(3)" in upsert
+
+    def test_updated_at_assignment_is_inside_the_upsert(self):
+        db, mock_conn = _make_shared_db()
+        db._batch_active = False
+        db._batch_preload = None
+
+        cur = self._write(db, mock_conn)
+
+        upsert = cur.execute.call_args_list[0].args[0]
+        clause = upsert.split("ON DUPLICATE KEY UPDATE", 1)[1]
+        assert "updated_at" in clause
+
+
+class TestSchemaMillisecondPrecision:
+    """updated_at needs sub-second resolution.
+
+    The browse refresh gate compares SyncedAt == updated_at exactly. At
+    whole-second resolution two writes inside one second share a timestamp,
+    so a peer that consumed the first silently skips the second.
+    """
+
+    def test_create_tables_declares_millisecond_updated_at(self):
+        db, _mock_conn = _make_shared_db()
+        cur = MagicMock()
+
+        db._create_tables(cur)
+
+        show_tracking = cur.execute.call_args_list[0].args[0]
+        assert "TIMESTAMP(3)" in show_tracking
+        assert "CURRENT_TIMESTAMP(3)" in show_tracking
+
+    def test_migration_widens_updated_at_precision(self):
+        db, mock_conn = _make_shared_db()
+        cur = MagicMock()
+        mock_conn.cursor.return_value = cur
+        cur.fetchone.return_value = (1,)
+
+        db._migrate_schema()
+
+        sql = " ".join(c.args[0] for c in cur.execute.call_args_list)
+        assert "ALTER TABLE" in sql
+        assert "TIMESTAMP(3)" in sql
+
+    def test_migration_is_skipped_when_already_current(self):
+        from resources.lib.constants import EASYTV_SCHEMA_VERSION
+
+        db, mock_conn = _make_shared_db()
+        cur = MagicMock()
+        mock_conn.cursor.return_value = cur
+        cur.fetchone.return_value = (EASYTV_SCHEMA_VERSION,)
+
+        db._migrate_schema()
+
+        sql = " ".join(c.args[0] for c in cur.execute.call_args_list)
+        assert "ALTER TABLE" not in sql

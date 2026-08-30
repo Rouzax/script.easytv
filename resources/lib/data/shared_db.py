@@ -675,7 +675,7 @@ class SharedDatabase:
                 offdeck_list      JSON,
                 watched_count     INT DEFAULT 0,
                 unwatched_count   INT DEFAULT 0,
-                updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                updated_at        TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
                 INDEX idx_title_year (show_title, show_year),
                 INDEX idx_updated (updated_at)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
@@ -741,11 +741,10 @@ class SharedDatabase:
                     from_version=current_version,
                     to_version=EASYTV_SCHEMA_VERSION)
             
-            # Future migrations go here:
-            # if current_version < 2:
-            #     self._migrate_v1_to_v2(cursor)
-            #     current_version = 2
-            
+            if current_version < 2:
+                self._migrate_v1_to_v2(cursor)
+                current_version = 2
+
             # Update version marker
             cursor.execute(f"""
                 INSERT INTO {self._table('sync_metadata')} (key_name, int_value)
@@ -754,10 +753,36 @@ class SharedDatabase:
             """, (EASYTV_SCHEMA_VERSION,))
             
             conn.commit()
-            
+
         finally:
             cursor.close()
-    
+
+    def _migrate_v1_to_v2(self, cursor: Any) -> None:
+        """
+        Widen show_tracking.updated_at to millisecond precision.
+
+        v1 stored whole seconds, which is too coarse for the change signal:
+        two writes to the same show inside one second share a timestamp, so
+        a peer that already consumed the first skips the second and keeps
+        showing stale properties.
+
+        Widening precision is additive and mixed-version safe. An instance
+        still running v1 writes second-resolution values that simply store
+        as `.000`, and both versions read the column fine.
+
+        Args:
+            cursor: Database cursor to use for execution.
+        """
+        cursor.execute(f"""
+            ALTER TABLE {self._table('show_tracking')}
+            MODIFY updated_at TIMESTAMP(3) NULL
+                DEFAULT CURRENT_TIMESTAMP(3)
+                ON UPDATE CURRENT_TIMESTAMP(3)
+        """)
+        log.info("Widened updated_at to millisecond precision",
+                 event="shareddb.schema_migrate_v2",
+                 table=self._table('show_tracking'))
+
     # =========================================================================
     # Read Operations
     # =========================================================================
@@ -1010,10 +1035,11 @@ class SharedDatabase:
         """
         Get show IDs whose tracking row changed at or after a timestamp.
 
-        Uses the idx_updated index. Comparison is inclusive (>=) so a row
-        written in the same one-second TIMESTAMP tick as the watermark is
-        never skipped; consumers must apply changes idempotently to absorb
-        any row re-pulled at the boundary.
+        Uses the idx_updated index. Comparison is inclusive (>=), so the row
+        sitting exactly on the watermark is re-pulled on every sync and
+        consumers must apply changes idempotently. Millisecond resolution
+        keeps that boundary to a single row rather than everything written
+        in the same second.
 
         Args:
             since: The watermark (a server-side updated_at value), or None.
@@ -1073,7 +1099,14 @@ class SharedDatabase:
         
         Uses LAST_INSERT_ID(expr) pattern to atomically increment revision
         and capture the new value without an extra query.
-        
+
+        The upsert assigns updated_at explicitly rather than relying on the
+        column's ON UPDATE clause. MariaDB treats an ON DUPLICATE KEY UPDATE
+        whose values all match the stored row as a no-op and leaves ON UPDATE
+        timestamps untouched, so a resume-only refresh (same on-deck id, same
+        lists, same counts) would otherwise leave updated_at unchanged and no
+        peer would ever learn the resume point moved.
+
         In batch mode (within a batch_write() context):
         - Executes the UPSERT SQL but defers the revision UPDATE and commit
           to _batch_finalize(), which performs a single commit for all writes
@@ -1130,7 +1163,8 @@ class SharedDatabase:
                     ondeck_list = VALUES(ondeck_list),
                     offdeck_list = VALUES(offdeck_list),
                     watched_count = VALUES(watched_count),
-                    unwatched_count = VALUES(unwatched_count)
+                    unwatched_count = VALUES(unwatched_count),
+                    updated_at = CURRENT_TIMESTAMP(3)
             """
             cursor.execute(sql, (
                 show_id,
