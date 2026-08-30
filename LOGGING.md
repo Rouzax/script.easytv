@@ -139,7 +139,7 @@ Events follow the pattern: `domain.action`
 | `next`     | Next episode logic  | `next.pick`, `next.fallback`                         |
 | `clone`    | Clone operations    | `clone.create`, `clone.update`, `clone.fail`         |
 | `export`   | Episode export      | `export.start`, `export.complete`, `export.fail`     |
-| `ui`       | User interface      | `ui.open`, `ui.select`, `ui.fallback`                |
+| `ui`       | User interface      | `ui.open`, `ui.select`, `ui.surprise`, `ui.fallback` |
 | `selector` | Show selector       | `selector.open`, `selector.save`                     |
 | `shareddb` | Shared DB sync      | `shareddb.connect`, `shareddb.backoff`, `shareddb.write` |
 | `storage`  | Storage abstraction | `storage.init_local`, `storage.init_shared`, `storage.reset` |

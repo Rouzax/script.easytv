@@ -26,6 +26,7 @@ EasyTV maintains a list of the **next episode to watch** for every TV show with 
 ### 🎬 Core
 - **Smart Episode Tracking:** Always knows your next episode, even with gaps in watch history
 - **Instant Updates:** Lists refresh immediately when you finish watching
+- **[Surprise Me](browse-mode.md#surprise-me):** Can't decide? One button picks a show and plays its next episode
 - **Multiple View Styles:** Card List, Posters, Big Screen, Split View, and Showcase, with 4 accent color themes
 
 ### 🎲 Random Playlists
@@ -50,7 +51,7 @@ EasyTV maintains a list of the **next episode to watch** for every TV show with 
 
 1. **[Install EasyTV](installation.md):** Download from GitHub and install via zip
 2. **Launch EasyTV:** Find it in your Add-ons menu
-3. **Choose your mode:** Browse your shows or let EasyTV surprise you
+3. **Choose your mode:** Browse your shows or start a random playlist
 
 That's it. EasyTV's background service handles everything automatically.
 
