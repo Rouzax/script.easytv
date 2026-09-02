@@ -36,7 +36,6 @@ import xbmcvfs
 from resources.lib.constants import (
     ADDON_RESTART_DELAY_MS,
     KODI_HOME_WINDOW_ID,
-    PROP_ART_FETCHED,
     PROP_FORCE_SYNC,
     PROP_SERVICE_PATH,
     PROP_SERVICE_RUNNING,
@@ -164,11 +163,13 @@ def main_entry(addon, log):
     # appear immediately instead of waiting for the next periodic tick.
     _signal_force_sync_on_open(window)
 
-    # Clear the art-cache session flag on every UI launch so a stale latch
-    # (e.g. an earlier empty/transient JSON-RPC result) self-heals without
-    # waiting for a video library scan. The actual fetch is gated to ~1s and
-    # only runs once per addon launch.
-    window.clearProperty(PROP_ART_FETCHED)
+    # The art-cache session flag is deliberately NOT cleared here. Clearing it
+    # made the ~1.2s art query run on every launch instead of once per Kodi
+    # session, which was ~38% of a 3.2s median launch measured across 268
+    # launches. The stale latch it guarded against cannot occur: _fetch_show_art
+    # only latches when at least one show actually had a poster (issue #2), and
+    # library_monitor clears the flag when a video scan finishes, which is the
+    # only way cached art goes out of date.
 
     # Load settings
     primary_function = addon.getSetting('primary_function')
@@ -190,7 +191,7 @@ def main_entry(addon, log):
     if primary_function == '2':
         choice = show_confirm(addon_name, lang(32100) + '\n\n' + lang(32101),
                               yes_label=lang(32103), no_label=lang(32102))
-        # show_confirm returns bool: True=yes(surprise me), False=no(show me)
+        # show_confirm returns bool: True=yes("Start playlist"), False=no("Show me")
     else:
         choice = int(primary_function) if primary_function in ('0', '1') else 0
 
