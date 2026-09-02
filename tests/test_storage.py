@@ -319,7 +319,15 @@ class TestGetOndeckBulkBoundedRefresh:
         )
 
     @patch('resources.lib.data.storage.WINDOW')
-    def test_first_encounter_seeds_marker_without_kodi_call(self, mock_window):
+    def test_first_encounter_seeds_marker_and_refreshes_resume(self, mock_window):
+        """First encounter skips the FULL display refresh but must still read
+        the resume state.
+
+        This assertion used to read mres.assert_not_called(), which encoded the
+        bug: a peer's partial watch changes the bookmark without moving the
+        on-deck episode, so a matching id was taken as proof the props were
+        current and the resume state was never re-read.
+        """
         storage, mock_db = self._make_storage()
         mock_db.get_show_tracking_bulk_with_rev.return_value = ({42: self._row(ondeck=100)}, 5)
         # No SyncedAt yet, but local EpisodeID already matches the DB on-deck
@@ -332,7 +340,7 @@ class TestGetOndeckBulkBoundedRefresh:
              patch.object(storage, '_refresh_resume_state') as mres:
             storage.get_ondeck_bulk([42], refresh_display=True)
         mdisp.assert_not_called()
-        mres.assert_not_called()
+        mres.assert_called_once_with(42, 100)
         mock_window.setProperty.assert_any_call(
             _build_property_key(42, "SyncedAt"), "2026-06-24 10:00:00"
         )
@@ -819,3 +827,82 @@ class TestUpdateWindowPropertiesKeepsCountsConsistent:
         mock_window.setProperty.assert_any_call(
             _build_property_key(387, "CountonDeckEps"), "2"
         )
+
+
+class TestFirstEncounterRefreshesResume:
+    """get_ondeck_bulk's first_encounter branch must not trust local props for
+    resume state.
+
+    A peer's partial watch changes a show's resume point without moving its
+    on-deck episode, so "db on-deck id == my on-deck id" says nothing about
+    whether our Resume/PercentPlayed are current. Skipping the Kodi query there
+    left a part-watched premiere with Resume="false", and browse_mode's
+    in-progress override then failed to rescue it from the premiere SKIP
+    filter: the show vanished from the in-progress list on the second box.
+    """
+
+    def _make_storage(self):
+        mock_db = MagicMock()
+        return SharedDatabaseStorage(mock_db), mock_db
+
+    def _row(self, ondeck=51, updated="2026-09-01 19:11:55"):
+        return {'ondeck_episode_id': ondeck, 'updated_at': updated,
+                'show_title': 'A Very British Scandal', 'show_year': 2021,
+                'ondeck_list': [ondeck, 52, 53], 'offdeck_list': [],
+                'watched_count': 0, 'unwatched_count': 3}
+
+    @patch('resources.lib.data.storage.WINDOW')
+    def test_first_encounter_refreshes_resume_from_kodi(self, mock_window):
+        """No marker yet, and the on-deck id already matches: the branch still
+        has to ask Kodi for the resume state."""
+        storage, mock_db = self._make_storage()
+        mock_db.get_show_tracking_bulk_with_rev.return_value = ({10: self._row()}, 9)
+        props = {
+            _build_property_key(10, "SyncedAt"): "",      # never synced here
+            _build_property_key(10, "EpisodeID"): "51",   # already on this episode
+        }
+        mock_window.getProperty.side_effect = lambda k: props.get(k, '')
+
+        with patch.object(storage, '_refresh_resume_state') as mres:
+            mres.return_value = True
+            storage.get_ondeck_bulk([10], refresh_display=True)
+
+        mres.assert_called_once_with(10, 51)
+
+    @patch('resources.lib.data.storage.WINDOW')
+    def test_first_encounter_still_seeds_the_marker(self, mock_window):
+        """The marker must still be seeded, or every sync repeats the query."""
+        storage, mock_db = self._make_storage()
+        mock_db.get_show_tracking_bulk_with_rev.return_value = ({10: self._row()}, 9)
+        props = {
+            _build_property_key(10, "SyncedAt"): "",
+            _build_property_key(10, "EpisodeID"): "51",
+        }
+        mock_window.getProperty.side_effect = lambda k: props.get(k, '')
+
+        with patch.object(storage, '_refresh_resume_state', return_value=True):
+            storage.get_ondeck_bulk([10], refresh_display=True)
+
+        mock_window.setProperty.assert_any_call(
+            _build_property_key(10, "SyncedAt"), "2026-09-01 19:11:55"
+        )
+
+    @patch('resources.lib.data.storage.WINDOW')
+    def test_first_encounter_counts_as_refreshed_for_recategorisation(
+        self, mock_window
+    ):
+        """The daemon only re-categorises shows storage reports as refreshed.
+        A show whose resume state just changed must be in that set, or its
+        smart playlist category never moves to continue_watching."""
+        storage, mock_db = self._make_storage()
+        mock_db.get_show_tracking_bulk_with_rev.return_value = ({10: self._row()}, 9)
+        props = {
+            _build_property_key(10, "SyncedAt"): "",
+            _build_property_key(10, "EpisodeID"): "51",
+        }
+        mock_window.getProperty.side_effect = lambda k: props.get(k, '')
+
+        with patch.object(storage, '_refresh_resume_state', return_value=True):
+            storage.get_ondeck_bulk([10], refresh_display=True)
+
+        assert 10 in storage.last_refreshed_show_ids

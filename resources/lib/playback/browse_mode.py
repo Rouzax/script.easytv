@@ -52,6 +52,7 @@ from resources.lib.constants import (
 )
 from resources.lib.data.queries import (
     build_add_episode_query,
+    build_inprogress_episodes_query,
     build_shows_art_query,
     get_clear_video_playlist_query,
 )
@@ -189,10 +190,28 @@ class EpisodeListConfig:
     clone_mode: bool = False
 
 
+def _is_in_progress(show_id: int, inprogress_ids: Optional[set]) -> bool:
+    """Whether the show's on-deck episode carries a resume point.
+
+    With inprogress_ids supplied the answer comes from Kodi's live in-progress
+    set, which is authoritative. Without it we fall back to this box's cached
+    Resume property, which a peer's partial watch can leave stale: the bookmark
+    moves while the on-deck episode does not, so the cache is never invalidated.
+    """
+    if inprogress_ids is None:
+        return WINDOW.getProperty(f"EasyTV.{show_id}.Resume") == "true"
+    try:
+        episode_id = int(WINDOW.getProperty(f"EasyTV.{show_id}.EpisodeID"))
+    except (ValueError, TypeError):
+        return False
+    return episode_id in inprogress_ids
+
+
 def should_include_show(
     show_id: int,
     series_premieres: int,
     season_premieres: int,
+    inprogress_ids: Optional[set] = None,
 ) -> bool:
     """
     Decide whether a show passes the premiere filter.
@@ -235,7 +254,7 @@ def should_include_show(
     # the type the user excluded. That leaked part-watched series premieres
     # into the season-premiere list and vice versa.
     if is_premiere and not only_mode:
-        if WINDOW.getProperty(f"EasyTV.{show_id}.Resume") == "true":
+        if _is_in_progress(show_id, inprogress_ids):
             return True
 
     if only_mode:
@@ -252,6 +271,35 @@ def should_include_show(
     if season_num == 1:
         return series_premieres != PREMIERE_SKIP
     return season_premieres != PREMIERE_SKIP
+
+
+def fetch_inprogress_episode_ids(log) -> set:
+    """Every episode in the library that carries a resume point, in one query.
+
+    The premiere filter's in-progress override needs Kodi's truth, not this
+    box's cache: a peer's partial watch moves the bookmark without moving the
+    on-deck episode, so the cached Resume property is never invalidated and a
+    part-watched premiere silently disappears from an in-progress list.
+
+    Asking per show costs ~86ms each against a remote MySQL library (measured:
+    16.8s for 164 shows, and JSON-RPC batching only removed 16% of that). The
+    native inprogress filter answers for the whole library in ~114ms.
+
+    Returns:
+        Set of episode ids with an active resume point; empty on query failure,
+        which degrades to "nothing is in progress" rather than raising.
+    """
+    try:
+        result = json_query(build_inprogress_episodes_query())
+        return {
+            ep['episodeid']
+            for ep in result.get('episodes', [])
+            if 'episodeid' in ep
+        }
+    except Exception as e:
+        log.warning("In-progress lookup failed, premiere override disabled",
+                    event="browse.inprogress_error", error=str(e))
+        return set()
 
 
 def build_episode_list(
@@ -309,10 +357,11 @@ def build_episode_list(
         or config.season_premieres in (PREMIERE_ONLY, PREMIERE_SKIP)
     )
 
-    def should_include(show_entry):
+    def should_include(show_entry, inprogress_ids):
         """Check if episode should be included based on premiere settings."""
         return should_include_show(
-            show_entry[1], config.series_premieres, config.season_premieres
+            show_entry[1], config.series_premieres, config.season_premieres,
+            inprogress_ids=inprogress_ids,
         )
 
     def _fetch_data():
@@ -327,15 +376,21 @@ def build_episode_list(
                 max_minutes=config.duration_max
             )
         if needs_premiere_filter:
+            # Read the in-progress set from Kodi rather than trusting this
+            # box's cached Resume properties, which a peer's partial watch
+            # leaves stale. One query for the whole library.
+            inprogress_ids = fetch_inprogress_episode_ids(log)
             before_count = len(show_data)
-            show_data = [x for x in show_data if should_include(x)]
+            show_data = [x for x in show_data
+                         if should_include(x, inprogress_ids)]
             excluded = before_count - len(show_data)
             if excluded:
                 log.debug("Premiere filter applied",
                           event="browse.premiere_filter",
                           before=before_count,
                           after=len(show_data),
-                          excluded=excluded)
+                          excluded=excluded,
+                          inprogress=len(inprogress_ids))
         if config.excl_random_order_shows and random_order_shows:
             return [x for x in show_data if x[1] not in random_order_shows]
         return show_data
@@ -354,7 +409,9 @@ def build_episode_list(
 
         filtered_data = _fetch_data()
 
-        # Refresh episode data from shared storage for listed shows
+        # Refresh display data for the rows actually shown. The premiere filter
+        # no longer depends on this: it reads Kodi's in-progress set directly,
+        # so a stale property can no longer exclude a show before we get here.
         if filtered_data:
             if storage.needs_refresh():
                 show_ids = [show[1] for show in filtered_data]

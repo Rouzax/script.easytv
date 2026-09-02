@@ -164,3 +164,60 @@ class TestOnlyModeRespectsPremiereType:
         })
         should_include = _make_should_include(PREMIERE_SKIP, PREMIERE_SKIP)
         assert should_include([0, 347, '5157']) is True
+
+
+class TestInProgressSetDrivesTheOverride:
+    """The in-progress override reads Kodi's live in-progress set, not the
+    per-show Resume property.
+
+    The property is a cache of Kodi's resume state, and a peer's partial watch
+    changes that state without moving the on-deck episode, so this box could
+    hold Resume="false" indefinitely. Consulting Kodi directly removes the
+    staleness entirely, and one filtered query answers it for the whole library
+    (~114ms) versus ~86ms per show asked individually.
+    """
+
+    def test_premiere_kept_when_ondeck_episode_is_in_progress(self, patch_window):
+        from resources.lib.constants import PREMIERE_SKIP
+        from resources.lib.playback.browse_mode import should_include_show
+        patch_window({
+            "EasyTV.7.EpisodeNo": "S01E01",
+            "EasyTV.7.EpisodeID": "1234",
+            "EasyTV.7.Resume": "false",   # stale cache says not in progress
+        })
+        assert should_include_show(
+            7, PREMIERE_SKIP, PREMIERE_SKIP, inprogress_ids={1234}
+        ) is True
+
+    def test_premiere_dropped_when_ondeck_episode_not_in_progress(self, patch_window):
+        from resources.lib.constants import PREMIERE_SKIP
+        from resources.lib.playback.browse_mode import should_include_show
+        patch_window({
+            "EasyTV.7.EpisodeNo": "S01E01",
+            "EasyTV.7.EpisodeID": "1234",
+            "EasyTV.7.Resume": "true",    # stale cache says in progress
+        })
+        assert should_include_show(
+            7, PREMIERE_SKIP, PREMIERE_SKIP, inprogress_ids=set()
+        ) is False
+
+    def test_falls_back_to_property_when_no_set_supplied(self, patch_window):
+        """Callers that do not pass a set keep the previous behaviour."""
+        from resources.lib.constants import PREMIERE_SKIP
+        from resources.lib.playback.browse_mode import should_include_show
+        patch_window({
+            "EasyTV.7.EpisodeNo": "S01E01",
+            "EasyTV.7.Resume": "true",
+        })
+        assert should_include_show(7, PREMIERE_SKIP, PREMIERE_SKIP) is True
+
+    def test_unparseable_episode_id_is_not_in_progress(self, patch_window):
+        from resources.lib.constants import PREMIERE_SKIP
+        from resources.lib.playback.browse_mode import should_include_show
+        patch_window({
+            "EasyTV.7.EpisodeNo": "S01E01",
+            "EasyTV.7.EpisodeID": "",
+        })
+        assert should_include_show(
+            7, PREMIERE_SKIP, PREMIERE_SKIP, inprogress_ids={1234}
+        ) is False

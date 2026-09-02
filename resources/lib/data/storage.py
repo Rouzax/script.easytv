@@ -508,12 +508,21 @@ class SharedDatabaseStorage(StorageBackend):
                 except (ValueError, TypeError):
                     current_episode_id = None
 
-                # First encounter with props already matching the DB on-deck:
-                # trust startup-populated props and seed the marker, no Kodi call.
+                # First encounter with props already matching the DB on-deck.
+                #
+                # The matching id says the on-deck EPISODE is current; it says
+                # nothing about that episode's resume state. A peer's partial
+                # watch moves the bookmark without moving the on-deck episode,
+                # so props populated before that watch are stale in exactly the
+                # way browse_mode's in-progress override depends on. Read the
+                # resume state from Kodi rather than trusting them, and seed
+                # the marker as before.
                 if (not synced and db_episode_id
                         and db_episode_id == current_episode_id):
                     branches['first_encounter'] += 1
                     self._update_window_properties(show_id, show_data)
+                    self._refresh_resume_state(show_id, db_episode_id)
+                    self._last_refreshed_show_ids.add(show_id)
                     if db_updated:
                         WINDOW.setProperty(synced_key, db_updated)
                     continue
