@@ -37,7 +37,7 @@ EasyTV organizes settings into six categories:
 |--------|----------|
 | **Show episode list** | Opens [Browse Mode](browse-mode.md) immediately |
 | **Play random playlist** | Starts playing a [Random Playlist](random-playlist-mode.md) immediately |
-| **Ask me** | Shows a dialog: "Show me" (browse) or "Surprise me" (random) |
+| **Ask me** | Shows a dialog: "Show me" (browse) or "Start playlist" (random) |
 
 ### Appearance
 

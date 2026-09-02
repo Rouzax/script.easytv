@@ -138,7 +138,7 @@ msgid "Show me"
 msgstr ""
 
 msgctxt "#32103"
-msgid "Surprise me"
+msgid "Start playlist"
 msgstr ""
 
 #. Playlist selection
