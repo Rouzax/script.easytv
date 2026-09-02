@@ -26,6 +26,7 @@ Logging:
 
 import os
 import sys
+import time
 from typing import List
 
 import xbmc
@@ -37,9 +38,11 @@ from resources.lib.constants import (
     ADDON_RESTART_DELAY_MS,
     KODI_HOME_WINDOW_ID,
     PROP_FORCE_SYNC,
+    PROP_SERVICE_HEARTBEAT,
     PROP_SERVICE_PATH,
     PROP_SERVICE_RUNNING,
     PROP_VERSION,
+    SERVICE_HEARTBEAT_MAX_AGE_S,
     SERVICE_POLL_SLEEP_MS,
     SERVICE_POLL_TIMEOUT_TICKS,
     SETTING_MULTI_INSTANCE_SYNC,
@@ -363,8 +366,40 @@ def _handle_special_modes(mode, addon, log, addon_name='EasyTV'):
             raise
 
 
+def _heartbeat_is_fresh(window) -> bool:
+    """Whether the service published a timestamp recently enough to trust.
+
+    Anything unparseable, missing, older than the limit, or dated in the future
+    (a backwards clock correction) is treated as not fresh, which costs only
+    the handshake below.
+    """
+    raw = window.getProperty(PROP_SERVICE_HEARTBEAT)
+    if not raw:
+        return False
+    try:
+        age = time.time() - float(raw)
+    except (TypeError, ValueError):
+        return False
+    return 0 <= age <= SERVICE_HEARTBEAT_MAX_AGE_S
+
+
 def _check_service_running(window):
-    """Check if EasyTV service is running. Returns True if running."""
+    """Check if EasyTV service is running. Returns True if running.
+
+    A recent service heartbeat proves liveness outright. The service can only
+    answer the marco/polo handshake between operations, so a launch landing
+    inside a long blocking query used to wait for it to finish (measured at
+    2.88s, with a 5s timeout beyond which the user is ejected with a restart
+    prompt).
+
+    Falling back rather than failing is deliberate: a stale heartbeat means the
+    service is busy or older than this UI, not that it is gone, so the original
+    handshake still decides. This can therefore only make the check faster, and
+    a genuinely dead service is still reported exactly as before.
+    """
+    if _heartbeat_is_fresh(window):
+        return True
+
     window.setProperty(PROP_SERVICE_RUNNING, 'marco')
     count = 0
     while window.getProperty(PROP_SERVICE_RUNNING) == 'marco':

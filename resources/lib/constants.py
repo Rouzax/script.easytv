@@ -112,6 +112,11 @@ EXPORT_COMPLETE_DELAY_MS = 100
 TARGET_DETECTION_MAX_TICKS = 20
 POSITION_CHECK_INTERVAL_TICKS = 50
 SERVICE_POLL_TIMEOUT_TICKS = 500
+# How old the service heartbeat may be and still prove liveness. Observed
+# blocked stretches are ~5s, so 10s keeps the fast path in normal use while
+# bounding how long a service that died between writes looks alive. Exceeding
+# it costs only the original handshake.
+SERVICE_HEARTBEAT_MAX_AGE_S = 10
 DIALOG_WAIT_MAX_TICKS = 5
 ISTREAM_FIX_MAX_RETRIES = 2
 SYNC_CHECK_INTERVAL_TICKS = 3000  # ~5 minutes at 100ms per tick
@@ -470,6 +475,12 @@ STREAMDETAILS_CACHE_VERSION = 1
 # =============================================================================
 # Service lifecycle status ('starting', 'true', 'marco', 'polo')
 PROP_SERVICE_RUNNING = "EasyTV_service_running"
+# Wall-clock time of the service's last event-loop pass. Lets the UI prove
+# liveness without the marco/polo round trip, which the service can only answer
+# between operations: a launch landing inside a long blocking query waited for
+# it to finish. Anything not fresh falls back to the handshake, so this can only
+# make the check faster, never wrongly report the service missing.
+PROP_SERVICE_HEARTBEAT = "EasyTV.ServiceHeartbeat"
 # Addon version string
 PROP_VERSION = "EasyTV.Version"
 # Path to addon directory

@@ -50,6 +50,7 @@ from resources.lib.constants import (
     LOG_MAX_VALUE_LENGTH,
     LOG_TIMESTAMP_FORMAT,
     LOG_TIMESTAMP_TRIM,
+    PROP_SERVICE_HEARTBEAT,
     PROP_SERVICE_RUNNING,
     VERSION_PRERELEASE_ALPHA,
     VERSION_PRERELEASE_BETA,
@@ -1238,9 +1239,18 @@ def service_heartbeat() -> None:
             xbmc.sleep(100)
     """
     window = xbmcgui.Window(KODI_HOME_WINDOW_ID)
-    
+
+    # Publish the time of this pass. The UI treats a recent value as proof of
+    # life and skips the round trip below, which it could otherwise only get
+    # answered between operations.
+    window.setProperty(PROP_SERVICE_HEARTBEAT, str(time.time()))
+
     # Respond to service liveness check from the addon
     # When default.py sends 'marco', respond with 'polo' to confirm service is running
+    #
+    # Kept for older UIs: clones ship their own copy of default.py, run no
+    # service of their own, and are updated separately, so one may still be
+    # using the handshake against a newer service.
     if window.getProperty(PROP_SERVICE_RUNNING) == 'marco':
         window.setProperty(PROP_SERVICE_RUNNING, 'polo')
 
