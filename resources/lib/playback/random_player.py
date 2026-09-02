@@ -119,6 +119,9 @@ class RandomPlaylistConfig:
         premieres: Series premiere filter mode (PREMIERE_SKIP=0, PREMIERE_MIX_IN=1, PREMIERE_ONLY=2)
         season_premieres: Season premiere filter mode (PREMIERE_SKIP=0, PREMIERE_MIX_IN=1, PREMIERE_ONLY=2)
         multiple_shows: Whether the same show can appear multiple times
+        multiple_shows_uniform: With multiple_shows on, draw each slot from all
+            eligible shows so a repeat can happen at any time. The default
+            spreads repeats out, giving every other show a turn first.
         sort_by: Sort method for shows (0=name, 1=last played, 2=random)
         sort_reverse: Whether to reverse the sort order
         language: System language for sorting
@@ -138,6 +141,7 @@ class RandomPlaylistConfig:
     premieres: int = PREMIERE_MIX_IN
     season_premieres: int = PREMIERE_MIX_IN
     multiple_shows: bool = False
+    multiple_shows_uniform: bool = False
     sort_by: int = 0
     sort_reverse: bool = False
     language: str = 'English'
@@ -198,6 +202,7 @@ def _serialize_playlist_config(config: RandomPlaylistConfig) -> Dict[str, Any]:
         'premieres': config.premieres,
         'season_premieres': config.season_premieres,
         'multiple_shows': config.multiple_shows,
+        'multiple_shows_uniform': config.multiple_shows_uniform,
         'sort_by': config.sort_by,
         'sort_reverse': config.sort_reverse,
         'language': config.language,
@@ -819,10 +824,59 @@ def _process_tv_candidate(
         return tmp_episode_id, False
 
 
+def _fetch_inprogress_episode_ids(logger) -> set:
+    """Every episode with a resume point, in one query.
+
+    Asking per show costs ~86ms each against a remote MySQL library; the native
+    inprogress filter answers for the whole library in ~114ms.
+    """
+    try:
+        result = json_query(build_inprogress_episodes_query())
+        return {ep['episodeid'] for ep in result.get('episodes', [])
+                if 'episodeid' in ep}
+    except Exception as e:
+        logger.warning("In-progress lookup failed, premiere override disabled",
+                       event="playlist.inprogress_error", error=str(e))
+        return set()
+
+
+def _read_ondeck_episode_ids(candidate_list: List[str]) -> dict:
+    """Map each TV candidate's show id to its cached on-deck episode id."""
+    ondeck = {}
+    for tag in candidate_list:
+        if not tag.startswith('t'):
+            continue
+        try:
+            show_id = int(tag[1:])
+            ondeck[show_id] = int(
+                WINDOW.getProperty(f"EasyTV.{show_id}.EpisodeID"))
+        except (ValueError, TypeError):
+            continue
+    return ondeck
+
+
+def _show_is_in_progress(
+    show_id: int,
+    inprogress_ids: Optional[set],
+    ondeck_ids: Optional[dict],
+) -> bool:
+    """Whether the show's on-deck episode carries a resume point.
+
+    Prefers Kodi's live in-progress set, which is authoritative. Falls back to
+    this box's cached Resume property when no set is supplied, which is what a
+    peer's partial watch can leave stale.
+    """
+    if inprogress_ids is None or ondeck_ids is None:
+        return WINDOW.getProperty(f"EasyTV.{show_id}.Resume") == "true"
+    return ondeck_ids.get(show_id) in inprogress_ids
+
+
 def _check_premiere_exclusion(
     show_id: int,
     candidate_list: List[str],
     config: RandomPlaylistConfig,
+    inprogress_ids: Optional[set] = None,
+    ondeck_ids: Optional[dict] = None,
 ) -> bool:
     """
     Check if episode should be excluded due to premiere settings.
@@ -835,6 +889,11 @@ def _check_premiere_exclusion(
         show_id: The TV show ID
         candidate_list: List of remaining candidates (modified in place)
         config: Playlist configuration
+        inprogress_ids: Episode ids Kodi reports as part-watched. Given these,
+            the in-progress carve-out uses them instead of the cached Resume
+            property, which a peer's partial watch leaves stale because the
+            bookmark moves while the on-deck episode does not.
+        ondeck_ids: show_id -> on-deck episode id, needed to test membership.
 
     Returns:
         True if episode should be excluded, False otherwise.
@@ -868,8 +927,8 @@ def _check_premiere_exclusion(
     # Excluded in only_mode: an allowed premiere is kept there regardless of
     # resume state, so the override could only ever admit a premiere of the
     # type the user excluded.
-    if (is_premiere and not only_mode
-            and WINDOW.getProperty(f"EasyTV.{show_id}.Resume") == "true"):
+    if is_premiere and not only_mode and _show_is_in_progress(
+            show_id, inprogress_ids, ondeck_ids):
         return False
 
     if only_mode:
@@ -1323,6 +1382,12 @@ def build_random_playlist(
             # Handle partial prioritization - find all partial items and move to front
             partial_episode_map: Dict[int, int] = {}
             partial_candidate_tags: List[str] = []
+            # Hoisted: the premiere carve-out below reuses this rather than
+            # repeating the same in-progress query. The flag distinguishes
+            # "scanned, found nothing part-watched" (the common case, and a
+            # complete answer) from "never scanned".
+            partial_episodes: List[Tuple[str, int, int, int, str]] = []
+            partials_scanned = False
             if config.start_partials_tv or config.start_partials_movies:
                 with log_timing(log, "partial_prioritization", 
                                tv_enabled=config.start_partials_tv,
@@ -1331,11 +1396,11 @@ def build_random_playlist(
                     tv_show_ids = [int(x[1:]) for x in candidate_list if x.startswith('t')]
                     
                     # Find partial episodes (if TV partials enabled and we have TV content)
-                    partial_episodes: List[Tuple[str, int, int, int, str]] = []
                     if config.start_partials_tv and tv_show_ids:
                         partial_episodes = _find_all_partial_episodes(
                             tv_show_ids, log
                         )
+                        partials_scanned = True
                         timer.mark("tv_episodes_query")
                     
                     # Find partial movies (if movie partials enabled and we have movies)
@@ -1403,13 +1468,37 @@ def build_random_playlist(
         # its type against the remaining budget so movies mix through the
         # playlist rather than filling the final slots.
         partial_tag_set = set(partial_candidate_tags)
+
+        # Kodi's live in-progress set, read once for the whole build. The
+        # premiere carve-out below needs it rather than each show's cached
+        # Resume property, which a peer's partial watch leaves stale: the
+        # bookmark moves while the on-deck episode does not, so nothing
+        # invalidates it. Mirrors browse_mode, which must agree with this.
+        premiere_filtering = (
+            config.premieres != PREMIERE_MIX_IN
+            or config.season_premieres != PREMIERE_MIX_IN
+        )
+        inprogress_ids = None
+        ondeck_ids = None
+        if premiere_filtering:
+            if partials_scanned:
+                # Already fetched above by the partials path: same query, same
+                # library-wide inprogress filter, scoped to these candidates.
+                # Its playcount==0 filter is harmless here because an on-deck
+                # episode is unwatched anyway.
+                inprogress_ids = {int(p[4]) for p in partial_episodes}
+            else:
+                inprogress_ids = _fetch_inprogress_episode_ids(log)
+            ondeck_ids = _read_ondeck_episode_ids(candidate_list)
+
         while count < config.length and candidate_list:
             iterations += 1
 
             candidate = select_next_candidate(
                 candidate_list, partial_tag_set,
                 movie_target - movies_added,
-                show_target - shows_added
+                show_target - shows_added,
+                uniform=config.multiple_shows and config.multiple_shows_uniform
             )
             if candidate is None:
                 break
@@ -1429,7 +1518,10 @@ def build_random_playlist(
                     continue
                 
                 # Check premiere exclusion
-                if _check_premiere_exclusion(candidate_id, candidate_list, config):
+                if _check_premiere_exclusion(
+                        candidate_id, candidate_list, config,
+                        inprogress_ids=inprogress_ids,
+                        ondeck_ids=ondeck_ids):
                     continue
                 
                 # Add episode to playlist
@@ -1451,8 +1543,10 @@ def build_random_playlist(
                 )
                 
                 # Move show to end of list so other shows get a turn
-                # (only when multiple_shows is enabled and show wasn't exhausted)
-                if config.multiple_shows:
+                # (only when multiple_shows is enabled and show wasn't
+                # exhausted). Skipped in uniform mode, where the draw ignores
+                # order and a repeat is meant to be possible at any time.
+                if config.multiple_shows and not config.multiple_shows_uniform:
                     candidate_tag = f't{candidate_id}'
                     if candidate_tag in candidate_list:
                         candidate_list.remove(candidate_tag)

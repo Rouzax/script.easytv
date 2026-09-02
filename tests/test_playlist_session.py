@@ -172,3 +172,84 @@ class TestMovieDistribution:
     def test_movie_target_is_still_respected_exactly(self):
         positions = _run_selection(n_shows=120, movie_target=10, length=20, trials=200)
         assert len(positions) == 10 * 200
+
+
+# ── uniform (truly random) show repetition ───────────────────────────
+
+class TestUniformSelection:
+    """"Truly random" draws each slot from all eligible candidates.
+
+    The default spreads repeats out: a picked show is rotated to the back and
+    select_next_candidate takes the first match, so a show only recurs once
+    every other eligible show has had a turn. That is why a 10-episode playlist
+    from 15 shows never repeats one. Uniform mode restores the older behaviour
+    where a repeat can happen at any time, including back to back.
+    """
+
+    def test_uniform_can_pick_beyond_the_front(self):
+        picks = {
+            select_next_candidate(
+                ['t1', 't2', 't3'], None, 0, 10, uniform=True
+            )
+            for _ in range(200)
+        }
+        assert picks == {'t1', 't2', 't3'}
+
+    def test_default_still_takes_the_first_match(self):
+        picks = {
+            select_next_candidate(['t1', 't2', 't3'], None, 0, 10)
+            for _ in range(50)
+        }
+        assert picks == {'t1'}
+
+    def test_uniform_respects_the_wanted_type(self):
+        picks = {
+            select_next_candidate(
+                ['m9', 't1', 't2'], None, 0, 10, uniform=True
+            )
+            for _ in range(200)
+        }
+        assert picks == {'t1', 't2'}, "should not draw a movie when TV is wanted"
+
+    def test_uniform_still_honours_partial_priority(self):
+        """Unfinished content keeps front-of-playlist priority in both modes."""
+        picked = select_next_candidate(
+            ['t7', 't1', 't2'], {'t7'}, 0, 10, uniform=True
+        )
+        assert picked == 't7'
+
+    def test_uniform_on_empty_list_returns_none(self):
+        assert select_next_candidate([], None, 1, 19, uniform=True) is None
+
+
+class TestLazyQueueHonoursUniform:
+    """Both mode with multiple_shows takes the lazy-queue path, not the batch
+    loop, so the repeat-style setting has to be threaded here too or the
+    setting silently does nothing in exactly the mode it applies to.
+    """
+
+    def _session(self, uniform, mocker):
+        from resources.lib.playback.playlist_session import PlaylistSession
+        return PlaylistSession(
+            config={'multiple_shows': True,
+                    'multiple_shows_uniform': uniform,
+                    'movie_chance': 0},
+            population={'none': ''},
+            random_order_shows=[],
+            candidate_list=['t1', 't2', 't3'],
+            target_length=10,
+        )
+
+    def test_uniform_flag_reaches_the_selector(self, mocker):
+        from resources.lib.playback import playlist_session as ps
+        spy = mocker.patch.object(ps, 'select_next_candidate',
+                                  return_value=None)
+        self._session(True, mocker).pick_next_item()
+        assert spy.call_args.kwargs.get('uniform') is True
+
+    def test_default_does_not_request_uniform(self, mocker):
+        from resources.lib.playback import playlist_session as ps
+        spy = mocker.patch.object(ps, 'select_next_candidate',
+                                  return_value=None)
+        self._session(False, mocker).pick_next_item()
+        assert spy.call_args.kwargs.get('uniform') is False

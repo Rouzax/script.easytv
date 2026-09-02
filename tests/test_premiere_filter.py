@@ -301,3 +301,50 @@ class TestOnlyModeRespectsPremiereType:
             premieres=PREMIERE_SKIP, season_premieres=PREMIERE_SKIP
         )
         assert _check_premiere_exclusion(1, ['t1'], config) is False
+
+
+class TestInProgressSetDrivesTheRandomCarveOut:
+    """Random's in-progress carve-out must read Kodi's live in-progress set.
+
+    It mirrored Browse by reading EasyTV.{id}.Resume, a cached value a peer's
+    partial watch leaves stale: the bookmark moves while the on-deck episode
+    does not, so nothing invalidates it. Browse now asks Kodi directly, and
+    Random must match or the same part-watched premiere that stays visible in
+    Browse still vanishes from a random playlist.
+    """
+
+    def test_in_progress_premiere_kept_despite_stale_property(self, patch_window):
+        patch_window({1: 's01e01'}, resume_map={1: 'false'})  # stale cache
+        config = RandomPlaylistConfig(
+            premieres=PREMIERE_SKIP, season_premieres=PREMIERE_SKIP
+        )
+        candidates = ['t1']
+
+        excluded = _check_premiere_exclusion(
+            1, candidates, config, inprogress_ids={501}, ondeck_ids={1: 501}
+        )
+
+        assert excluded is False
+        assert candidates == ['t1']
+
+    def test_premiere_excluded_when_not_actually_in_progress(self, patch_window):
+        patch_window({1: 's01e01'}, resume_map={1: 'true'})  # stale cache
+        config = RandomPlaylistConfig(
+            premieres=PREMIERE_SKIP, season_premieres=PREMIERE_SKIP
+        )
+        candidates = ['t1']
+
+        excluded = _check_premiere_exclusion(
+            1, candidates, config, inprogress_ids=set(), ondeck_ids={1: 501}
+        )
+
+        assert excluded is True
+
+    def test_falls_back_to_the_property_without_a_set(self, patch_window):
+        """Callers that pass no set keep the previous behaviour."""
+        patch_window({1: 's01e01'}, resume_map={1: 'true'})
+        config = RandomPlaylistConfig(
+            premieres=PREMIERE_SKIP, season_premieres=PREMIERE_SKIP
+        )
+
+        assert _check_premiere_exclusion(1, ['t1'], config) is False

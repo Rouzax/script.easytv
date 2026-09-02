@@ -233,6 +233,7 @@ def main_entry(addon, log):
                 premieres=get_int_setting('premieres'),
                 season_premieres=get_int_setting('season_premieres'),
                 multiple_shows=get_bool_setting('multiple_shows'),
+                multiple_shows_uniform=get_int_setting('multiple_shows_uniform') == 1,
                 sort_by=sort_by, sort_reverse=sort_reverse, language=language,
                 movie_playlist=movie_playlist,
                 unwatched_ratio=get_int_setting('unwatched_ratio'),

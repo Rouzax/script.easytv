@@ -220,8 +220,21 @@ Enable these on low-power devices (Raspberry Pi, older Fire TV) for better respo
 | **Playlist content** | TV episodes only / TV and movies / Movies only | TV episodes only | What to include in the playlist |
 | **Playlist length** | 1-50 (slider) | 5 | Number of items in the playlist |
 | **Allow multiple episodes of same TV Show** | On / Off | Off | Let the same show appear multiple times |
+| **How to repeat shows** | Spread out / Truly random | Spread out | When a show is allowed to come round again |
 
-**Visibility:** "Allow multiple episodes" is hidden when content is "Movies only".
+**Visibility:** "Allow multiple episodes" is hidden when content is "Movies only". "How to repeat shows" appears only when "Allow multiple episodes" is On.
+
+### How to repeat shows
+
+Only relevant once **Allow multiple episodes of same TV Show** is enabled.
+
+| Option | What you get |
+|--------|--------------|
+| **Spread out** (default) | Every other eligible show gets a turn before any show comes round again. A 10-episode playlist drawn from 15 shows therefore contains 10 different shows; repeats appear only once the pool is smaller than the playlist, so 7 shows for 10 episodes gives 3 repeats. |
+| **Truly random** | Every episode is drawn from all eligible shows, so a show can come back at any time, including twice in a row. With 15 shows you will usually still see mostly different ones, but repeats are down to chance rather than held back until needed. |
+
+Both options fill the playlist to the requested length whenever there is enough
+content. The difference is only *when* a show is allowed to repeat.
 
 ### Content Options
 
@@ -394,6 +407,7 @@ Some settings only appear based on other settings:
 | Unwatched episode chance | Episode selection is "Both" |
 | Start watched movies at random point | Movie selection includes watched |
 | Allow multiple episodes | Playlist content is not "Movies only" |
+| How to repeat shows | "Allow multiple episodes" is On |
 | Countdown duration | "Prompt to continue playlist" is On |
 | Prompt timeout, default action | "Ask to watch next episode" is On |
 | Maximum shows | "Limit shows displayed" is On |

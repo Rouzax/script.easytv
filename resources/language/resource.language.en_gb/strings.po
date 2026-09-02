@@ -436,6 +436,22 @@ msgctxt "#32227"
 msgid "Surprise Me"
 msgstr ""
 
+msgctxt "#32228"
+msgid "How to repeat shows"
+msgstr ""
+
+msgctxt "#32229"
+msgid "Spread out"
+msgstr ""
+
+msgctxt "#32230"
+msgid "Truly random"
+msgstr ""
+
+msgctxt "#32231"
+msgid "Spread out gives every other show a turn before repeating one, so a show only comes back once the rest have been used. Truly random draws every episode from all your shows, so a show can repeat at any time."
+msgstr ""
+
 
 # =============================================================================
 # ADDON METADATA (32300-32399)

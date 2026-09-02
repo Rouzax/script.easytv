@@ -91,7 +91,8 @@ def select_next_candidate(
     partial_candidates: Optional[Set[str]],
     movies_remaining: int,
     shows_remaining: int,
-    rand: Optional[float] = None
+    rand: Optional[float] = None,
+    uniform: bool = False
 ) -> Optional[str]:
     """Choose which candidate to attempt next, mixing movies through the playlist.
 
@@ -116,6 +117,12 @@ def select_next_candidate(
         shows_remaining: TV slots left in the budget.
         rand: Optional roll in [0, 1) for deterministic tests. Defaults to
             random.random().
+        uniform: Draw the slot from all eligible candidates instead of taking
+            the first. The default takes the front of the pre-shuffled list,
+            which combined with rotating a used show to the back spreads
+            repeats out: a show only recurs once every other one has had a
+            turn. Uniform lets a show recur at any time, including back to
+            back.
 
     Returns:
         The candidate tag to attempt, or None if the pool is empty. The
@@ -150,9 +157,9 @@ def select_next_candidate(
     fallback = TV_CANDIDATE_PREFIX if want_movie else MOVIE_CANDIDATE_PREFIX
 
     for prefix in (wanted, fallback):
-        for candidate in candidate_list:
-            if candidate[:1] == prefix:
-                return candidate
+        matching = [c for c in candidate_list if c[:1] == prefix]
+        if matching:
+            return random.choice(matching) if uniform else matching[0]
 
     # Only unknown-type entries left - hand the front one back so the caller
     # logs and discards it
@@ -497,11 +504,16 @@ class PlaylistSession:
         while self.candidate_list:
             # Roll the type for this slot so movies mix through the playlist
             # instead of being spent on the final slots
+            # Both mode with multiple_shows runs here rather than the batch
+            # loop, so the repeat-style setting must be honoured here too.
+            uniform = bool(self.config.get('multiple_shows')
+                           and self.config.get('multiple_shows_uniform'))
             candidate = select_next_candidate(
                 self.candidate_list,
                 self.partial_candidates,
                 movie_target - movies_added_count,
-                show_target - shows_added_count
+                show_target - shows_added_count,
+                uniform=uniform
             )
             if candidate is None:
                 break
@@ -524,9 +536,12 @@ class PlaylistSession:
                     episode_id, used_ondeck = result
                     self.items_added += 1
                     
-                    # Move show to end of list for fair rotation
-                    self.candidate_list.remove(candidate)
-                    self.candidate_list.append(candidate)
+                    # Move show to end of list for fair rotation. Skipped in
+                    # uniform mode, where the draw ignores order and a repeat
+                    # is meant to be possible at any time.
+                    if not uniform:
+                        self.candidate_list.remove(candidate)
+                        self.candidate_list.append(candidate)
                     
                     log.debug("TV episode selected",
                               event="session.pick_episode",
