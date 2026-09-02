@@ -1,6 +1,61 @@
 EasyTV Changelog
 ================
 
+v1.8.0 (2026-09-02)
+-------------------
+New Features:
+  - "How to repeat shows", a dependent setting under "Allow multiple episodes
+    of same TV Show". "Spread out" keeps the existing rotation, where a used
+    show moves to the back of the candidate list and select_next_candidate
+    takes the first eligible entry, so a show only recurs once every other one
+    has had a turn. "Truly random" draws each slot from all eligible shows via
+    select_next_candidate(uniform=True) and skips the rotation, so a repeat can
+    happen at any time including back to back. Defaults to Spread out.
+    Both mode with multiple_shows runs through PlaylistSession's lazy queue
+    rather than the batch loop, so both paths are wired. Present in the clone
+    settings template as well. Raised on the forum by DJ_Izumi.
+
+Bug Fixes:
+  - Fixed: a peer's part-watched premiere disappeared from an in-progress list
+    on a second instance, indefinitely rather than for one sync interval.
+    get_ondeck_bulk's first_encounter branch treated a matching on-deck episode
+    id as proof its window properties were current; it proves the on-deck
+    EPISODE is current and says nothing about that episode's resume state,
+    which a peer's partial watch changes without moving the episode. It now
+    reads resume from Kodi and reports the show in last_refreshed_show_ids,
+    without which the daemon also skips re-categorisation. browse_mode's
+    premiere filter no longer consults the cached Resume property at all: it
+    reads Kodi's live in-progress set, so the decision cannot be made on stale
+    data. random_player's carve-out was migrated to the same source, reusing
+    the partials scan where it already ran so no extra query is issued.
+  - Fixed: the launch dialog's "Surprise me" button collided with the Surprise
+    Me button added to the browse views in v1.7.0. The dialog button is now
+    "Start playlist", answering the question above it in its own words. The
+    browse button keeps its name, which matches EasyMovie's #32310.
+  - Fixed: show art could be missing for a show added by another instance on a
+    shared library. The art session cache was invalidated only by
+    onScanFinished, a local event that never fires when a peer does the
+    scanning, so the show rendered with no poster until Kodi restarted. The
+    cache is now validated against the shows about to be listed.
+
+Performance:
+  - Show art is fetched once per Kodi session instead of once per launch. The
+    UI cleared the session flag on every launch, so the ~1.2s query ran every
+    time: a median 1.20s of a 3.20s median launch measured across 268 launches.
+    The clear was redundant, since _fetch_show_art only latches the flag when a
+    show really had a poster (issue #2) and library_monitor clears it on scan.
+  - Service liveness is proved from a published heartbeat rather than a
+    marco/polo round trip. The service can only answer between operations, so a
+    launch landing inside a long blocking query waited for it to finish,
+    measured at 2.88s. A stale heartbeat falls back to the handshake rather
+    than reporting the service missing, so the check can only get faster.
+    marco/polo is retained for clone UIs, which ship their own default.py and
+    update separately.
+
+Internal:
+  - Tests added for the batch write skip predicate, the art session cache and
+    the liveness fast path, none of which had any coverage.
+
 v1.7.0 (2026-08-30)
 -------------------
 New Features:

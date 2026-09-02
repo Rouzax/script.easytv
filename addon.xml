@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <addon id="script.easytv"
        name="EasyTV"
-       version="1.7.0"
+       version="1.8.0"
        provider-name="Rouzax">
     <requires>
         <import addon="xbmc.python" version="3.0.1"/>
@@ -25,13 +25,13 @@
         <forum>https://forum.kodi.tv/showthread.php?tid=383902</forum>
         <website>https://rouzax.github.io/script.easytv/</website>
         <source>https://github.com/Rouzax/script.easytv</source>
-        <news>v1.7.0 (2026-08-30)
-- New "Surprise Me" button in every browse view: picks a show for you and starts its next episode
-- Fixed episodes added to a show later going missing from that show's list on synced devices
-- Fixed a negative "Skipped" count in the browse list
-- Fixed an in-progress episode not showing its progress on your other devices
-- Fixed part-watched premieres of the wrong type appearing in premieres-only lists
-- Faster sync: no longer repeats smart playlist work for shows that did not change</news>
+        <news>v1.8.0 (2026-09-02)
+- New setting: choose whether a repeated show is spread out or truly random, under "Allow multiple episodes of same TV Show"
+- Fixed a part-watched premiere disappearing from an in-progress list on your other device
+- Fixed missing artwork for a show added on another device
+- Renamed the launch dialog's "Surprise me" button to "Start playlist" so it no longer clashes with Surprise Me in the browse views
+- Faster launch: show artwork is fetched once per Kodi session instead of every time you open EasyTV
+- Faster launch: EasyTV no longer waits on the background service when it is busy</news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
