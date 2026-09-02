@@ -47,6 +47,7 @@ from resources.lib.constants import (
     PREMIERE_ONLY,
     PREMIERE_SKIP,
     PROP_ART_FETCHED,
+    PROP_ART_SHOW_IDS,
     PROP_PLAYLIST_RUNNING,
     PROP_RANDOM_ORDER_SHUFFLE,
 )
@@ -90,7 +91,8 @@ def _get_log() -> StructuredLogger:
 WINDOW = xbmcgui.Window(KODI_HOME_WINDOW_ID)
 
 
-def _fetch_show_art(logger: 'StructuredLogger') -> None:
+def _fetch_show_art(logger: 'StructuredLogger',
+                    show_ids: Optional[list] = None) -> None:
     """
     Fetch and cache show art to window properties.
     
@@ -103,11 +105,34 @@ def _fetch_show_art(logger: 'StructuredLogger') -> None:
     
     Args:
         logger: Logger instance for timing instrumentation.
+        show_ids: Shows about to be listed. When given, the cache is only
+            reused if it covers all of them, so a show that appeared since the
+            last fetch triggers a refetch rather than rendering without art.
     """
-    # Check session flag - skip if already fetched this session
+    # Skip only when the cache genuinely covers the shows about to be listed.
+    #
+    # The session flag alone is not enough. A show can enter this box's library
+    # with no local scan: on a shared MySQL library another instance scans it
+    # in and the show simply appears here, so onScanFinished never fires and an
+    # event-based invalidation misses it. Checking coverage catches that and
+    # any other route a show arrives by. Coverage is recorded per fetch rather
+    # than inferred from the art properties, because a show legitimately
+    # without artwork is indistinguishable from one never fetched.
     if WINDOW.getProperty(PROP_ART_FETCHED) == 'true':
-        logger.debug("Art already fetched this session, skipping")
-        return
+        if show_ids is None:
+            logger.debug("Art already fetched this session, skipping")
+            return
+        covered = {
+            part for part in
+            WINDOW.getProperty(PROP_ART_SHOW_IDS).split(',') if part
+        }
+        missing = {str(s) for s in show_ids} - covered
+        if not missing:
+            logger.debug("Art already fetched this session, skipping",
+                         show_count=len(show_ids))
+            return
+        logger.debug("Art cache does not cover every listed show, refetching",
+                     event="browse.art_refetch", missing=len(missing))
 
     # Fetch art for all shows
     populated = 0
@@ -144,6 +169,11 @@ def _fetch_show_art(logger: 'StructuredLogger') -> None:
     # poison the cache for the rest of the Kodi session).
     if populated > 0:
         WINDOW.setProperty(PROP_ART_FETCHED, 'true')
+        WINDOW.setProperty(
+            PROP_ART_SHOW_IDS,
+            ','.join(str(s.get('tvshowid')) for s in shows
+                     if s.get('tvshowid') is not None)
+        )
         logger.debug("Art fetched and cached",
                      show_count=len(shows), populated=populated)
     else:
@@ -426,8 +456,8 @@ def build_episode_list(
 
         log.info("Browse mode starting", event="browse.start", show_count=len(filtered_data))
 
-        # Fetch show art if not already cached this session
-        _fetch_show_art(log)
+        # Fetch show art unless the session cache already covers these shows
+        _fetch_show_art(log, show_ids=[show[1] for show in filtered_data])
     
     # Get appropriate XML file for skin
     xmlfile = get_skin_xml_file(config.skin)

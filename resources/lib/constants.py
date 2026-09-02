@@ -437,6 +437,10 @@ PROP_SOURCE_ADDON_ID = "EasyTV.SourceAddonId"
 # =============================================================================
 # Session flag indicating show art has been fetched (cleared on library scan)
 PROP_ART_FETCHED = "EasyTV.ArtFetched"
+# Show ids covered by the last art fetch. The flag alone cannot say
+# whether a newly appeared show is in the cache; a show added by another
+# instance on a shared library arrives with no local scan to invalidate.
+PROP_ART_SHOW_IDS = "EasyTV.ArtShowIds"
 
 # =============================================================================
 # Duration Filter Settings

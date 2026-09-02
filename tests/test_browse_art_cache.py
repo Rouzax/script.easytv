@@ -74,3 +74,91 @@ class TestArtSessionFlag:
         _fetch_show_art(MagicMock())
 
         mock_query.assert_not_called()
+
+
+class TestArtCacheCoversDisplayedShows:
+    """The session cache must answer to the data, not just to a flag.
+
+    A show can enter this box's library without any local scan: on a shared
+    MySQL library another instance scans it in and the show simply appears.
+    onScanFinished never fires here, so an event-based invalidation misses it
+    and the new show renders with no poster for the rest of the session.
+    Checking that the displayed shows are actually covered catches every route
+    a show can arrive by, including ones nobody enumerated.
+    """
+
+    @patch('resources.lib.playback.browse_mode.json_query')
+    @patch('resources.lib.playback.browse_mode.WINDOW')
+    def test_skips_when_every_displayed_show_is_covered(self, mock_window, mock_query):
+        from resources.lib.playback.browse_mode import _fetch_show_art
+        props = {
+            PROP_ART_FETCHED: 'true',
+            'EasyTV.ArtShowIds': '1,2,3',
+        }
+        mock_window.getProperty.side_effect = lambda k: props.get(k, '')
+
+        _fetch_show_art(MagicMock(), show_ids=[1, 3])
+
+        mock_query.assert_not_called()
+
+    @patch('resources.lib.playback.browse_mode.json_query')
+    @patch('resources.lib.playback.browse_mode.WINDOW')
+    def test_refetches_when_a_displayed_show_is_not_covered(
+        self, mock_window, mock_query
+    ):
+        """Show 9 arrived from another instance after the last fetch."""
+        from resources.lib.playback.browse_mode import _fetch_show_art
+        props = {
+            PROP_ART_FETCHED: 'true',
+            'EasyTV.ArtShowIds': '1,2,3',
+        }
+        mock_window.getProperty.side_effect = lambda k: props.get(k, '')
+        mock_query.return_value = _shows('image://p/')
+
+        _fetch_show_art(MagicMock(), show_ids=[1, 9])
+
+        mock_query.assert_called_once()
+
+    @patch('resources.lib.playback.browse_mode.json_query')
+    @patch('resources.lib.playback.browse_mode.WINDOW')
+    def test_records_the_covered_show_ids(self, mock_window, mock_query):
+        from resources.lib.playback.browse_mode import _fetch_show_art
+        mock_window.getProperty.return_value = ''
+        mock_query.return_value = _shows('image://p1/', 'image://p2/')
+
+        _fetch_show_art(MagicMock(), show_ids=[1, 2])
+
+        recorded = [c for c in mock_window.setProperty.call_args_list
+                    if c[0][0] == 'EasyTV.ArtShowIds']
+        assert recorded, "covered show ids were not recorded"
+        assert set(recorded[-1][0][1].split(',')) == {'1', '2'}
+
+    @patch('resources.lib.playback.browse_mode.json_query')
+    @patch('resources.lib.playback.browse_mode.WINDOW')
+    def test_posterless_show_still_counts_as_covered(self, mock_window, mock_query):
+        """A show legitimately without artwork must not force a refetch every
+        launch, or the saving disappears on unscraped libraries."""
+        from resources.lib.playback.browse_mode import _fetch_show_art
+        props = {
+            PROP_ART_FETCHED: 'true',
+            'EasyTV.ArtShowIds': '1,2',
+        }
+        mock_window.getProperty.side_effect = lambda k: props.get(k, '')
+
+        _fetch_show_art(MagicMock(), show_ids=[2])
+
+        mock_query.assert_not_called()
+
+    @patch('resources.lib.playback.browse_mode.json_query')
+    @patch('resources.lib.playback.browse_mode.WINDOW')
+    def test_without_show_ids_the_flag_alone_still_governs(
+        self, mock_window, mock_query
+    ):
+        """dialog_preview calls this with no id list; keep that working."""
+        from resources.lib.playback.browse_mode import _fetch_show_art
+        props = {PROP_ART_FETCHED: 'true'}
+        mock_window.getProperty.side_effect = lambda k: props.get(k, '')
+
+        _fetch_show_art(MagicMock())
+
+        mock_query.assert_not_called()
