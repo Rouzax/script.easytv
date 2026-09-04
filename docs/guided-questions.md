@@ -36,36 +36,36 @@ Up to six questions can appear, in this order. Each one is a separate toggle in 
 
 | # | Question | Setting to include it |
 |---|----------|------------------------|
-| 1 | Genres to avoid | Ask about genres to avoid |
-| 2 | Which genres? | Ask about genres |
-| 3 | Episode length | Ask about episode length |
-| 4 | Era | Ask about era |
-| 5 | Rating | Ask about rating |
+| 1 | Ignore Genres | Ask about genres to avoid |
+| 2 | Select Genres | Ask about genres |
+| 3 | Select Episode Length | Ask about episode length |
+| 4 | Select Time Period | Ask about era |
+| 5 | Select Rating | Ask about rating |
 | 6 | How much to watch? | Ask about how much to watch |
 
 Every answer narrows the candidate list for the questions that follow it, so later questions and their result counts (see [Result Counts](#result-counts)) reflect everything you've picked so far.
 
-### 1. Genres to avoid
+### 1. Ignore Genres
 
 A multi-select list of every genre present in your candidate shows. Pick any number of genres to exclude, or pick none. Genres you avoid here are removed from the list offered by the next question.
 
-### 2. Which genres?
+### 2. Select Genres
 
 A multi-select list of the remaining genres (after removing whatever you avoided in question 1). Pick any number to require at least one of; pick none to leave genre unrestricted.
 
 If none of your candidate shows have genre metadata, both genre questions are skipped automatically.
 
-### 3. Episode length
+### 3. Select Episode Length
 
 A single-select choice: **Short (30 min or less)**, **Medium (30-45 min)**, **Long (over 45 min)**, or **No preference**.
 
 An answer here **replaces** your **Duration Filter** setting for this run; see [How It Interacts With Your Settings](#how-it-interacts-with-your-settings). **No preference** falls back to your existing Duration Filter setting instead.
 
-### 4. Era
+### 4. Select Time Period
 
 A single-select choice built from the years present in your candidate shows: **Recent (last 5 years)**, one option per decade that has shows (newest first, e.g. "2020s", "2010s"), and **No preference**.
 
-### 5. Rating
+### 5. Select Rating
 
 A single-select choice: **Any rating**, **Good (7+)**, **Great (8+)**.
 

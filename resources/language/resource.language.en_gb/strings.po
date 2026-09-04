@@ -1457,27 +1457,27 @@ msgstr ""
 
 #. Guided flow dialog: First question (ignore genres)
 msgctxt "#32770"
-msgid "Genres to avoid"
+msgid "Ignore Genres"
 msgstr ""
 
 #. Guided flow dialog: Second question (select genres)
 msgctxt "#32771"
-msgid "Which genres?"
+msgid "Select Genres"
 msgstr ""
 
 #. Guided flow dialog: Third question (episode length)
 msgctxt "#32772"
-msgid "Episode length"
+msgid "Select Episode Length"
 msgstr ""
 
 #. Guided flow dialog: Fourth question (era)
 msgctxt "#32773"
-msgid "Era"
+msgid "Select Time Period"
 msgstr ""
 
 #. Guided flow dialog: Fifth question (rating)
 msgctxt "#32774"
-msgid "Rating"
+msgid "Select Rating"
 msgstr ""
 
 #. Guided flow dialog: Sixth question (how much to watch)
