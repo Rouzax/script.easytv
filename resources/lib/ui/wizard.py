@@ -1,9 +1,11 @@
-"""Guided-flow wizard controller.
+"""Guided-flow wizard controller and dialog driver.
 
-Pure logic for step sequencing and answer bookkeeping. No dialogs, no settings
-reads, no JSON-RPC. The driver feeds settings and records answers; the wizard
-produces ShowFilterConfig. Answers are session-scoped and never written back
-to addon settings.
+WizardFlow is pure logic for step sequencing and answer bookkeeping: no
+dialogs, no settings reads, no JSON-RPC. run_wizard drives WizardFlow through
+one themed dialog per step, reading settings and show data and writing
+session-scoped answers; WizardFlow produces the ShowFilterConfig that
+narrows the candidate set. Answers are never written back to addon settings,
+only to the wizard answers file via save_wizard_answers.
 
 Logging:
     Logger: 'wizard'
@@ -12,11 +14,34 @@ Logging:
     - wizard.step: User advances to next step or goes back
     - wizard.cancel: User cancels the flow
     - wizard.complete: User completes all steps
+    - wizard.empty_base: The pre-wizard candidate set was already empty
 """
-from typing import Any, Dict, List, Optional
+import datetime
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
 
-from resources.lib.data.show_filters import ShowFilterConfig
-from resources.lib.utils import get_logger
+from resources.lib.constants import (
+    EPISODE_SELECTION_UNWATCHED,
+    GUIDED_DEPTH_BUCKETS,
+    GUIDED_LENGTH_BUCKETS,
+    GUIDED_RATING_BUCKETS,
+    GUIDED_RECENT_YEARS,
+)
+from resources.lib.data.show_filters import (
+    ShowFilterConfig,
+    apply_show_filters,
+    eligible_episode_count,
+    extract_decade_buckets,
+    extract_unique_genres,
+    fetch_filterable_shows,
+    resolve_candidate_show_ids,
+)
+from resources.lib.data.shows import get_show_duration
+from resources.lib.data.storage import load_wizard_answers, save_wizard_answers
+from resources.lib.utils import get_bool_setting, get_int_setting, get_logger, lang
+
+if TYPE_CHECKING:
+    from resources.lib.utils import StructuredLogger
 
 log = get_logger('wizard')
 
@@ -124,3 +149,237 @@ class WizardFlow:
         config.min_rating = float(self._answers.get("rating", 0) or 0)
         config.min_eligible_episodes = int(self._answers.get("depth", 0) or 0)
         return config
+
+
+@dataclass
+class WizardResult:
+    """What the guided flow hands back to main_entry."""
+    allowed_show_ids: Set[int]
+
+
+def _fmt_count(label: str, count: int, show_counts: bool) -> str:
+    if show_counts:
+        return f"{label} ({count})"
+    return label
+
+
+def _genre_counts(genres: List[str],
+                   pool: List[Dict[str, Any]]) -> Dict[str, int]:
+    counts = {g: 0 for g in genres}
+    for show in pool:
+        for g in show.get('genre', []):
+            if g in counts:
+                counts[g] += 1
+    return counts
+
+
+def run_wizard(addon_id: str, population: dict, mode_choice: int,
+               logger: 'StructuredLogger') -> Optional[WizardResult]:
+    """Run the guided questions and return the allowed show ids.
+
+    Returns None when the user cancels; the caller aborts the launch.
+    An empty allowed set is returned as-is: the mode shows its normal
+    empty-result behavior.
+    """
+    from resources.lib.ui.dialogs import show_confirm
+
+    episode_selection = (
+        get_int_setting('episode_selection', addon_id)
+        if mode_choice == 1 else EPISODE_SELECTION_UNWATCHED)
+
+    base_ids = resolve_candidate_show_ids(
+        population, episode_selection,
+        get_int_setting('premieres', addon_id),
+        get_int_setting('season_premieres', addon_id),
+        logger)
+    if not base_ids:
+        logger.info("Guided flow found no base candidates",
+                    event="wizard.empty_base")
+        return WizardResult(allowed_show_ids=set())
+
+    all_shows = [s for s in fetch_filterable_shows()
+                 if s.get('tvshowid') in base_ids]
+    durations = {sid: get_show_duration(sid) for sid in base_ids}
+
+    settings = {
+        "ask_ignore_genre": get_bool_setting('guided_ask_ignore_genre', addon_id),
+        "ask_genre": get_bool_setting('guided_ask_genre', addon_id),
+        "ask_length": get_bool_setting('guided_ask_length', addon_id),
+        "ask_era": get_bool_setting('guided_ask_era', addon_id),
+        "ask_rating": get_bool_setting('guided_ask_rating', addon_id),
+        "ask_depth": get_bool_setting('guided_ask_depth', addon_id),
+        "duration_filter_enabled": get_bool_setting('duration_filter_enabled', addon_id),
+        "duration_min": get_int_setting('duration_min', addon_id),
+        "duration_max": get_int_setting('duration_max', addon_id),
+    }
+    remember = get_bool_setting('guided_remember_answers', addon_id)
+    show_counts = get_bool_setting('guided_show_counts', addon_id)
+
+    flow = WizardFlow(settings)
+    if remember:
+        flow.load_last_answers(load_wizard_answers(addon_id))
+    log.info("Guided flow started", event="wizard.start",
+             steps=list(flow.steps), candidates=len(base_ids))
+
+    while True:
+        completed = _run_steps(flow, all_shows, durations,
+                               episode_selection, addon_id, show_counts)
+        if not completed:
+            log.info("Guided flow cancelled", event="wizard.cancel")
+            return None
+        config = flow.build_filter_config()
+        filtered = apply_show_filters(all_shows, config,
+                                      episode_selection, durations)
+        if filtered:
+            break
+        again = show_confirm('EasyTV', lang(32788, addon_id),
+                             yes_label=lang(32789, addon_id),
+                             no_label=lang(32734, addon_id),
+                             addon_id=addon_id)
+        if not again:
+            log.info("Guided flow cancelled at zero results",
+                     event="wizard.cancel")
+            return None
+        flow.restart()
+
+    if remember:
+        save_wizard_answers(flow.get_answers(), addon_id)
+    log.info("Guided flow complete", event="wizard.complete",
+             result_count=len(filtered), candidates=len(base_ids))
+    return WizardResult(
+        allowed_show_ids={s['tvshowid'] for s in filtered})
+
+
+def _run_steps(flow: WizardFlow, all_shows: List[Dict[str, Any]],
+               durations: Dict[int, int], episode_selection: int,
+               addon_id: str, show_counts: bool) -> bool:
+    """Walk the flow, one dialog per step.
+
+    Every dialog-cancel means go_back; cancelling from the first step
+    cancels the whole wizard. Returns True when the flow completed
+    (possibly with zero steps configured), False on cancel.
+    """
+    from resources.lib.ui.dialogs import show_multi_select, show_select
+
+    def _pool() -> List[Dict[str, Any]]:
+        """Shows remaining under the answers of completed steps."""
+        return apply_show_filters(
+            all_shows, flow.build_partial_filter_config(),
+            episode_selection, durations, reason="cumulative_count")
+
+    def _single(heading_id: int,
+                options: List[Tuple[str, int]]) -> Optional[int]:
+        """One single-select step. options = (label, count). Returns the
+        selected option index, or None for back/cancel."""
+        items = [_fmt_count(label, count, show_counts)
+                 for label, count in options]
+        idx = show_select(lang(heading_id, addon_id), items,
+                          addon_id=addon_id)
+        return None if idx < 0 else idx
+
+    while not flow.is_complete:
+        step = flow.current_step
+        if step is None:
+            break
+        pool = _pool()
+        answer: Any = None
+
+        if step in ("ignore_genre", "genre"):
+            genres = extract_unique_genres(all_shows)
+            if step == "genre":
+                # Avoided genres make no sense to also want.
+                avoided = set(flow.get_answers().get("ignore_genre") or [])
+                genres = [g for g in genres if g not in avoided]
+            if not genres:
+                flow.set_answer(step, [])
+                if not flow.advance():
+                    break
+                continue
+            counts = _genre_counts(genres, pool)
+            items = [_fmt_count(g, counts[g], show_counts) for g in genres]
+            previous = set(flow.get_answers().get(step) or [])
+            preselected = [i for i, g in enumerate(genres) if g in previous]
+            heading = 32770 if step == "ignore_genre" else 32771
+            result = show_multi_select(lang(heading, addon_id), items,
+                                       preselected=preselected,
+                                       addon_id=addon_id)
+            if result is None:
+                if not flow.go_back():
+                    return False
+                continue
+            answer = [genres[i] for i in result]
+
+        elif step == "length":
+            def _len_count(lo: int, hi: int) -> int:
+                cfg = ShowFilterConfig(duration_min=lo, duration_max=hi)
+                return len(apply_show_filters(
+                    pool, cfg, episode_selection, durations,
+                    reason="cumulative_count"))
+            options = [(lang(label_id, addon_id), _len_count(lo, hi))
+                       for lo, hi, label_id in GUIDED_LENGTH_BUCKETS]
+            options.append((lang(32776, addon_id), len(pool)))
+            idx = _single(32772, options)
+            if idx is None:
+                if not flow.go_back():
+                    return False
+                continue
+            if idx < len(GUIDED_LENGTH_BUCKETS):
+                lo, hi, _ = GUIDED_LENGTH_BUCKETS[idx]
+                answer = {"min": lo, "max": hi}
+            else:
+                answer = {"min": 0, "max": 0}
+
+        elif step == "era":
+            current_year = datetime.datetime.now().year
+            cutoff = current_year - GUIDED_RECENT_YEARS
+            buckets = extract_decade_buckets(pool)
+            recent = sum(1 for s in pool if s.get('year', 0) >= cutoff)
+            options = [(lang(32780, addon_id), recent)]
+            options.extend((label, count) for _, count, label in buckets)
+            options.append((lang(32776, addon_id), len(pool)))
+            idx = _single(32773, options)
+            if idx is None:
+                if not flow.go_back():
+                    return False
+                continue
+            if idx == 0:
+                answer = {"from": cutoff, "to": 0}
+            elif idx <= len(buckets):
+                decade = buckets[idx - 1][0]
+                answer = {"from": decade, "to": decade + 9}
+            else:
+                answer = {"from": 0, "to": 0}
+
+        elif step == "rating":
+            options = [(lang(32782, addon_id), len(pool))]
+            for min_rating, label_id in GUIDED_RATING_BUCKETS:
+                count = sum(1 for s in pool
+                            if s.get('rating', 0.0) >= min_rating)
+                options.append((lang(label_id, addon_id), count))
+            idx = _single(32774, options)
+            if idx is None:
+                if not flow.go_back():
+                    return False
+                continue
+            answer = 0 if idx == 0 else GUIDED_RATING_BUCKETS[idx - 1][0]
+
+        elif step == "depth":
+            options = [(lang(32785, addon_id), len(pool))]
+            for min_eps, label_id in GUIDED_DEPTH_BUCKETS:
+                count = sum(
+                    1 for s in pool
+                    if eligible_episode_count(s, episode_selection) >= min_eps)
+                options.append((lang(label_id, addon_id), count))
+            idx = _single(32775, options)
+            if idx is None:
+                if not flow.go_back():
+                    return False
+                continue
+            answer = 0 if idx == 0 else GUIDED_DEPTH_BUCKETS[idx - 1][0]
+
+        flow.set_answer(step, answer)
+        log.debug("Guided answer recorded", event="wizard.step",
+                  step=step, answer=answer, remaining=len(pool))
+        if not flow.advance():
+            break
+    return True

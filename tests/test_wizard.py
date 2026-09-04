@@ -141,3 +141,22 @@ class TestLoadLastAnswers:
         flow.load_last_answers({"bogus": 1, "genre": ["Comedy"]})
         assert flow.build_filter_config().genres == ["Comedy"]
         assert "bogus" not in flow.get_answers()
+
+
+class TestFormatCount:
+    def test_with_counts(self):
+        from resources.lib.ui.wizard import _fmt_count
+        assert _fmt_count("Comedy", 12, True) == "Comedy (12)"
+
+    def test_without_counts(self):
+        from resources.lib.ui.wizard import _fmt_count
+        assert _fmt_count("Comedy", 12, False) == "Comedy"
+
+
+class TestGenreCounts:
+    def test_counts_shows_containing_each_genre(self):
+        from resources.lib.ui.wizard import _genre_counts
+        pool = [{"genre": ["Comedy"]}, {"genre": ["Comedy", "Drama"]},
+                {"genre": ["Drama"]}]
+        assert _genre_counts(["Comedy", "Drama", "Horror"], pool) == {
+            "Comedy": 2, "Drama": 2, "Horror": 0}
