@@ -22,6 +22,8 @@ Logging:
     Key events:
         - filter.step (DEBUG): Guided flow filter steps (apply_show_filters)
         - filter.apply (DEBUG): Guided flow filter result counts
+        - filter.base_set (DEBUG): Base candidate set resolved
+          (resolve_candidate_show_ids)
         - browse.inprogress_error (WARNING): In-progress lookup failed,
           premiere override disabled
     See LOGGING.md for full guidelines.
@@ -30,7 +32,7 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
 
 import xbmcgui
 
@@ -271,6 +273,51 @@ def fetch_filterable_shows() -> List[Dict[str, Any]]:
     """All library shows with the properties the guided flow filters on."""
     result = json_query(build_show_filter_query())
     return result.get('tvshows', [])
+
+
+def resolve_candidate_show_ids(
+    population: dict,
+    episode_selection: int,
+    series_premieres: int,
+    season_premieres: int,
+    logger: Optional['StructuredLogger'] = None,
+) -> Set[int]:
+    """Show ids the configured settings already allow.
+
+    The guided flow narrows from this set so its per-step counts reflect
+    population, episode-selection, and premiere settings rather than raw
+    library totals. The playback modes still apply their own gates
+    afterwards; this set only ever narrows their input.
+    """
+    log = logger or _get_log()
+    stored = filter_shows_by_population(
+        population, sort_by=0, sort_reverse=False, language='English',
+        episode_selection=episode_selection, logger=log)
+    ids = {entry[1] for entry in stored}
+
+    needs_premiere_gate = (
+        series_premieres in (PREMIERE_ONLY, PREMIERE_SKIP)
+        or season_premieres in (PREMIERE_ONLY, PREMIERE_SKIP))
+    if needs_premiere_gate and ids:
+        inprogress = fetch_inprogress_episode_ids(log)
+        ids = {sid for sid in ids
+               if should_include_show(sid, series_premieres,
+                                      season_premieres,
+                                      inprogress_ids=inprogress)}
+    log.debug("Guided base candidates resolved", event="filter.base_set",
+              count=len(ids))
+    return ids
+
+
+def restrict_to_allowed(stored_data: list,
+                        allowed: Optional[Set[int]]) -> list:
+    """Keep only [sort_key, showid, episode_id] rows whose show is allowed.
+
+    None means the guided flow did not run; the data passes through.
+    """
+    if allowed is None:
+        return stored_data
+    return [entry for entry in stored_data if entry[1] in allowed]
 
 
 @dataclass

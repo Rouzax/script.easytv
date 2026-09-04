@@ -129,3 +129,61 @@ class TestExtractors:
     def test_decade_buckets_skip_year_zero(self):
         shows = SHOWS + [_show(9, year=0)]
         assert extract_decade_buckets(shows) == extract_decade_buckets(SHOWS)
+
+
+class TestResolveCandidateShowIds:
+    def test_population_only(self, mocker):
+        mocker.patch(
+            "resources.lib.data.show_filters.filter_shows_by_population",
+            return_value=[["k", 1, 11], ["k", 2, 22]])
+        from resources.lib.constants import PREMIERE_MIX_IN
+        from resources.lib.data.show_filters import resolve_candidate_show_ids
+        ids = resolve_candidate_show_ids(
+            {"none": ""}, 0, PREMIERE_MIX_IN, PREMIERE_MIX_IN)
+        assert ids == {1, 2}
+
+    def test_premiere_gate_applied_when_filtering_mode(self, mocker):
+        mocker.patch(
+            "resources.lib.data.show_filters.filter_shows_by_population",
+            return_value=[["k", 1, 11], ["k", 2, 22]])
+        mocker.patch(
+            "resources.lib.data.show_filters.fetch_inprogress_episode_ids",
+            return_value=set())
+        gate = mocker.patch(
+            "resources.lib.data.show_filters.should_include_show",
+            side_effect=lambda sid, *a, **kw: sid == 2)
+        from resources.lib.constants import PREMIERE_MIX_IN, PREMIERE_SKIP
+        from resources.lib.data.show_filters import resolve_candidate_show_ids
+        ids = resolve_candidate_show_ids(
+            {"none": ""}, 0, PREMIERE_SKIP, PREMIERE_MIX_IN)
+        assert ids == {2}
+        assert gate.called
+
+    def test_premiere_gate_bypassed_in_mix_in(self, mocker):
+        mocker.patch(
+            "resources.lib.data.show_filters.filter_shows_by_population",
+            return_value=[["k", 3, 33]])
+        gate = mocker.patch(
+            "resources.lib.data.show_filters.should_include_show")
+        from resources.lib.constants import PREMIERE_MIX_IN
+        from resources.lib.data.show_filters import resolve_candidate_show_ids
+        ids = resolve_candidate_show_ids(
+            {"none": ""}, 0, PREMIERE_MIX_IN, PREMIERE_MIX_IN)
+        assert ids == {3}
+        assert not gate.called
+
+
+class TestRestrictToAllowed:
+    def test_none_means_no_restriction(self):
+        from resources.lib.data.show_filters import restrict_to_allowed
+        data = [["k", 1, 11], ["k", 2, 22]]
+        assert restrict_to_allowed(data, None) == data
+
+    def test_intersection(self):
+        from resources.lib.data.show_filters import restrict_to_allowed
+        data = [["k", 1, 11], ["k", 2, 22], ["k", 3, 33]]
+        assert restrict_to_allowed(data, {2, 3}) == [["k", 2, 22], ["k", 3, 33]]
+
+    def test_empty_allowed_set_removes_all(self):
+        from resources.lib.data.show_filters import restrict_to_allowed
+        assert restrict_to_allowed([["k", 1, 11]], set()) == []
