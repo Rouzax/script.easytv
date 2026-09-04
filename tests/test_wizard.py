@@ -355,3 +355,29 @@ class TestPresetAnswer:
         flow = WizardFlow(_settings())
         for step in STEP_ORDER:
             assert flow.preset_answer(step) is None
+
+
+class TestParseGenreList:
+    def test_json_list(self):
+        from resources.lib.ui.wizard import _parse_genre_list
+        assert _parse_genre_list('["Comedy", "Drama"]') == ["Comedy", "Drama"]
+
+    def test_none_and_empty_and_garbage(self):
+        from resources.lib.ui.wizard import _parse_genre_list
+        assert _parse_genre_list("") == []
+        assert _parse_genre_list("none") == []
+        assert _parse_genre_list("{not json") == []
+        assert _parse_genre_list('"just a string"') == []
+
+
+class TestPreselectPrecedence:
+    def test_remembered_answer_wins_over_preset(self):
+        flow = WizardFlow(_settings(preset_rating=2))  # preset Great 8+
+        flow.load_last_answers({"rating": 7.0})        # remembered Good 7+
+        saved = flow.get_answers().get("rating") or flow.preset_answer("rating")
+        assert saved == 7.0
+
+    def test_preset_used_when_nothing_remembered(self):
+        flow = WizardFlow(_settings(preset_rating=2))
+        saved = flow.get_answers().get("rating") or flow.preset_answer("rating")
+        assert saved == 8.0

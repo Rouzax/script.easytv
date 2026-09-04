@@ -17,6 +17,7 @@ Logging:
     - wizard.empty_base: The pre-wizard candidate set was already empty
 """
 import datetime
+import json
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
 
@@ -41,7 +42,13 @@ from resources.lib.data.show_filters import (
 )
 from resources.lib.data.shows import get_show_duration
 from resources.lib.data.storage import load_wizard_answers, save_wizard_answers
-from resources.lib.utils import get_bool_setting, get_int_setting, get_logger, lang
+from resources.lib.utils import (
+    get_bool_setting,
+    get_int_setting,
+    get_logger,
+    get_setting,
+    lang,
+)
 
 if TYPE_CHECKING:
     from resources.lib.utils import StructuredLogger
@@ -299,6 +306,19 @@ def _value_bucket_preselect(saved: Optional[float],
     return 0
 
 
+def _parse_genre_list(raw: str) -> List[str]:
+    """Genre preset settings store a JSON list; anything else means none."""
+    if not raw or raw == 'none':
+        return []
+    try:
+        data = json.loads(raw)
+    except (ValueError, TypeError):
+        return []
+    if not isinstance(data, list):
+        return []
+    return [str(g) for g in data]
+
+
 def run_wizard(addon_id: str, population: dict, mode_choice: int,
                logger: 'StructuredLogger') -> Optional[WizardResult]:
     """Run the guided questions and return the allowed show ids.
@@ -328,15 +348,24 @@ def run_wizard(addon_id: str, population: dict, mode_choice: int,
     durations = {sid: get_show_duration(sid) for sid in base_ids}
 
     settings = {
-        "ask_ignore_genre": get_bool_setting('guided_ask_ignore_genre', addon_id),
-        "ask_genre": get_bool_setting('guided_ask_genre', addon_id),
-        "ask_length": get_bool_setting('guided_ask_length', addon_id),
-        "ask_era": get_bool_setting('guided_ask_era', addon_id),
-        "ask_rating": get_bool_setting('guided_ask_rating', addon_id),
-        "ask_depth": get_bool_setting('guided_ask_depth', addon_id),
+        "ignore_genre_mode": get_int_setting('guided_ignore_genre_mode', addon_id),
+        "genre_mode": get_int_setting('guided_genre_mode', addon_id),
+        "length_mode": get_int_setting('guided_length_mode', addon_id),
+        "era_mode": get_int_setting('guided_era_mode', addon_id),
+        "rating_mode": get_int_setting('guided_rating_mode', addon_id),
+        "depth_mode": get_int_setting('guided_depth_mode', addon_id),
+        "preset_ignore_genres": _parse_genre_list(
+            get_setting('guided_preset_ignore_genres', addon_id)),
+        "preset_genres": _parse_genre_list(
+            get_setting('guided_preset_genres', addon_id)),
+        "preset_length": get_int_setting('guided_preset_length', addon_id),
+        "preset_recency_years": get_int_setting('guided_preset_recency_years', addon_id),
+        "preset_rating": get_int_setting('guided_preset_rating', addon_id),
+        "preset_depth": get_int_setting('guided_preset_depth', addon_id),
         "duration_filter_enabled": get_bool_setting('duration_filter_enabled', addon_id),
         "duration_min": get_int_setting('duration_min', addon_id),
         "duration_max": get_int_setting('duration_max', addon_id),
+        "current_year": datetime.datetime.now().year,
     }
     remember = get_bool_setting('guided_remember_answers', addon_id)
     show_counts = get_bool_setting('guided_show_counts', addon_id)
@@ -424,7 +453,7 @@ def _run_steps(flow: WizardFlow, all_shows: List[Dict[str, Any]],
             counts = (_ignore_genre_counts(genres, pool)
                      if step == "ignore_genre" else _genre_counts(genres, pool))
             items = [_fmt_count(g, counts[g], show_counts) for g in genres]
-            previous = set(flow.get_answers().get(step) or [])
+            previous = set(flow.get_answers().get(step) or flow.preset_answer(step) or [])
             preselected = [i for i, g in enumerate(genres) if g in previous]
             heading = 32770 if step == "ignore_genre" else 32771
             result = show_multi_select(lang(heading, addon_id), items,
@@ -445,7 +474,8 @@ def _run_steps(flow: WizardFlow, all_shows: List[Dict[str, Any]],
             options = [(lang(label_id, addon_id), _len_count(lo, hi))
                        for lo, hi, label_id in GUIDED_LENGTH_BUCKETS]
             options.append((lang(32776, addon_id), len(pool)))
-            preselect = _length_preselect(flow.get_answers().get("length"))
+            saved = flow.get_answers().get("length") or flow.preset_answer("length")
+            preselect = _length_preselect(saved)
             idx = _single(32772, options, preselect)
             if idx is None:
                 if not flow.go_back():
@@ -465,8 +495,8 @@ def _run_steps(flow: WizardFlow, all_shows: List[Dict[str, Any]],
             options = [(lang(32780, addon_id), recent)]
             options.extend((label, count) for _, count, label in buckets)
             options.append((lang(32776, addon_id), len(pool)))
-            preselect = _era_preselect(flow.get_answers().get("era"),
-                                       buckets, cutoff)
+            saved = flow.get_answers().get("era") or flow.preset_answer("era")
+            preselect = _era_preselect(saved, buckets, cutoff)
             idx = _single(32773, options, preselect)
             if idx is None:
                 if not flow.go_back():
@@ -486,8 +516,8 @@ def _run_steps(flow: WizardFlow, all_shows: List[Dict[str, Any]],
                 count = sum(1 for s in pool
                             if s.get('rating', 0.0) >= min_rating)
                 options.append((lang(label_id, addon_id), count))
-            preselect = _value_bucket_preselect(
-                flow.get_answers().get("rating"), GUIDED_RATING_BUCKETS)
+            saved = flow.get_answers().get("rating") or flow.preset_answer("rating")
+            preselect = _value_bucket_preselect(saved, GUIDED_RATING_BUCKETS)
             idx = _single(32774, options, preselect)
             if idx is None:
                 if not flow.go_back():
@@ -502,8 +532,8 @@ def _run_steps(flow: WizardFlow, all_shows: List[Dict[str, Any]],
                     1 for s in pool
                     if eligible_episode_count(s, episode_selection) >= min_eps)
                 options.append((lang(label_id, addon_id), count))
-            preselect = _value_bucket_preselect(
-                flow.get_answers().get("depth"), GUIDED_DEPTH_BUCKETS)
+            saved = flow.get_answers().get("depth") or flow.preset_answer("depth")
+            preselect = _value_bucket_preselect(saved, GUIDED_DEPTH_BUCKETS)
             idx = _single(32775, options, preselect)
             if idx is None:
                 if not flow.go_back():
