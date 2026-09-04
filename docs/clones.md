@@ -138,7 +138,7 @@ For advanced setups, you can use the main EasyTV addon purely as a background se
 | **EasyTV - In Progress** | Continue watching | Launches to Browse Mode, sorted by last watched |
 | **EasyTV - Season Premiere** | New seasons | Filters to Season Premieres playlist |
 | **EasyTV - Show Premiere** | New shows to start | Filters to Show Premieres playlist |
-| **EasyTV - Bedtime** | A saved mood | [Guided questions](guided-questions.md) on, with only "Ask about genres" and "Ask about episode length" left enabled |
+| **EasyTV - Bedtime** | A saved mood | [Guided questions](guided-questions.md) on, with **Genres** and **Episode length** set to **Ask** (or **Pre-set** for a fully silent launch) and the rest set to **Skip** |
 
 **Benefits:**
 

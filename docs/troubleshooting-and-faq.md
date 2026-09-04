@@ -120,15 +120,17 @@ Playlist generation finds nothing to add.
 
 ### The Questions Found No Shows
 
-[Guided Questions](guided-questions.md) shows "No shows match your answers." after you finish answering.
+[Guided Questions](guided-questions.md) shows "No shows match your answers." with **Adjust answers** and **Cancel** after you finish answering, but only when at least one question is set to **Ask**.
 
 This means your combined answers, layered on top of your existing show filter, episode selection, and premiere settings, leave nothing to offer. It's not an error: narrow enough answers (an avoided genre plus a strict rating plus a short episode length, say) can rule out every show.
 
-**What to do:**
+**What to do (when questions were asked):**
 
-- Choose **Adjust answers** in the dialog. This returns you to the first question with everything you already picked still selected, so you can loosen just the answer that's too strict rather than starting over.
+- Choose **Adjust answers** in the dialog. This returns you to the first **Ask** question with everything you already picked still selected, so you can loosen just the answer that's too strict rather than starting over.
 - Turn on **Show result counts** (Settings → EasyTV → Guided questions) so each answer option shows how many shows it would leave, making it easier to spot which answer is the one narrowing you down to zero.
 - Choose **Cancel** to close the questions and cancel the launch instead.
+
+**If every question is Pre-set or Skip:** there is nothing asked, so no dialog appears. EasyTV launches straight into Browse Mode or Random Playlist with zero candidates, and that mode shows its own normal empty-result screen instead. Review your **Pre-set** values (Settings → EasyTV → Guided questions): a combination of presets can silently leave zero shows the same way an answered question can. Switching a suspect question to **Ask** temporarily brings back the result counts, which make it easier to find the one that's excluding everything.
 
 **If this happens on every launch:** check that your regular settings (show filter, episode selection, smart playlist) aren't already close to zero shows on their own; the questions can only narrow further, never widen, so a near-empty starting set will hit zero with almost any answer.
 

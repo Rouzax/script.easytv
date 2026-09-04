@@ -372,12 +372,52 @@ class TestParseGenreList:
 
 class TestPreselectPrecedence:
     def test_remembered_answer_wins_over_preset(self):
+        from resources.lib.ui.wizard import _saved_or_preset
         flow = WizardFlow(_settings(preset_rating=2))  # preset Great 8+
         flow.load_last_answers({"rating": 7.0})        # remembered Good 7+
-        saved = flow.get_answers().get("rating") or flow.preset_answer("rating")
-        assert saved == 7.0
+        assert _saved_or_preset(flow, "rating") == 7.0
 
     def test_preset_used_when_nothing_remembered(self):
+        from resources.lib.ui.wizard import _saved_or_preset
         flow = WizardFlow(_settings(preset_rating=2))
-        saved = flow.get_answers().get("rating") or flow.preset_answer("rating")
-        assert saved == 8.0
+        assert _saved_or_preset(flow, "rating") == 8.0
+
+    def test_remembered_falsy_rating_wins_over_preset(self):
+        """A remembered 'Any' rating (0.0) is a real recorded answer and
+        must not lose to a nonzero preset just because it is falsy."""
+        from resources.lib.ui.wizard import _saved_or_preset
+        flow = WizardFlow(_settings(preset_rating=2))  # preset Great 8+
+        flow.load_last_answers({"rating": 0.0})
+        assert _saved_or_preset(flow, "rating") == 0.0
+
+    def test_remembered_empty_genre_list_wins_over_preset(self):
+        """A remembered deselect-all genre answer ([]) is a real recorded
+        answer and must not lose to a nonempty genre preset."""
+        from resources.lib.ui.wizard import _saved_or_preset
+        flow = WizardFlow(_settings(preset_genres=["Comedy"]))
+        flow.load_last_answers({"genre": []})
+        assert _saved_or_preset(flow, "genre") == []
+
+
+class TestAvoidedGenres:
+    """The Select Genres list must exclude the effective ignore-genre set."""
+
+    def test_preset_ignore_genres_narrow_the_list_when_not_asked(self):
+        from resources.lib.ui.wizard import _avoided_genres
+        flow = WizardFlow(_settings(ignore_genre_mode=GUIDED_MODE_PRESET,
+                                    preset_ignore_genres=["Horror"]))
+        assert _avoided_genres(flow) == {"Horror"}
+
+    def test_skip_mode_ignores_a_stale_preset_value(self):
+        """A leftover preset_ignore_genres value from a previous Pre-set
+        session must not resurface once the mode is switched to Skip."""
+        from resources.lib.ui.wizard import _avoided_genres
+        flow = WizardFlow(_settings(ignore_genre_mode=GUIDED_MODE_OFF,
+                                    preset_ignore_genres=["Horror"]))
+        assert _avoided_genres(flow) == set()
+
+    def test_ask_mode_uses_the_recorded_answer(self):
+        from resources.lib.ui.wizard import _avoided_genres
+        flow = WizardFlow(_settings(preset_ignore_genres=["Horror"]))
+        flow.set_answer("ignore_genre", ["Comedy"])
+        assert _avoided_genres(flow) == {"Comedy"}

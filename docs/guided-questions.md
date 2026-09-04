@@ -212,10 +212,12 @@ When **Playlist content** (Random Playlist settings) is set to **Movies only**, 
 
 ## When No Shows Match
 
-If the combination of asked answers and presets leaves zero shows, EasyTV shows "No shows match your answers." with two choices:
+If the combination of asked answers and presets leaves zero shows, and at least one question is set to **Ask**, EasyTV shows "No shows match your answers." with two choices:
 
 - **Adjust answers**: returns you to the first **Ask** question with everything you already picked still selected, so you can loosen one or two answers rather than starting over. Presets and **Skip** questions are unaffected, since they never asked anything to adjust.
 - **Cancel**: closes the questions and cancels the launch.
+
+If every question is set to **Pre-set** or **Skip**, nothing was asked, so there is no dialog to show and no answers to adjust. EasyTV launches straight into Browse Mode or Random Playlist with zero candidates, and that mode shows its own normal empty-result screen instead. If this happens, review your **Pre-set** values above; a preset combination can leave zero shows just as an answered question can, but silently, with no dialog pointing at it.
 
 ---
 
