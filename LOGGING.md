@@ -145,7 +145,7 @@ Events follow the pattern: `domain.action`
 | `storage`  | Storage abstraction | `storage.init_local`, `storage.init_shared`, `storage.reset` |
 | `sync`     | Multi-instance sync | `sync.added`, `sync.daemon_check`, `sync.clear_requested` |
 | `wizard`   | Guided flow (logger `'wizard'`) | `wizard.start`, `wizard.step`, `wizard.complete`, `wizard.cancel` |
-| `filter`   | Guided flow candidate filtering (logger `'data'`) | `filter.base_set`, `filter.step`, `filter.apply` |
+| `filter`   | Guided flow candidate filtering (`filter.step`/`filter.apply` always logger `'data'`; `filter.base_set` logs under the caller's logger) | `filter.base_set`, `filter.step`, `filter.apply` |
 
 ### When to Add Logging
 
@@ -441,15 +441,15 @@ The guided flow (Settings → EasyTV → Guided questions) asks up to six mood q
 | `wizard.not_applicable` (logger `'ui'`, in `main.py`) | DEBUG | Guided flow skipped because the launch is a movies-only playlist |
 | `wizard.save_fail` (logger `'storage'`, in `data/storage.py`) | WARNING | Remembered answers could not be written to `wizard_answers.json` |
 
-### filter Events (Logger: 'data')
+### filter Events (`data/show_filters.py`)
 
 | Event | Level | Description |
 |-------|-------|-------------|
-| `filter.base_set` | DEBUG | Base candidate show ids resolved from population, episode selection, and premiere settings, before any guided question is applied |
-| `filter.step` | DEBUG | One mood filter (genre, duration, year, rating, depth) applied; logs the remaining count. Only logged for the final filter pass, not the per-question cumulative counts |
-| `filter.apply` | DEBUG | All configured mood filters applied to a show list; logs input and result counts |
+| `filter.base_set` | DEBUG | Base candidate show ids resolved from population, episode selection, and premiere settings, before any guided question is applied. Logs under whatever logger the caller supplied to `resolve_candidate_show_ids`, not a fixed logger name; currently that's `'default'`, since the guided flow (its only caller) always passes the UI entry point's logger |
+| `filter.step` | DEBUG | One mood filter (genre, duration, year, rating, depth) applied; logs the remaining count. Only logged for the final filter pass, not the per-question cumulative counts. Always logger `'data'` (`apply_show_filters` uses the module's own logger, not a caller-supplied one) |
+| `filter.apply` | DEBUG | All configured mood filters applied to a show list; logs input and result counts. Always logger `'data'`, same as `filter.step` |
 
-`browse.inprogress_error` (logger `'data'`, WARNING) is the shared in-progress lookup used by the premiere filter; the guided flow's `filter.base_set` resolution, Browse Mode, and the random playlist builder all route through the same function, so a lookup failure there logs under this one event name regardless of caller.
+`browse.inprogress_error` (WARNING) is the shared in-progress lookup (`fetch_inprogress_episode_ids`) used by the premiere filter; the guided flow's `filter.base_set` resolution, Browse Mode, and the random playlist builder all route through this one function and share this one event name, but each passes its own caller-supplied logger through rather than a fixed `'data'` logger. Currently that resolves to `'default'` from the guided flow and from an interactive Browse Mode or Random Playlist launch (both go through `main.py`'s UI entry point), and to `'daemon'` when the random playlist builder is invoked from the background service's playlist-continuation regeneration path (`service/daemon.py`).
 
 ---
 
