@@ -1,8 +1,8 @@
 EasyTV Changelog
 ================
 
-Next release
-------------
+v1.9.0 (2026-09-04)
+-------------------
 New Features:
   - Guided questions, an optional pre-launch mood check (Settings > EasyTV >
     Guided questions, default off). Before Browse Mode or Random Playlist
@@ -19,6 +19,15 @@ New Features:
     own independent copy of these settings, so a clone with the master
     switch on and only a couple of questions left enabled is a saved mood
     of its own, with its own remembered answers.
+
+Internal:
+  - Moved the population, premiere, and in-progress candidate gates from
+    playback/ into the new data/show_filters.py alongside the guided-flow
+    filter engine; removed random_player's duplicate in-progress query
+    helper.
+  - Themed select dialog gained multi-select checkboxes and an optional
+    preselected index; existing single-select callers unchanged.
+  - Bumped ruff to 0.16.5 (Dependabot).
 
 v1.8.0 (2026-09-02)
 -------------------
