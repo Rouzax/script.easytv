@@ -379,6 +379,17 @@ def _handle_special_modes(mode, addon, log, addon_name='EasyTV'):
         from resources import clear_sync_data
         clear_sync_data.main()
 
+    elif mode == 'guided_genres':
+        log.debug("Guided genre preset picker mode")
+        from resources import genre_selector
+        genre_selector.Main()
+
+        addon_id = addon.getAddonInfo('id')
+        xbmc.executebuiltin('Dialog.Close(all,true)')
+        xbmc.executebuiltin(
+            f'AlarmClock(EasyTVSettings,Addon.OpenSettings({addon_id}),00:01,silent)'
+        )
+
     elif mode == 'dialog_preview':
         log.debug("Dialog preview mode")
         try:
