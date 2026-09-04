@@ -13,6 +13,7 @@ EasyTV Dialog Helpers.
 Provides common dialog functions and custom dialog classes:
 - show_confirm: Present themed confirmation dialog (replaces Dialog.yesno)
 - show_select: Present themed selection dialog (replaces Dialog.select)
+- show_multi_select: Present themed multi-select dialog with checkboxes
 - show_playlist_selection: Present smart playlist chooser
 - CountdownDialog: Reusable countdown dialog with live timer
 - ConfirmDialog: Themed yes/no confirmation dialog
@@ -35,13 +36,15 @@ from __future__ import annotations
 import os
 import threading
 import xml.etree.ElementTree as ET
-from typing import TYPE_CHECKING, List, Optional, cast
+from typing import TYPE_CHECKING, List, Optional, Set, cast
 
 import xbmc
 import xbmcgui
 import xbmcvfs
 
 from resources.lib.constants import (
+    ACTION_MOVE_DOWN,
+    ACTION_MOVE_UP,
     ACTION_NAV_BACK,
     ACTION_PREVIOUS_MENU,
     CONFIRM_HEADING,
@@ -57,8 +60,10 @@ from resources.lib.constants import (
     COUNTDOWN_YES_BUTTON,
     DEFAULT_ADDON_ID,
     SECONDS_TO_MS_MULTIPLIER,
+    SELECT_BACK,
     SELECT_HEADING,
     SELECT_LIST,
+    SELECT_OK,
     SELECTOR_CANCEL,
     SELECTOR_CLEAR_SEARCH,
     SELECTOR_COUNT,
@@ -540,16 +545,28 @@ class SelectDialog(xbmcgui.WindowXMLDialog):
     """
     Themed item selection dialog.
 
-    Replaces Dialog.select() with a themed, accent-colored dialog.
+    Replaces Dialog.select() with a themed, accent-colored dialog. Supports
+    two modes:
+    - Single-select (default): clicking an item selects it and closes the
+      dialog, matching Dialog.select() semantics.
+    - Multi-select: items toggle a `checked` ListItem property; an OK
+      button confirms the selection, Back cancels.
 
     Control IDs (must match script-easytv-select.xml):
         1   - Heading label
         100 - Scrollable list
+        10  - OK button (multi-select only)
+        11  - Back button (multi-select only)
+
+    ListItem properties (multi-select mode):
+        is_header - "true" marks a non-selectable group header row
+        checked   - "true" marks a checked row
     """
 
     def __new__(cls, *args, **kwargs):
         """Create instance, filtering out custom kwargs for parent class."""
-        for key in ('heading', 'items', 'addon_id'):
+        for key in ('heading', 'items', 'addon_id', 'multi_select',
+                    'preselected', 'headers'):
             kwargs.pop(key, None)
         return super().__new__(cls, *args, **kwargs)
 
@@ -558,8 +575,13 @@ class SelectDialog(xbmcgui.WindowXMLDialog):
         self._heading = kwargs.pop('heading', '')
         self._items: List[str] = kwargs.pop('items', [])
         self._addon_id: Optional[str] = kwargs.pop('addon_id', None)
+        self._multi_select: bool = kwargs.pop('multi_select', False)
+        self._preselected: List[int] = kwargs.pop('preselected', [])
+        self._headers: Set[int] = kwargs.pop('headers', set())
         super().__init__(*args, **kwargs)
         self._result = -1
+        self.selected: List[int] = []
+        self.cancelled = False
 
     def onInit(self) -> None:
         """Initialize dialog controls and populate the list."""
@@ -569,27 +591,66 @@ class SelectDialog(xbmcgui.WindowXMLDialog):
         cast(xbmcgui.ControlLabel, self.getControl(SELECT_HEADING)).setLabel(
             self._heading)
 
+        if not self._multi_select:
+            self.setProperty('EasyTV.SingleSelect', 'true')
+
         name_list = cast(xbmcgui.ControlList, self.getControl(SELECT_LIST))
-        for item_text in self._items:
-            name_list.addItem(xbmcgui.ListItem(item_text))
+        for i, item_text in enumerate(self._items):
+            li = xbmcgui.ListItem(item_text)
+            if i in self._headers:
+                li.setProperty('is_header', 'true')
+            elif i in self._preselected:
+                li.setProperty('checked', 'true')
+                self.selected.append(i)
+            name_list.addItem(li)
         self.setFocus(name_list)
 
     def onClick(self, controlID: int) -> None:
-        """Handle list item clicks."""
+        """Handle list item and button clicks."""
         if controlID == SELECT_LIST:
             name_list = cast(xbmcgui.ControlList, self.getControl(SELECT_LIST))
-            self._result = name_list.getSelectedPosition()
+            li = name_list.getSelectedItem()
+            if li is not None and li.getProperty('is_header') == 'true':
+                return
+            if self._multi_select:
+                idx = name_list.getSelectedPosition()
+                if li.getProperty('checked') == 'true':
+                    li.setProperty('checked', '')
+                    if idx in self.selected:
+                        self.selected.remove(idx)
+                else:
+                    li.setProperty('checked', 'true')
+                    if idx not in self.selected:
+                        self.selected.append(idx)
+            else:
+                self._result = name_list.getSelectedPosition()
+                self.close()
+        elif controlID == SELECT_OK:
+            self.close()
+        elif controlID == SELECT_BACK:
+            self.cancelled = True
             self.close()
 
     def onAction(self, action: xbmcgui.Action) -> None:
-        """Handle ESC/back as cancel."""
-        if action.getId() in (ACTION_PREVIOUS_MENU, ACTION_NAV_BACK):
+        """Handle ESC/back as cancel, and skip header rows on up/down."""
+        action_id = action.getId()
+        if action_id in (ACTION_PREVIOUS_MENU, ACTION_NAV_BACK):
             self._result = -1
+            self.cancelled = True
             self.close()
+            return
+        if self._headers and action_id in (ACTION_MOVE_UP, ACTION_MOVE_DOWN):
+            name_list = cast(xbmcgui.ControlList, self.getControl(SELECT_LIST))
+            pos = name_list.getSelectedPosition()
+            if pos in self._headers:
+                step = 1 if action_id == ACTION_MOVE_DOWN else -1
+                new_pos = max(0, min(pos + step, name_list.size() - 1))
+                if new_pos not in self._headers:
+                    name_list.selectItem(new_pos)
 
     @property
     def result(self) -> int:
-        """Selected index, or -1 if cancelled."""
+        """Selected index, or -1 if cancelled. (Single-select mode.)"""
         return self._result
 
 
@@ -623,6 +684,34 @@ def show_select(
     result = dlg.result
     del dlg
     return result
+
+
+def show_multi_select(
+    heading: str,
+    items: List[str],
+    preselected: Optional[List[int]] = None,
+    headers: Optional[Set[int]] = None,
+    addon_id: Optional[str] = None,
+) -> Optional[List[int]]:
+    """Themed multi-select dialog.
+
+    Returns sorted selected indices, an empty list when OK was pressed
+    with nothing ticked (meaning: no filter), or None on Back/cancel.
+    """
+    addon_path = _dialog_script_path(addon_id)
+    dlg = SelectDialog(
+        'script-easytv-select.xml', addon_path, 'Default',
+        heading=heading, items=items, addon_id=addon_id,
+        multi_select=True, preselected=preselected or [],
+        headers=headers or set(),
+    )
+    dlg.doModal()
+    cancelled = dlg.cancelled
+    selected = sorted(dlg.selected)
+    del dlg
+    if cancelled:
+        return None
+    return selected
 
 
 class ShowSelectorDialog(xbmcgui.WindowXMLDialog):

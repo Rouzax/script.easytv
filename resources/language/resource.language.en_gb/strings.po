@@ -109,6 +109,15 @@ msgctxt "#32079"
 msgid "No"
 msgstr ""
 
+#. Select dialog button labels (multi-select mode)
+msgctxt "#32080"
+msgid "OK"
+msgstr ""
+
+msgctxt "#32081"
+msgid "Back"
+msgstr ""
+
 #. Generic action labels (used in dialogs and spinners)
 msgctxt "#32091"
 msgid "Don't play"

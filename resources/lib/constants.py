@@ -78,6 +78,8 @@ CONFIRM_NO_BUTTON = 11
 # =============================================================================
 SELECT_HEADING = 1
 SELECT_LIST = 100
+SELECT_OK = 10
+SELECT_BACK = 11
 
 # =============================================================================
 # Show Selector Dialog Control IDs
@@ -395,6 +397,8 @@ MOVIE_CANDIDATE_PREFIX = 'm'
 # =============================================================================
 # Kodi Action IDs
 # =============================================================================
+ACTION_MOVE_UP = 3
+ACTION_MOVE_DOWN = 4
 ACTION_PREVIOUS_MENU = 10
 ACTION_NAV_BACK = 92
 ACTION_CONTEXT_MENU = 117
