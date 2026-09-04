@@ -1354,3 +1354,199 @@ msgstr ""
 msgctxt "#32747"
 msgid "Showcase"
 msgstr ""
+
+# =============================================================================
+# GUIDED FLOW (32750-32792)
+# Settings for guided mood-based questioning on launch
+# =============================================================================
+
+#. Settings: Guided questions - Group label
+msgctxt "#32750"
+msgid "Guided questions"
+msgstr ""
+
+#. Settings: Guided questions - Enable setting
+msgctxt "#32751"
+msgid "Ask what I'm in the mood for on launch"
+msgstr ""
+
+#. Settings: Guided questions - Enable setting help
+msgctxt "#32752"
+msgid "Before Browse or Random Playlist opens, ask a few quick questions (genre, episode length, era, rating, how much to watch) and only offer shows that match. Your answers apply to this launch only and are never saved to settings."
+msgstr ""
+
+#. Settings: Guided questions - Ask ignore genre setting
+msgctxt "#32753"
+msgid "Ask about genres to avoid"
+msgstr ""
+
+#. Settings: Guided questions - Ask ignore genre help
+msgctxt "#32754"
+msgid "Include the question that removes genres you don't want right now."
+msgstr ""
+
+#. Settings: Guided questions - Ask genre setting
+msgctxt "#32755"
+msgid "Ask about genres"
+msgstr ""
+
+#. Settings: Guided questions - Ask genre help
+msgctxt "#32756"
+msgid "Include the question that picks the genres you want right now."
+msgstr ""
+
+#. Settings: Guided questions - Ask length setting
+msgctxt "#32757"
+msgid "Ask about episode length"
+msgstr ""
+
+#. Settings: Guided questions - Ask length help
+msgctxt "#32758"
+msgid "Include the question about average episode length. An answer replaces the duration filter for this launch; \"No preference\" uses the duration filter from settings."
+msgstr ""
+
+#. Settings: Guided questions - Ask era setting
+msgctxt "#32759"
+msgid "Ask about era"
+msgstr ""
+
+#. Settings: Guided questions - Ask era help
+msgctxt "#32760"
+msgid "Include the question about how recent the show should be."
+msgstr ""
+
+#. Settings: Guided questions - Ask rating setting
+msgctxt "#32761"
+msgid "Ask about rating"
+msgstr ""
+
+#. Settings: Guided questions - Ask rating help
+msgctxt "#32762"
+msgid "Include the question about minimum show rating."
+msgstr ""
+
+#. Settings: Guided questions - Ask depth setting
+msgctxt "#32763"
+msgid "Ask about how much to watch"
+msgstr ""
+
+#. Settings: Guided questions - Ask depth help
+msgctxt "#32764"
+msgid "Include the question about how many matching episodes a show should have available."
+msgstr ""
+
+#. Settings: Guided questions - Remember answers setting
+msgctxt "#32765"
+msgid "Remember my answers"
+msgstr ""
+
+#. Settings: Guided questions - Remember answers help
+msgctxt "#32766"
+msgid "Pre-select your previous answers the next time the questions appear."
+msgstr ""
+
+#. Settings: Guided questions - Show counts setting
+msgctxt "#32767"
+msgid "Show result counts"
+msgstr ""
+
+#. Settings: Guided questions - Show counts help
+msgctxt "#32768"
+msgid "Show how many shows remain next to each answer."
+msgstr ""
+
+#. Guided flow dialog: First question (ignore genres)
+msgctxt "#32770"
+msgid "Genres to avoid"
+msgstr ""
+
+#. Guided flow dialog: Second question (select genres)
+msgctxt "#32771"
+msgid "Which genres?"
+msgstr ""
+
+#. Guided flow dialog: Third question (episode length)
+msgctxt "#32772"
+msgid "Episode length"
+msgstr ""
+
+#. Guided flow dialog: Fourth question (era)
+msgctxt "#32773"
+msgid "Era"
+msgstr ""
+
+#. Guided flow dialog: Fifth question (rating)
+msgctxt "#32774"
+msgid "Rating"
+msgstr ""
+
+#. Guided flow dialog: Sixth question (how much to watch)
+msgctxt "#32775"
+msgid "How much to watch?"
+msgstr ""
+
+#. Guided flow answer option: No preference
+msgctxt "#32776"
+msgid "No preference"
+msgstr ""
+
+#. Guided flow answer option: Episode length - short
+msgctxt "#32777"
+msgid "Short (30 min or less)"
+msgstr ""
+
+#. Guided flow answer option: Episode length - medium
+msgctxt "#32778"
+msgid "Medium (30-45 min)"
+msgstr ""
+
+#. Guided flow answer option: Episode length - long
+msgctxt "#32779"
+msgid "Long (over 45 min)"
+msgstr ""
+
+#. Guided flow answer option: Era - recent
+msgctxt "#32780"
+msgid "Recent (last 5 years)"
+msgstr ""
+
+#. Guided flow answer option: Rating - any
+msgctxt "#32782"
+msgid "Any rating"
+msgstr ""
+
+#. Guided flow answer option: Rating - good
+msgctxt "#32783"
+msgid "Good (7+)"
+msgstr ""
+
+#. Guided flow answer option: Rating - great
+msgctxt "#32784"
+msgid "Great (8+)"
+msgstr ""
+
+#. Guided flow answer option: How much to watch - anything
+msgctxt "#32785"
+msgid "Anything"
+msgstr ""
+
+#. Guided flow answer option: How much to watch - few episodes
+msgctxt "#32786"
+msgid "A few episodes available (3+)"
+msgstr ""
+
+#. Guided flow answer option: How much to watch - plenty to binge
+msgctxt "#32787"
+msgid "Plenty to binge (10+)"
+msgstr ""
+
+#. Guided flow dialog: No shows match
+msgctxt "#32788"
+msgid "No shows match your answers."
+msgstr ""
+
+#. Guided flow dialog: Adjust answers button
+msgctxt "#32789"
+msgid "Adjust answers"
+msgstr ""
+
