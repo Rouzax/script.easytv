@@ -24,6 +24,9 @@ from resources.lib.constants import (
     EPISODE_SELECTION_UNWATCHED,
     GUIDED_DEPTH_BUCKETS,
     GUIDED_LENGTH_BUCKETS,
+    GUIDED_MODE_ASK,
+    GUIDED_MODE_OFF,
+    GUIDED_MODE_PRESET,
     GUIDED_RATING_BUCKETS,
     GUIDED_RECENT_YEARS,
 )
@@ -47,13 +50,13 @@ log = get_logger('wizard')
 
 STEP_ORDER = ["ignore_genre", "genre", "length", "era", "rating", "depth"]
 
-_TOGGLE_KEYS = {
-    "ignore_genre": "ask_ignore_genre",
-    "genre": "ask_genre",
-    "length": "ask_length",
-    "era": "ask_era",
-    "rating": "ask_rating",
-    "depth": "ask_depth",
+_MODE_KEYS = {
+    "ignore_genre": "ignore_genre_mode",
+    "genre": "genre_mode",
+    "length": "length_mode",
+    "era": "era_mode",
+    "rating": "rating_mode",
+    "depth": "depth_mode",
 }
 
 
@@ -72,7 +75,7 @@ class WizardFlow:
         self._current_index = 0
         self.steps: List[str] = [
             step for step in STEP_ORDER
-            if settings.get(_TOGGLE_KEYS[step], False)]
+            if settings.get(_MODE_KEYS[step], GUIDED_MODE_OFF) == GUIDED_MODE_ASK]
 
     @property
     def current_step(self) -> Optional[str]:
@@ -116,6 +119,54 @@ class WizardFlow:
         self._answers.update(
             {k: v for k, v in answers.items() if k in self.steps})
 
+    def _mode(self, step: str) -> int:
+        return self._settings.get(_MODE_KEYS[step], GUIDED_MODE_OFF)
+
+    def preset_answer(self, step: str) -> Any:
+        """The configured preset for a step, in answer shape, or None.
+
+        Used two ways: as the silently applied answer when the step's
+        mode is Pre-set, and as the pre-selected default when the step
+        is asked and no remembered answer exists.
+        """
+        s = self._settings
+        if step == "ignore_genre":
+            return list(s.get("preset_ignore_genres") or []) or None
+        if step == "genre":
+            return list(s.get("preset_genres") or []) or None
+        if step == "length":
+            idx = int(s.get("preset_length", 0) or 0)
+            if not 1 <= idx <= len(GUIDED_LENGTH_BUCKETS):
+                return None
+            lo, hi, _label = GUIDED_LENGTH_BUCKETS[idx - 1]
+            return {"min": lo, "max": hi}
+        if step == "era":
+            years = int(s.get("preset_recency_years", 0) or 0)
+            if years <= 0:
+                return None
+            return {"from": int(s.get("current_year", 0)) - years, "to": 0}
+        if step == "rating":
+            idx = int(s.get("preset_rating", 0) or 0)
+            if not 1 <= idx <= len(GUIDED_RATING_BUCKETS):
+                return None
+            return GUIDED_RATING_BUCKETS[idx - 1][0]
+        if step == "depth":
+            idx = int(s.get("preset_depth", 0) or 0)
+            if not 1 <= idx <= len(GUIDED_DEPTH_BUCKETS):
+                return None
+            return GUIDED_DEPTH_BUCKETS[idx - 1][0]
+        return None
+
+    def _effective_answer(self, step: str) -> Any:
+        """Answer for config building: Ask -> recorded answer,
+        Pre-set -> preset, Skip -> None."""
+        mode = self._mode(step)
+        if mode == GUIDED_MODE_ASK:
+            return self._answers.get(step)
+        if mode == GUIDED_MODE_PRESET:
+            return self.preset_answer(step)
+        return None
+
     def build_partial_filter_config(self) -> ShowFilterConfig:
         """Config from steps before the current one, for cumulative counts.
 
@@ -132,25 +183,26 @@ class WizardFlow:
 
     def build_filter_config(self) -> ShowFilterConfig:
         config = ShowFilterConfig()
-        config.ignore_genres = self._answers.get("ignore_genre") or None
-        config.genres = self._answers.get("genre") or None
+        config.ignore_genres = self._effective_answer("ignore_genre") or None
+        config.genres = self._effective_answer("genre") or None
 
-        length = self._answers.get("length") or {}
+        length = self._effective_answer("length") or {}
         if length.get("min") or length.get("max"):
             config.duration_min = length.get("min", 0)
             config.duration_max = length.get("max", 0)
         elif self._settings.get("duration_filter_enabled"):
-            # "No preference" (and an untoggled step) fall back to the
-            # settings duration filter; the mode-level filter is disabled
-            # for guided runs so this is the single application point.
+            # Ask-with-no-preference, Skip, and an empty preset all fall
+            # back to the settings duration filter; the mode-level filter
+            # is disabled for guided runs so this stays the single
+            # application point.
             config.duration_min = self._settings.get("duration_min", 0)
             config.duration_max = self._settings.get("duration_max", 0)
 
-        era = self._answers.get("era") or {}
+        era = self._effective_answer("era") or {}
         config.year_from = era.get("from", 0)
         config.year_to = era.get("to", 0)
-        config.min_rating = float(self._answers.get("rating", 0) or 0)
-        config.min_eligible_episodes = int(self._answers.get("depth", 0) or 0)
+        config.min_rating = float(self._effective_answer("rating") or 0)
+        config.min_eligible_episodes = int(self._effective_answer("depth") or 0)
         return config
 
 

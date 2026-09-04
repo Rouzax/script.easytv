@@ -1,13 +1,22 @@
 """Tests for the guided-flow wizard controller."""
+from resources.lib.constants import (
+    GUIDED_MODE_ASK,
+    GUIDED_MODE_OFF,
+    GUIDED_MODE_PRESET,
+)
 from resources.lib.ui.wizard import STEP_ORDER, WizardFlow
 
 
 def _settings(**overrides):
     base = {
-        "ask_ignore_genre": True, "ask_genre": True, "ask_length": True,
-        "ask_era": True, "ask_rating": True, "ask_depth": True,
+        "ignore_genre_mode": GUIDED_MODE_ASK, "genre_mode": GUIDED_MODE_ASK,
+        "length_mode": GUIDED_MODE_ASK, "era_mode": GUIDED_MODE_ASK,
+        "rating_mode": GUIDED_MODE_ASK, "depth_mode": GUIDED_MODE_ASK,
+        "preset_ignore_genres": [], "preset_genres": [],
+        "preset_length": 0, "preset_recency_years": 0,
+        "preset_rating": 0, "preset_depth": 0,
         "duration_filter_enabled": False, "duration_min": 0,
-        "duration_max": 0,
+        "duration_max": 0, "current_year": 2026,
     }
     base.update(overrides)
     return base
@@ -19,20 +28,20 @@ class TestStepList:
         assert flow.steps == STEP_ORDER
 
     def test_toggled_off_steps_are_absent(self):
-        flow = WizardFlow(_settings(ask_era=False, ask_rating=False))
+        flow = WizardFlow(_settings(era_mode=GUIDED_MODE_OFF, rating_mode=GUIDED_MODE_OFF))
         assert flow.steps == ["ignore_genre", "genre", "length", "depth"]
 
     def test_all_off_is_immediately_complete(self):
         flow = WizardFlow(_settings(
-            ask_ignore_genre=False, ask_genre=False, ask_length=False,
-            ask_era=False, ask_rating=False, ask_depth=False))
+            ignore_genre_mode=GUIDED_MODE_OFF, genre_mode=GUIDED_MODE_OFF, length_mode=GUIDED_MODE_OFF,
+            era_mode=GUIDED_MODE_OFF, rating_mode=GUIDED_MODE_OFF, depth_mode=GUIDED_MODE_OFF))
         assert flow.is_complete
 
 
 class TestNavigation:
     def test_advance_walks_to_completion(self):
-        flow = WizardFlow(_settings(ask_length=False, ask_era=False,
-                                    ask_rating=False, ask_depth=False))
+        flow = WizardFlow(_settings(length_mode=GUIDED_MODE_OFF, era_mode=GUIDED_MODE_OFF,
+                                    rating_mode=GUIDED_MODE_OFF, depth_mode=GUIDED_MODE_OFF))
         assert flow.current_step == "ignore_genre"
         assert flow.advance() is True
         assert flow.current_step == "genre"
@@ -98,8 +107,8 @@ class TestDurationResolution:
         cfg = flow.build_filter_config()
         assert (cfg.duration_min, cfg.duration_max) == (40, 60)
 
-    def test_untoggled_length_step_uses_settings_range(self):
-        flow = WizardFlow(_settings(ask_length=False,
+    def test_off_length_keeps_settings_duration_fallback(self):
+        flow = WizardFlow(_settings(length_mode=GUIDED_MODE_OFF,
                                     duration_filter_enabled=True,
                                     duration_min=20, duration_max=45))
         cfg = flow.build_filter_config()
@@ -144,17 +153,17 @@ class TestLoadLastAnswers:
 
     def test_disabled_step_answer_does_not_reach_filter_config(self):
         """A saved rating answer for a toggled-off question must not
-        leak into the config; ask_rating=False means "no rating filter",
+        leak into the config; rating_mode=GUIDED_MODE_OFF means "no rating filter",
         not "whatever was last picked"."""
-        flow = WizardFlow(_settings(ask_rating=False))
+        flow = WizardFlow(_settings(rating_mode=GUIDED_MODE_OFF))
         flow.load_last_answers({"rating": 8.0})
         assert "rating" not in flow.get_answers()
         assert flow.build_filter_config().min_rating == 0.0
 
     def test_disabled_length_step_leaves_settings_duration_fallback_intact(self):
-        """ask_length=False must fall back to the settings duration
+        """length_mode=GUIDED_MODE_OFF must fall back to the settings duration
         range even when a stale length answer is on disk."""
-        flow = WizardFlow(_settings(ask_length=False,
+        flow = WizardFlow(_settings(length_mode=GUIDED_MODE_OFF,
                                     duration_filter_enabled=True,
                                     duration_min=20, duration_max=45))
         flow.load_last_answers({"length": {"min": 0, "max": 30}})
@@ -253,3 +262,96 @@ class TestValueBucketPreselect:
     def test_unmatched_answer_degrades_to_any_index(self):
         from resources.lib.ui.wizard import _value_bucket_preselect
         assert _value_bucket_preselect(9.5, [(7.0, 1), (8.0, 2)]) == 0
+
+
+class TestPresetMode:
+    def test_preset_steps_are_not_asked(self):
+        flow = WizardFlow(_settings(genre_mode=GUIDED_MODE_PRESET,
+                                    rating_mode=GUIDED_MODE_OFF))
+        assert flow.steps == ["ignore_genre", "length", "era", "depth"]
+
+    def test_preset_genres_reach_config(self):
+        flow = WizardFlow(_settings(genre_mode=GUIDED_MODE_PRESET,
+                                    preset_genres=["Comedy", "Drama"]))
+        cfg = flow.build_filter_config()
+        assert cfg.genres == ["Comedy", "Drama"]
+
+    def test_preset_ignore_genres_reach_config(self):
+        flow = WizardFlow(_settings(ignore_genre_mode=GUIDED_MODE_PRESET,
+                                    preset_ignore_genres=["Horror"]))
+        assert flow.build_filter_config().ignore_genres == ["Horror"]
+
+    def test_preset_length_overrides_settings_duration(self):
+        flow = WizardFlow(_settings(length_mode=GUIDED_MODE_PRESET,
+                                    preset_length=1,
+                                    duration_filter_enabled=True,
+                                    duration_min=40, duration_max=60))
+        cfg = flow.build_filter_config()
+        assert (cfg.duration_min, cfg.duration_max) == (0, 30)
+
+    def test_preset_length_none_falls_back_to_settings(self):
+        flow = WizardFlow(_settings(length_mode=GUIDED_MODE_PRESET,
+                                    preset_length=0,
+                                    duration_filter_enabled=True,
+                                    duration_min=40, duration_max=60))
+        cfg = flow.build_filter_config()
+        assert (cfg.duration_min, cfg.duration_max) == (40, 60)
+
+    def test_preset_era_recency(self):
+        flow = WizardFlow(_settings(era_mode=GUIDED_MODE_PRESET,
+                                    preset_recency_years=5,
+                                    current_year=2026))
+        cfg = flow.build_filter_config()
+        assert (cfg.year_from, cfg.year_to) == (2021, 0)
+
+    def test_preset_rating_and_depth(self):
+        flow = WizardFlow(_settings(rating_mode=GUIDED_MODE_PRESET,
+                                    preset_rating=2,
+                                    depth_mode=GUIDED_MODE_PRESET,
+                                    preset_depth=1))
+        cfg = flow.build_filter_config()
+        assert cfg.min_rating == 8.0
+        assert cfg.min_eligible_episodes == 3
+
+    def test_empty_preset_applies_nothing(self):
+        flow = WizardFlow(_settings(genre_mode=GUIDED_MODE_PRESET,
+                                    preset_genres=[]))
+        assert flow.build_filter_config().genres is None
+
+
+class TestOffMode:
+    def test_off_length_keeps_settings_duration_fallback(self):
+        flow = WizardFlow(_settings(length_mode=GUIDED_MODE_OFF,
+                                    duration_filter_enabled=True,
+                                    duration_min=20, duration_max=45))
+        cfg = flow.build_filter_config()
+        assert (cfg.duration_min, cfg.duration_max) == (20, 45)
+
+    def test_off_applies_no_other_filters(self):
+        flow = WizardFlow(_settings(
+            ignore_genre_mode=GUIDED_MODE_OFF, genre_mode=GUIDED_MODE_OFF,
+            era_mode=GUIDED_MODE_OFF, rating_mode=GUIDED_MODE_OFF,
+            depth_mode=GUIDED_MODE_OFF,
+            preset_genres=["Comedy"], preset_rating=2))
+        cfg = flow.build_filter_config()
+        assert cfg.genres is None
+        assert cfg.min_rating == 0.0
+
+
+class TestPresetAnswer:
+    def test_answer_shapes(self):
+        flow = WizardFlow(_settings(
+            preset_genres=["Comedy"], preset_ignore_genres=["Horror"],
+            preset_length=3, preset_recency_years=10,
+            preset_rating=1, preset_depth=2, current_year=2026))
+        assert flow.preset_answer("genre") == ["Comedy"]
+        assert flow.preset_answer("ignore_genre") == ["Horror"]
+        assert flow.preset_answer("length") == {"min": 45, "max": 0}
+        assert flow.preset_answer("era") == {"from": 2016, "to": 0}
+        assert flow.preset_answer("rating") == 7.0
+        assert flow.preset_answer("depth") == 10
+
+    def test_no_preset_returns_none(self):
+        flow = WizardFlow(_settings())
+        for step in STEP_ORDER:
+            assert flow.preset_answer(step) is None

@@ -34,6 +34,16 @@ PREMIERE_MIX_IN = 1
 PREMIERE_ONLY = 2
 
 # =============================================================================
+# Guided Flow ("what do I feel like?") Question Modes
+# =============================================================================
+# Guided question modes (EasyMovie parity: Ask / Pre-set / Skip in the UI).
+# The OFF constant is deliberately not named *_SKIP: EasyTV's PREMIERE_SKIP
+# means "exclude premieres" and reusing the word invites misreading.
+GUIDED_MODE_ASK = 0
+GUIDED_MODE_PRESET = 1
+GUIDED_MODE_OFF = 2
+
+# =============================================================================
 # Guided Flow ("what do I feel like?") Answer Buckets
 # =============================================================================
 # Length: (min_minutes, max_minutes, label id); 0 = unbounded.
