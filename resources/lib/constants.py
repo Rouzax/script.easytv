@@ -34,6 +34,27 @@ PREMIERE_MIX_IN = 1
 PREMIERE_ONLY = 2
 
 # =============================================================================
+# Guided Flow ("what do I feel like?") Answer Buckets
+# =============================================================================
+# Length: (min_minutes, max_minutes, label id); 0 = unbounded.
+GUIDED_LENGTH_BUCKETS = [
+    (0, 30, 32777),   # Short (30 min or less)
+    (30, 45, 32778),  # Medium (30-45 min)
+    (45, 0, 32779),   # Long (over 45 min)
+]
+GUIDED_RECENT_YEARS = 5
+# Rating: (minimum rating on Kodi's 0-10 scale, label id).
+GUIDED_RATING_BUCKETS = [
+    (7.0, 32783),  # Good (7+)
+    (8.0, 32784),  # Great (8+)
+]
+# Depth: (minimum eligible episodes, label id).
+GUIDED_DEPTH_BUCKETS = [
+    (3, 32786),   # A few episodes available
+    (10, 32787),  # Plenty to binge
+]
+
+# =============================================================================
 # Countdown Dialog Control IDs
 # =============================================================================
 COUNTDOWN_HEADING = 1

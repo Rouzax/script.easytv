@@ -472,19 +472,19 @@ def build_show_details_query(tvshowid: int) -> Dict[str, Any]:
 def build_shows_art_query() -> Dict[str, Any]:
     """
     Get art for all TV shows.
-    
+
     Used for lazy-loading art when Browse mode opens. This is significantly
     faster than including art in the bulk episode query (~1s vs ~10s).
-    
+
     Returns art keys:
         - poster: Show poster image
         - fanart: Show fanart/background image
-    
+
     Note:
         Caller must map keys when caching to window properties:
         - art.poster -> Art(tvshow.poster)
         - art.fanart -> Art(tvshow.fanart)
-    
+
     Returns:
         Query for all shows with art property only.
     """
@@ -495,6 +495,27 @@ def build_shows_art_query() -> Dict[str, Any]:
         "params": {
             "properties": ["art"]
         }
+    }
+
+
+def build_show_filter_query() -> Dict[str, Any]:
+    """
+    Build a query for all TV shows with the properties the guided flow
+    filters on. One round trip supplies genre, era, rating, and the
+    episode counts the depth filter needs.
+
+    Returns:
+        Query dict for VideoLibrary.GetTVShows.
+    """
+    return {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "VideoLibrary.GetTVShows",
+        "params": {
+            "properties": [
+                "genre", "year", "rating", "episode", "watchedepisodes"
+            ]
+        },
     }
 
 

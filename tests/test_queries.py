@@ -139,3 +139,22 @@ class TestBuildEpisodeDetailsQuery:
         q1 = build_episode_details_query(episode_id=1)
         q2 = build_episode_details_query(episode_id=1)
         assert q1 is not q2
+
+
+# ── build_show_filter_query ──────────────────────────────────────
+
+class TestShowFilterQuery:
+    def test_build_show_filter_query_shape(self):
+        from resources.lib.data.queries import build_show_filter_query
+        query = build_show_filter_query()
+        assert query["method"] == "VideoLibrary.GetTVShows"
+        assert query["jsonrpc"] == "2.0"
+        props = query["params"]["properties"]
+        assert set(props) == {"genre", "year", "rating", "episode", "watchedepisodes"}
+
+    def test_build_show_filter_query_returns_fresh_copy(self):
+        from resources.lib.data.queries import build_show_filter_query
+        q1 = build_show_filter_query()
+        q1["params"]["properties"].append("mutated")
+        q2 = build_show_filter_query()
+        assert "mutated" not in q2["params"]["properties"]

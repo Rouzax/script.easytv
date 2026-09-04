@@ -28,7 +28,7 @@ Logging:
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import xbmcgui
 
@@ -39,7 +39,10 @@ from resources.lib.constants import (
     PREMIERE_ONLY,
     PREMIERE_SKIP,
 )
-from resources.lib.data.queries import build_inprogress_episodes_query
+from resources.lib.data.queries import (
+    build_inprogress_episodes_query,
+    build_show_filter_query,
+)
 from resources.lib.data.shows import (
     extract_showids_from_playlist,
     fetch_shows_with_watched_episodes,
@@ -260,3 +263,9 @@ def filter_shows_by_population(
     log.debug("Stored data processing complete", count=len(stored_data_filtered))
 
     return stored_data_filtered
+
+
+def fetch_filterable_shows() -> List[Dict[str, Any]]:
+    """All library shows with the properties the guided flow filters on."""
+    result = json_query(build_show_filter_query())
+    return result.get('tvshows', [])
