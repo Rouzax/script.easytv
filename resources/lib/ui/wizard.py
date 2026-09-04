@@ -75,10 +75,6 @@ class WizardFlow:
             if settings.get(_TOGGLE_KEYS[step], False)]
 
     @property
-    def current_step_index(self) -> int:
-        return self._current_index
-
-    @property
     def current_step(self) -> Optional[str]:
         if self._current_index < len(self.steps):
             return self.steps[self._current_index]
@@ -109,9 +105,16 @@ class WizardFlow:
         return dict(self._answers)
 
     def load_last_answers(self, answers: Dict[str, Any]) -> None:
-        """Preload a previous session's answers as defaults."""
+        """Preload a previous session's answers as defaults.
+
+        Filters against self.steps (the enabled steps for this run), not
+        STEP_ORDER: an answer saved while a question was on must not
+        leak into the config once that question is toggled off, or it
+        silently overrides the disabled-question fallback (e.g. the
+        settings duration range) instead of leaving it alone.
+        """
         self._answers.update(
-            {k: v for k, v in answers.items() if k in STEP_ORDER})
+            {k: v for k, v in answers.items() if k in self.steps})
 
     def build_partial_filter_config(self) -> ShowFilterConfig:
         """Config from steps before the current one, for cumulative counts.
@@ -171,6 +174,77 @@ def _genre_counts(genres: List[str],
             if g in counts:
                 counts[g] += 1
     return counts
+
+
+def _ignore_genre_counts(genres: List[str],
+                         pool: List[Dict[str, Any]]) -> Dict[str, int]:
+    """Shows remaining if each genre is added to the ignore list.
+
+    Every other step's counts mean "shows remaining if you pick this",
+    so the Ignore Genres counts must too: the complement of
+    _genre_counts, not the having-genre count itself.
+    """
+    having = _genre_counts(genres, pool)
+    return {g: len(pool) - having[g] for g in genres}
+
+
+def _length_preselect(saved: Optional[Dict[str, Any]]) -> Optional[int]:
+    """Option index for a remembered length answer.
+
+    Options are GUIDED_LENGTH_BUCKETS followed by "No preference" (the
+    last index). A saved {"min": 0, "max": 0}, or any answer that does
+    not match a bucket exactly, degrades to "No preference" rather than
+    being left unmatched.
+    """
+    if saved is None:
+        return None
+    no_preference = len(GUIDED_LENGTH_BUCKETS)
+    lo, hi = saved.get("min", 0), saved.get("max", 0)
+    for i, (blo, bhi, _label_id) in enumerate(GUIDED_LENGTH_BUCKETS):
+        if blo == lo and bhi == hi:
+            return i
+    return no_preference
+
+
+def _era_preselect(saved: Optional[Dict[str, Any]],
+                   buckets: List[Tuple[int, int, str]],
+                   cutoff: int) -> Optional[int]:
+    """Option index for a remembered era answer.
+
+    Options are "Recent" (index 0), one per decade bucket, then "No
+    preference" (the last index). The decade list is pool-dependent, so
+    a saved decade absent from the current buckets is left unmatched
+    (None) rather than guessed at with "No preference".
+    """
+    if saved is None:
+        return None
+    lo, hi = saved.get("from", 0), saved.get("to", 0)
+    if lo == cutoff and hi == 0:
+        return 0
+    for i, (decade, _count, _label) in enumerate(buckets):
+        if lo == decade and hi == decade + 9:
+            return 1 + i
+    if lo == 0 and hi == 0:
+        return 1 + len(buckets)
+    return None
+
+
+def _value_bucket_preselect(saved: Optional[float],
+                            buckets: List[Tuple[Any, int]]) -> Optional[int]:
+    """Option index for a remembered rating/depth answer.
+
+    Options are "Any"/"Anything" (index 0), then one per bucket. A saved
+    0 means "Any"/"Anything" was chosen (buckets never start at 0); an
+    unmatched non-zero answer also degrades to that index.
+    """
+    if saved is None:
+        return None
+    if not saved:
+        return 0
+    for i, (value, _label_id) in enumerate(buckets):
+        if value == saved:
+            return i + 1
+    return 0
 
 
 def run_wizard(addon_id: str, population: dict, mode_choice: int,
@@ -267,14 +341,14 @@ def _run_steps(flow: WizardFlow, all_shows: List[Dict[str, Any]],
             all_shows, flow.build_partial_filter_config(),
             episode_selection, durations, reason="cumulative_count")
 
-    def _single(heading_id: int,
-                options: List[Tuple[str, int]]) -> Optional[int]:
+    def _single(heading_id: int, options: List[Tuple[str, int]],
+                preselect: Optional[int] = None) -> Optional[int]:
         """One single-select step. options = (label, count). Returns the
         selected option index, or None for back/cancel."""
         items = [_fmt_count(label, count, show_counts)
                  for label, count in options]
         idx = show_select(lang(heading_id, addon_id), items,
-                          addon_id=addon_id)
+                          addon_id=addon_id, preselected_index=preselect)
         return None if idx < 0 else idx
 
     while not flow.is_complete:
@@ -295,7 +369,8 @@ def _run_steps(flow: WizardFlow, all_shows: List[Dict[str, Any]],
                 if not flow.advance():
                     break
                 continue
-            counts = _genre_counts(genres, pool)
+            counts = (_ignore_genre_counts(genres, pool)
+                     if step == "ignore_genre" else _genre_counts(genres, pool))
             items = [_fmt_count(g, counts[g], show_counts) for g in genres]
             previous = set(flow.get_answers().get(step) or [])
             preselected = [i for i, g in enumerate(genres) if g in previous]
@@ -318,7 +393,8 @@ def _run_steps(flow: WizardFlow, all_shows: List[Dict[str, Any]],
             options = [(lang(label_id, addon_id), _len_count(lo, hi))
                        for lo, hi, label_id in GUIDED_LENGTH_BUCKETS]
             options.append((lang(32776, addon_id), len(pool)))
-            idx = _single(32772, options)
+            preselect = _length_preselect(flow.get_answers().get("length"))
+            idx = _single(32772, options, preselect)
             if idx is None:
                 if not flow.go_back():
                     return False
@@ -337,7 +413,9 @@ def _run_steps(flow: WizardFlow, all_shows: List[Dict[str, Any]],
             options = [(lang(32780, addon_id), recent)]
             options.extend((label, count) for _, count, label in buckets)
             options.append((lang(32776, addon_id), len(pool)))
-            idx = _single(32773, options)
+            preselect = _era_preselect(flow.get_answers().get("era"),
+                                       buckets, cutoff)
+            idx = _single(32773, options, preselect)
             if idx is None:
                 if not flow.go_back():
                     return False
@@ -356,7 +434,9 @@ def _run_steps(flow: WizardFlow, all_shows: List[Dict[str, Any]],
                 count = sum(1 for s in pool
                             if s.get('rating', 0.0) >= min_rating)
                 options.append((lang(label_id, addon_id), count))
-            idx = _single(32774, options)
+            preselect = _value_bucket_preselect(
+                flow.get_answers().get("rating"), GUIDED_RATING_BUCKETS)
+            idx = _single(32774, options, preselect)
             if idx is None:
                 if not flow.go_back():
                     return False
@@ -370,7 +450,9 @@ def _run_steps(flow: WizardFlow, all_shows: List[Dict[str, Any]],
                     1 for s in pool
                     if eligible_episode_count(s, episode_selection) >= min_eps)
                 options.append((lang(label_id, addon_id), count))
-            idx = _single(32775, options)
+            preselect = _value_bucket_preselect(
+                flow.get_answers().get("depth"), GUIDED_DEPTH_BUCKETS)
+            idx = _single(32775, options, preselect)
             if idx is None:
                 if not flow.go_back():
                     return False

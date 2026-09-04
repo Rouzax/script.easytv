@@ -438,7 +438,7 @@ The guided flow (Settings → EasyTV → Guided questions) asks up to six mood q
 | `wizard.cancel` | INFO | User cancelled the flow (from a question, or from the zero-result "Adjust answers" prompt) |
 | `wizard.complete` | INFO | Flow completed; logs result and candidate counts |
 | `wizard.empty_base` | INFO | The pre-wizard candidate set (population, episode selection, premieres already applied) was already empty; the flow returns immediately with no matches |
-| `wizard.not_applicable` (logger `'ui'`, in `main.py`) | DEBUG | Guided flow skipped because the launch is a movies-only playlist |
+| `wizard.not_applicable` (logger `'default'`, in `ui/main.py` `main_entry`) | DEBUG | Guided flow skipped because the launch is a movies-only playlist |
 | `wizard.save_fail` (logger `'storage'`, in `data/storage.py`) | WARNING | Remembered answers could not be written to `wizard_answers.json` |
 
 ### filter Events (`data/show_filters.py`)

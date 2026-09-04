@@ -36,15 +36,13 @@ from __future__ import annotations
 import os
 import threading
 import xml.etree.ElementTree as ET
-from typing import TYPE_CHECKING, List, Optional, Set, cast
+from typing import TYPE_CHECKING, List, Optional, cast
 
 import xbmc
 import xbmcgui
 import xbmcvfs
 
 from resources.lib.constants import (
-    ACTION_MOVE_DOWN,
-    ACTION_MOVE_UP,
     ACTION_NAV_BACK,
     ACTION_PREVIOUS_MENU,
     CONFIRM_HEADING,
@@ -559,14 +557,13 @@ class SelectDialog(xbmcgui.WindowXMLDialog):
         11  - Back button (multi-select only)
 
     ListItem properties (multi-select mode):
-        is_header - "true" marks a non-selectable group header row
-        checked   - "true" marks a checked row
+        checked - "true" marks a checked row
     """
 
     def __new__(cls, *args, **kwargs):
         """Create instance, filtering out custom kwargs for parent class."""
         for key in ('heading', 'items', 'addon_id', 'multi_select',
-                    'preselected', 'headers'):
+                    'preselected', 'preselected_index'):
             kwargs.pop(key, None)
         return super().__new__(cls, *args, **kwargs)
 
@@ -577,7 +574,8 @@ class SelectDialog(xbmcgui.WindowXMLDialog):
         self._addon_id: Optional[str] = kwargs.pop('addon_id', None)
         self._multi_select: bool = kwargs.pop('multi_select', False)
         self._preselected: List[int] = kwargs.pop('preselected', [])
-        self._headers: Set[int] = kwargs.pop('headers', set())
+        self._preselected_index: Optional[int] = kwargs.pop(
+            'preselected_index', None)
         super().__init__(*args, **kwargs)
         self._result = -1
         self.selected: List[int] = []
@@ -597,21 +595,20 @@ class SelectDialog(xbmcgui.WindowXMLDialog):
         name_list = cast(xbmcgui.ControlList, self.getControl(SELECT_LIST))
         for i, item_text in enumerate(self._items):
             li = xbmcgui.ListItem(item_text)
-            if i in self._headers:
-                li.setProperty('is_header', 'true')
-            elif i in self._preselected:
+            if i in self._preselected:
                 li.setProperty('checked', 'true')
                 self.selected.append(i)
             name_list.addItem(li)
         self.setFocus(name_list)
+        if (not self._multi_select and self._preselected_index is not None
+                and 0 <= self._preselected_index < len(self._items)):
+            name_list.selectItem(self._preselected_index)
 
     def onClick(self, controlID: int) -> None:
         """Handle list item and button clicks."""
         if controlID == SELECT_LIST:
             name_list = cast(xbmcgui.ControlList, self.getControl(SELECT_LIST))
             li = name_list.getSelectedItem()
-            if li is not None and li.getProperty('is_header') == 'true':
-                return
             if self._multi_select:
                 idx = name_list.getSelectedPosition()
                 if li.getProperty('checked') == 'true':
@@ -632,21 +629,12 @@ class SelectDialog(xbmcgui.WindowXMLDialog):
             self.close()
 
     def onAction(self, action: xbmcgui.Action) -> None:
-        """Handle ESC/back as cancel, and skip header rows on up/down."""
+        """Handle ESC/back as cancel."""
         action_id = action.getId()
         if action_id in (ACTION_PREVIOUS_MENU, ACTION_NAV_BACK):
             self._result = -1
             self.cancelled = True
             self.close()
-            return
-        if self._headers and action_id in (ACTION_MOVE_UP, ACTION_MOVE_DOWN):
-            name_list = cast(xbmcgui.ControlList, self.getControl(SELECT_LIST))
-            pos = name_list.getSelectedPosition()
-            if pos in self._headers:
-                step = 1 if action_id == ACTION_MOVE_DOWN else -1
-                new_pos = max(0, min(pos + step, name_list.size() - 1))
-                if new_pos not in self._headers:
-                    name_list.selectItem(new_pos)
 
     @property
     def result(self) -> int:
@@ -658,6 +646,7 @@ def show_select(
     heading: str,
     items: List[str],
     addon_id: Optional[str] = None,
+    preselected_index: Optional[int] = None,
 ) -> int:
     """
     Show a themed selection dialog.
@@ -668,6 +657,7 @@ def show_select(
         heading: Dialog heading text.
         items: List of item labels to display.
         addon_id: Optional addon ID for theme (clone support).
+        preselected_index: Optional item index to focus on open.
 
     Returns:
         Selected item index, or -1 if cancelled.
@@ -679,6 +669,7 @@ def show_select(
         heading=heading,
         items=items,
         addon_id=addon_id,
+        preselected_index=preselected_index,
     )
     dlg.doModal()
     result = dlg.result
@@ -690,7 +681,6 @@ def show_multi_select(
     heading: str,
     items: List[str],
     preselected: Optional[List[int]] = None,
-    headers: Optional[Set[int]] = None,
     addon_id: Optional[str] = None,
 ) -> Optional[List[int]]:
     """Themed multi-select dialog.
@@ -703,7 +693,6 @@ def show_multi_select(
         'script-easytv-select.xml', addon_path, 'Default',
         heading=heading, items=items, addon_id=addon_id,
         multi_select=True, preselected=preselected or [],
-        headers=headers or set(),
     )
     dlg.doModal()
     cancelled = dlg.cancelled

@@ -142,6 +142,25 @@ class TestLoadLastAnswers:
         assert flow.build_filter_config().genres == ["Comedy"]
         assert "bogus" not in flow.get_answers()
 
+    def test_disabled_step_answer_does_not_reach_filter_config(self):
+        """A saved rating answer for a toggled-off question must not
+        leak into the config; ask_rating=False means "no rating filter",
+        not "whatever was last picked"."""
+        flow = WizardFlow(_settings(ask_rating=False))
+        flow.load_last_answers({"rating": 8.0})
+        assert "rating" not in flow.get_answers()
+        assert flow.build_filter_config().min_rating == 0.0
+
+    def test_disabled_length_step_leaves_settings_duration_fallback_intact(self):
+        """ask_length=False must fall back to the settings duration
+        range even when a stale length answer is on disk."""
+        flow = WizardFlow(_settings(ask_length=False,
+                                    duration_filter_enabled=True,
+                                    duration_min=20, duration_max=45))
+        flow.load_last_answers({"length": {"min": 0, "max": 30}})
+        cfg = flow.build_filter_config()
+        assert (cfg.duration_min, cfg.duration_max) == (20, 45)
+
 
 class TestFormatCount:
     def test_with_counts(self):
@@ -160,3 +179,77 @@ class TestGenreCounts:
                 {"genre": ["Drama"]}]
         assert _genre_counts(["Comedy", "Drama", "Horror"], pool) == {
             "Comedy": 2, "Drama": 2, "Horror": 0}
+
+    def test_ignore_step_counts_shows_remaining_if_ignored(self):
+        """Ignore Genres counts must mean "shows remaining if chosen",
+        like every other step's counts: len(pool) minus the shows that
+        have the genre, not the having-genre count itself."""
+        from resources.lib.ui.wizard import _ignore_genre_counts
+        pool = [{"genre": ["Comedy"]}, {"genre": ["Comedy", "Drama"]},
+                {"genre": ["Drama"]}]
+        assert _ignore_genre_counts(["Comedy", "Drama", "Horror"], pool) == {
+            "Comedy": 1, "Drama": 1, "Horror": 3}
+
+
+class TestLengthPreselect:
+    def test_no_saved_answer_yields_no_preselect(self):
+        from resources.lib.ui.wizard import _length_preselect
+        assert _length_preselect(None) is None
+
+    def test_bucket_match_returns_its_index(self):
+        from resources.lib.ui.wizard import _length_preselect
+        assert _length_preselect({"min": 30, "max": 45}) == 1
+
+    def test_no_preference_answer_returns_last_index(self):
+        from resources.lib.ui.wizard import _length_preselect
+        assert _length_preselect({"min": 0, "max": 0}) == 3
+
+    def test_unmatched_answer_degrades_to_no_preference(self):
+        from resources.lib.ui.wizard import _length_preselect
+        assert _length_preselect({"min": 5, "max": 12}) == 3
+
+
+class TestEraPreselect:
+    def test_no_saved_answer_yields_no_preselect(self):
+        from resources.lib.ui.wizard import _era_preselect
+        assert _era_preselect(None, [], 2021) is None
+
+    def test_recent_match_returns_index_zero(self):
+        from resources.lib.ui.wizard import _era_preselect
+        buckets = [(2020, 5, "2020s"), (2010, 3, "2010s")]
+        assert _era_preselect({"from": 2021, "to": 0}, buckets, 2021) == 0
+
+    def test_decade_match_returns_its_index(self):
+        from resources.lib.ui.wizard import _era_preselect
+        buckets = [(2020, 5, "2020s"), (2010, 3, "2010s")]
+        assert _era_preselect({"from": 2010, "to": 2019}, buckets, 2021) == 2
+
+    def test_no_preference_answer_returns_last_index(self):
+        from resources.lib.ui.wizard import _era_preselect
+        buckets = [(2020, 5, "2020s"), (2010, 3, "2010s")]
+        assert _era_preselect({"from": 0, "to": 0}, buckets, 2021) == 3
+
+    def test_decade_absent_from_current_buckets_yields_no_preselect(self):
+        """The decade list is pool-dependent: a saved decade no longer
+        present must not be guessed at as "No preference"."""
+        from resources.lib.ui.wizard import _era_preselect
+        buckets = [(2020, 5, "2020s")]
+        assert _era_preselect({"from": 2010, "to": 2019}, buckets, 2021) is None
+
+
+class TestValueBucketPreselect:
+    def test_no_saved_answer_yields_no_preselect(self):
+        from resources.lib.ui.wizard import _value_bucket_preselect
+        assert _value_bucket_preselect(None, [(7.0, 1), (8.0, 2)]) is None
+
+    def test_zero_saved_answer_returns_any_index(self):
+        from resources.lib.ui.wizard import _value_bucket_preselect
+        assert _value_bucket_preselect(0, [(7.0, 1), (8.0, 2)]) == 0
+
+    def test_bucket_match_returns_its_index(self):
+        from resources.lib.ui.wizard import _value_bucket_preselect
+        assert _value_bucket_preselect(8.0, [(7.0, 1), (8.0, 2)]) == 2
+
+    def test_unmatched_answer_degrades_to_any_index(self):
+        from resources.lib.ui.wizard import _value_bucket_preselect
+        assert _value_bucket_preselect(9.5, [(7.0, 1), (8.0, 2)]) == 0
