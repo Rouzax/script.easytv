@@ -15,8 +15,10 @@ New Features:
     written to settings. "Remember my answers" pre-selects the previous
     run's choices instead, read from a per-instance wizard_answers.json.
     Zero matches offers "Adjust answers" (same questions, previous picks
-    kept) or Cancel. Skipped for movies-only playlists and not available to
-    clones, which is a main-instance-only feature.
+    kept) or Cancel. Skipped for movies-only playlists. Each clone has its
+    own independent copy of these settings, so a clone with the master
+    switch on and only a couple of questions left enabled is a saved mood
+    of its own, with its own remembered answers.
 
 v1.8.0 (2026-09-02)
 -------------------

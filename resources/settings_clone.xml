@@ -21,6 +21,87 @@
 				</setting>
 			</group>
 
+			<!-- Group 1.2: Guided questions -->
+			<group id="guided" label="32750">
+				<setting id="guided_enabled" type="boolean" label="32751" help="32752">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle" />
+				</setting>
+
+				<setting id="guided_ask_ignore_genre" type="boolean" label="32753" help="32754">
+					<level>0</level>
+					<default>true</default>
+					<dependencies>
+						<dependency type="visible" setting="guided_enabled">true</dependency>
+					</dependencies>
+					<control type="toggle" />
+				</setting>
+
+				<setting id="guided_ask_genre" type="boolean" label="32755" help="32756">
+					<level>0</level>
+					<default>true</default>
+					<dependencies>
+						<dependency type="visible" setting="guided_enabled">true</dependency>
+					</dependencies>
+					<control type="toggle" />
+				</setting>
+
+				<setting id="guided_ask_length" type="boolean" label="32757" help="32758">
+					<level>0</level>
+					<default>true</default>
+					<dependencies>
+						<dependency type="visible" setting="guided_enabled">true</dependency>
+					</dependencies>
+					<control type="toggle" />
+				</setting>
+
+				<setting id="guided_ask_era" type="boolean" label="32759" help="32760">
+					<level>0</level>
+					<default>true</default>
+					<dependencies>
+						<dependency type="visible" setting="guided_enabled">true</dependency>
+					</dependencies>
+					<control type="toggle" />
+				</setting>
+
+				<setting id="guided_ask_rating" type="boolean" label="32761" help="32762">
+					<level>0</level>
+					<default>true</default>
+					<dependencies>
+						<dependency type="visible" setting="guided_enabled">true</dependency>
+					</dependencies>
+					<control type="toggle" />
+				</setting>
+
+				<setting id="guided_ask_depth" type="boolean" label="32763" help="32764">
+					<level>0</level>
+					<default>true</default>
+					<dependencies>
+						<dependency type="visible" setting="guided_enabled">true</dependency>
+					</dependencies>
+					<control type="toggle" />
+				</setting>
+
+				<setting id="guided_remember_answers" type="boolean" label="32765" help="32766">
+					<level>1</level>
+					<default>true</default>
+					<dependencies>
+						<dependency type="visible" setting="guided_enabled">true</dependency>
+					</dependencies>
+					<control type="toggle" />
+				</setting>
+
+				<setting id="guided_show_counts" type="boolean" label="32767" help="32768">
+					<level>1</level>
+					<default>true</default>
+					<dependencies>
+						<dependency type="visible" setting="guided_enabled">true</dependency>
+					</dependencies>
+					<control type="toggle" />
+				</setting>
+			</group>
+
 			<group id="appearance" label="32555">
 				<setting id="theme" type="integer" label="32720" help="32721">
 					<level>0</level>

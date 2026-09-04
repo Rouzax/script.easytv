@@ -31,16 +31,6 @@ MAIN_ONLY_SETTINGS: Set[str] = {
     "previous_episode_check",
     # Notifications (service-level)
     "notify",
-    # Guided questions (main instance feature, not for clones)
-    "guided_enabled",
-    "guided_ask_ignore_genre",
-    "guided_ask_genre",
-    "guided_ask_length",
-    "guided_ask_era",
-    "guided_ask_rating",
-    "guided_ask_depth",
-    "guided_remember_answers",
-    "guided_show_counts",
     # Advanced service/admin tools
     "startup",
     "playlist_export_episodes",

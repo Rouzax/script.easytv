@@ -41,6 +41,7 @@ A new addon appears in **Add-ons → Program add-ons**:
 Each clone has its own:
 
 - Launch behavior (Browse vs Random vs Ask)
+- [Guided questions](guided-questions.md) configuration, including remembered answers
 - Show filter (which shows to include)
 - Smart playlist selection
 - Random-order shows list
@@ -79,7 +80,6 @@ Clones do NOT:
 - Affect each other's settings or the main addon's settings
 - Participate in [multi-instance sync](multi-instance-sync.md). Clones use the main addon's local data only.
 - Run their own background service. The main EasyTV addon handles all background work for every clone.
-- Have [Guided Questions](guided-questions.md). It's a main-instance-only feature and doesn't appear in a clone's settings; a clone always launches straight to Browse Mode or Random Playlist. Build a saved mood as its own clone with that clone's own show filter or smart playlist instead.
 
 ### Clone Random-Order Limitations
 
@@ -138,6 +138,7 @@ For advanced setups, you can use the main EasyTV addon purely as a background se
 | **EasyTV - In Progress** | Continue watching | Launches to Browse Mode, sorted by last watched |
 | **EasyTV - Season Premiere** | New seasons | Filters to Season Premieres playlist |
 | **EasyTV - Show Premiere** | New shows to start | Filters to Show Premieres playlist |
+| **EasyTV - Bedtime** | A saved mood | [Guided questions](guided-questions.md) on, with only "Ask about genres" and "Ask about episode length" left enabled |
 
 **Benefits:**
 

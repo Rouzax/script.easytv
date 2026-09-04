@@ -57,7 +57,8 @@ See [Guided Questions](guided-questions.md) for the full guide to what each ques
 
 **Visibility rules:**
 - The eight toggles below "Ask what I'm in the mood for on launch" only appear when it is On.
-- Not available in [clones](clones.md): each clone has its own independent settings, and this group is main-instance only.
+
+Each [clone](clones.md) has its own independent copy of this group, so a clone can enable guided questions and trim it down to a fixed set of questions as a saved mood, separately from the main instance.
 
 ### Appearance
 

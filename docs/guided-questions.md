@@ -15,7 +15,7 @@ EasyTV's usual filters (show selection, smart playlists, episode selection, prem
 ## Prerequisites
 
 - **Settings → EasyTV → Guided questions → Ask what I'm in the mood for on launch** must be On (default: Off).
-- The questions run before Browse Mode or before building a Random Playlist. They do not run for a **Playlist content** of "Movies only", since there are no TV shows to narrow (see [Works With Clones](#works-with-clones-and-movies-only-playlists) below for that and clone caveats).
+- The questions run before Browse Mode or before building a Random Playlist. They do not run for a **Playlist content** of "Movies only", since there are no TV shows to narrow (see [Works With Clones](#works-with-clones-and-movies-only-playlists) below).
 
 ---
 
@@ -109,9 +109,9 @@ Turn on **Show result counts** (Settings → EasyTV → Guided questions) and ev
 
 ## Works With Clones and Movies-Only Playlists
 
-Guided questions is a main-instance feature. It does not appear in a [clone's](clones.md) settings and clones cannot run it, even if the main EasyTV instance has it enabled: each clone has its own independent settings and always launches straight to Browse Mode or Random Playlist. If you want a saved mood as its own home-screen entry, build it with a clone's own [show filter](settings-reference.md#shows) or smart playlist instead.
+Every [clone](clones.md) has its own independent copy of the Guided Questions settings, exactly like its other settings. A clone with **Ask what I'm in the mood for on launch** turned on, and only the questions you want left on, is a saved mood of its own: give it a name like "Bedtime" or "Comedy Night", add it to your home screen, and it always opens with just that trimmed set of questions. Turning guided questions off on a clone (the default) leaves that clone launching straight to Browse Mode or Random Playlist, unaffected by the main instance's setting.
 
-When **Playlist content** (Random Playlist settings) is set to **Movies only**, the questions are skipped: they only narrow TV shows, and a movies-only playlist has none to narrow.
+When **Playlist content** (Random Playlist settings) is set to **Movies only**, the questions are skipped: they only narrow TV shows, and a movies-only playlist has none to narrow. This applies the same way on a clone as on the main instance.
 
 ---
 
@@ -129,5 +129,5 @@ If your answers leave zero shows, EasyTV shows "No shows match your answers." wi
 - **[Browse Mode](browse-mode.md):** One of the two modes guided questions can narrow
 - **[Random Playlist Mode](random-playlist-mode.md):** The other mode guided questions can narrow
 - **[Settings Reference](settings-reference.md):** All Guided Questions settings
-- **[Clones](clones.md):** Why guided questions isn't available there, and how to build a saved mood as a clone instead
+- **[Clones](clones.md):** How to build a saved mood as its own clone
 - **[Troubleshooting & FAQ](troubleshooting-and-faq.md):** "The questions found no shows"
