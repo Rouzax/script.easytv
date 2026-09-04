@@ -20,15 +20,17 @@ not import playback/ (such as ui/) can still gate candidates.
 Logging:
     Logger: 'data' (via get_logger)
     Key events:
-        - filter.step (DEBUG): Population filter fetch/merge steps
-        - filter.apply (DEBUG): Population filter result counts
+        - filter.step (DEBUG): Guided flow filter steps (apply_show_filters)
+        - filter.apply (DEBUG): Guided flow filter result counts
         - browse.inprogress_error (WARNING): In-progress lookup failed,
           premiere override disabled
     See LOGGING.md for full guidelines.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from collections import Counter
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import xbmcgui
 
@@ -269,3 +271,127 @@ def fetch_filterable_shows() -> List[Dict[str, Any]]:
     """All library shows with the properties the guided flow filters on."""
     result = json_query(build_show_filter_query())
     return result.get('tvshows', [])
+
+
+@dataclass
+class ShowFilterConfig:
+    """Session-scoped mood filters. Field defaults mean 'no filter'."""
+    ignore_genres: Optional[List[str]] = None
+    genres: Optional[List[str]] = None
+    duration_min: int = 0
+    duration_max: int = 0
+    year_from: int = 0
+    year_to: int = 0
+    min_rating: float = 0.0
+    min_eligible_episodes: int = 0
+
+
+def eligible_episode_count(show: Dict[str, Any], episode_selection: int) -> int:
+    """Episodes of this show the current episode_selection mode can pick."""
+    total = int(show.get('episode', 0) or 0)
+    watched = int(show.get('watchedepisodes', 0) or 0)
+    if episode_selection == EPISODE_SELECTION_UNWATCHED:
+        return max(total - watched, 0)
+    if episode_selection == EPISODE_SELECTION_WATCHED:
+        return watched
+    return total
+
+
+def apply_show_filters(
+    shows: List[Dict[str, Any]],
+    config: ShowFilterConfig,
+    episode_selection: int,
+    durations: Optional[Dict[int, int]] = None,
+    reason: str = "final",
+) -> List[Dict[str, Any]]:
+    """Apply all configured mood filters to a list of show dicts.
+
+    Args:
+        shows: Show dicts from build_show_filter_query.
+        config: Filter configuration; default fields apply no filter.
+        episode_selection: EPISODE_SELECTION_* mode; drives the depth count.
+        durations: tvshowid -> average episode seconds. A show with no
+            entry (or 0) passes any duration filter: missing data must
+            not silently hide shows.
+        reason: "final" logs per-step detail, "cumulative_count" only
+            the summary.
+
+    Returns:
+        Filtered list of show dicts.
+    """
+    log = _get_log()
+    result = shows
+    verbose = reason == "final"
+
+    def _step(name: str) -> None:
+        if verbose:
+            log.debug("Filter step", event="filter.step",
+                      step=name, remaining=len(result))
+
+    if config.ignore_genres:
+        ignore = set(config.ignore_genres)
+        result = [s for s in result
+                  if not ignore.intersection(set(s.get('genre', [])))]
+        _step("ignore_genres")
+
+    if config.genres:
+        wanted = set(config.genres)
+        result = [s for s in result
+                  if wanted.intersection(set(s.get('genre', [])))]
+        _step("genres")
+
+    if (config.duration_min > 0 or config.duration_max > 0) and durations:
+        min_s = config.duration_min * 60
+        max_s = config.duration_max * 60
+
+        def _duration_ok(show: Dict[str, Any]) -> bool:
+            avg = durations.get(show.get('tvshowid', 0), 0)
+            if avg <= 0:
+                return True
+            if min_s and avg < min_s:
+                return False
+            if max_s and avg > max_s:
+                return False
+            return True
+
+        result = [s for s in result if _duration_ok(s)]
+        _step("duration")
+
+    if config.year_from > 0:
+        result = [s for s in result if s.get('year', 0) >= config.year_from]
+        _step("year_from")
+    if config.year_to > 0:
+        result = [s for s in result
+                  if 0 < s.get('year', 0) <= config.year_to]
+        _step("year_to")
+
+    if config.min_rating > 0:
+        result = [s for s in result
+                  if s.get('rating', 0.0) >= config.min_rating]
+        _step("rating")
+
+    if config.min_eligible_episodes > 0:
+        result = [s for s in result
+                  if eligible_episode_count(s, episode_selection)
+                  >= config.min_eligible_episodes]
+        _step("depth")
+
+    log.debug("Filters applied", event="filter.apply", reason=reason,
+              input_count=len(shows), result_count=len(result))
+    return result
+
+
+def extract_unique_genres(shows: List[Dict[str, Any]]) -> List[str]:
+    """All distinct genres in the show list, sorted."""
+    genres = set()
+    for show in shows:
+        genres.update(show.get('genre', []))
+    return sorted(genres)
+
+
+def extract_decade_buckets(shows: List[Dict[str, Any]]) -> List[Tuple[int, int, str]]:
+    """(decade_start, count, label) tuples, newest first; year 0 skipped."""
+    decades = Counter((s.get('year', 0) // 10) * 10
+                      for s in shows if s.get('year', 0) > 0)
+    return [(decade, count, f"{decade}s")
+            for decade, count in sorted(decades.items(), reverse=True)]
