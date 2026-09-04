@@ -87,6 +87,7 @@ nav:
   - Core Features:
       - Browse Mode: browse-mode.md
       - Random Playlist Mode: random-playlist-mode.md
+      - Guided Questions: guided-questions.md
       - Random Order Shows: random-order-shows.md
   - Configuration:
       - Settings Reference: settings-reference.md

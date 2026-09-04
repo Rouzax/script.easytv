@@ -27,6 +27,7 @@ EasyTV maintains a list of the **next episode to watch** for every TV show in yo
 
 - **Smart Episode Tracking**: Always knows your next episode, even with gaps in watch history
 - **Surprise Me**: Can't decide? One button picks a show and plays its next episode
+- **Guided Questions**: Answer a few quick questions about mood (genre, length, era, rating) to narrow shows for this launch only
 - **Multi-Instance Sync**: Share watch progress across multiple Kodi devices
 - **Mix in Movies**: Add movies to your random playlists
 - **Smart Playlist Filtering**: Use Kodi smart playlists to filter content

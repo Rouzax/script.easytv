@@ -1,6 +1,23 @@
 EasyTV Changelog
 ================
 
+Next release
+------------
+New Features:
+  - Guided questions, an optional pre-launch mood check (Settings > EasyTV >
+    Guided questions, default off). Before Browse Mode or Random Playlist
+    Mode opens, up to six questions narrow the candidate shows: genres to
+    avoid, genres, episode length, era, rating, and how much to watch. Each
+    question narrows the pool the next question counts against, and each
+    has its own toggle so any of them can be dropped. An episode-length
+    answer replaces the Duration Filter setting for that launch only; "No
+    preference" falls back to it. Answers are session-scoped and never
+    written to settings. "Remember my answers" pre-selects the previous
+    run's choices instead, read from a per-instance wizard_answers.json.
+    Zero matches offers "Adjust answers" (same questions, previous picks
+    kept) or Cancel. Skipped for movies-only playlists and not available to
+    clones, which is a main-instance-only feature.
+
 v1.8.0 (2026-09-02)
 -------------------
 New Features:

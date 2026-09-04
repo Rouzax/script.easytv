@@ -39,6 +39,26 @@ EasyTV organizes settings into six categories:
 | **Play random playlist** | Starts playing a [Random Playlist](random-playlist-mode.md) immediately |
 | **Ask me** | Shows a dialog: "Show me" (browse) or "Start playlist" (random) |
 
+### Guided Questions
+
+See [Guided Questions](guided-questions.md) for the full guide to what each question asks and how it narrows shows.
+
+| Setting | Options | Default | Description |
+|---------|---------|---------|-------------|
+| **Ask what I'm in the mood for on launch** | On / Off | Off | Before Browse or Random Playlist opens, ask a few quick questions (genre, episode length, era, rating, how much to watch) and only offer shows that match. Your answers apply to this launch only and are never saved to settings. |
+| **Ask about genres to avoid** | On / Off | On | Include the question that removes genres you don't want right now. |
+| **Ask about genres** | On / Off | On | Include the question that picks the genres you want right now. |
+| **Ask about episode length** | On / Off | On | Include the question about average episode length. An answer replaces the duration filter for this launch; "No preference" uses the duration filter from settings. |
+| **Ask about era** | On / Off | On | Include the question about how recent the show should be. |
+| **Ask about rating** | On / Off | On | Include the question about minimum show rating. |
+| **Ask about how much to watch** | On / Off | On | Include the question about how many matching episodes a show should have available. |
+| **Remember my answers** | On / Off | On | Pre-select your previous answers the next time the questions appear. |
+| **Show result counts** | On / Off | On | Show how many shows remain next to each answer. |
+
+**Visibility rules:**
+- The eight toggles below "Ask what I'm in the mood for on launch" only appear when it is On.
+- Not available in [clones](clones.md): each clone has its own independent settings, and this group is main-instance only.
+
 ### Appearance
 
 | Setting | Options | Default | Description |

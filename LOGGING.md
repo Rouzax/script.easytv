@@ -71,7 +71,7 @@ Logger names by package:
 | Package      | Logger Name                                      |
 | ------------ | ------------------------------------------------ |
 | `service/`   | `'daemon'` or `'service'`                        |
-| `ui/`        | `'ui'`                                           |
+| `ui/`        | `'ui'`, `'wizard'`                                |
 | `data/`      | `'data'`, `'shareddb'`, `'storage'`              |
 | `playback/`  | `'playback'`                                     |
 | Entry points | `'default'`, `'clone'`, `'selector'`, `'export'`, `'clear_sync'` |
@@ -144,6 +144,8 @@ Events follow the pattern: `domain.action`
 | `shareddb` | Shared DB sync      | `shareddb.connect`, `shareddb.backoff`, `shareddb.write` |
 | `storage`  | Storage abstraction | `storage.init_local`, `storage.init_shared`, `storage.reset` |
 | `sync`     | Multi-instance sync | `sync.added`, `sync.daemon_check`, `sync.clear_requested` |
+| `wizard`   | Guided flow (logger `'wizard'`) | `wizard.start`, `wizard.step`, `wizard.complete`, `wizard.cancel` |
+| `filter`   | Guided flow candidate filtering (logger `'data'`) | `filter.base_set`, `filter.step`, `filter.apply` |
 
 ### When to Add Logging
 
@@ -420,6 +422,34 @@ The following operations are instrumented with `log_timing`:
 | `shareddb.bulk_read` | shareddb | Bulk show data fetch |
 | `shareddb.validate_ids` | shareddb | ID validation after rebuild |
 | `shareddb.migration_claim` | shareddb | Migration lock acquisition |
+
+---
+
+## Guided Flow Events
+
+The guided flow (Settings → EasyTV → Guided questions) asks up to six mood questions before Browse Mode or Random Playlist Mode and narrows the candidate shows accordingly. See `docs/guided-questions.md` for user-facing behavior.
+
+### wizard Events (Logger: 'wizard', except where noted)
+
+| Event | Level | Description |
+|-------|-------|-------------|
+| `wizard.start` | INFO | Guided flow started; logs the enabled steps and candidate count |
+| `wizard.step` | DEBUG | User answered one question |
+| `wizard.cancel` | INFO | User cancelled the flow (from a question, or from the zero-result "Adjust answers" prompt) |
+| `wizard.complete` | INFO | Flow completed; logs result and candidate counts |
+| `wizard.empty_base` | INFO | The pre-wizard candidate set (population, episode selection, premieres already applied) was already empty; the flow returns immediately with no matches |
+| `wizard.not_applicable` (logger `'ui'`, in `main.py`) | DEBUG | Guided flow skipped because the launch is a movies-only playlist |
+| `wizard.save_fail` (logger `'storage'`, in `data/storage.py`) | WARNING | Remembered answers could not be written to `wizard_answers.json` |
+
+### filter Events (Logger: 'data')
+
+| Event | Level | Description |
+|-------|-------|-------------|
+| `filter.base_set` | DEBUG | Base candidate show ids resolved from population, episode selection, and premiere settings, before any guided question is applied |
+| `filter.step` | DEBUG | One mood filter (genre, duration, year, rating, depth) applied; logs the remaining count. Only logged for the final filter pass, not the per-question cumulative counts |
+| `filter.apply` | DEBUG | All configured mood filters applied to a show list; logs input and result counts |
+
+`browse.inprogress_error` (logger `'data'`, WARNING) is the shared in-progress lookup used by the premiere filter; the guided flow's `filter.base_set` resolution, Browse Mode, and the random playlist builder all route through the same function, so a lookup failure there logs under this one event name regardless of caller.
 
 ---
 

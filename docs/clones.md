@@ -79,6 +79,7 @@ Clones do NOT:
 - Affect each other's settings or the main addon's settings
 - Participate in [multi-instance sync](multi-instance-sync.md). Clones use the main addon's local data only.
 - Run their own background service. The main EasyTV addon handles all background work for every clone.
+- Have [Guided Questions](guided-questions.md). It's a main-instance-only feature and doesn't appear in a clone's settings; a clone always launches straight to Browse Mode or Random Playlist. Build a saved mood as its own clone with that clone's own show filter or smart playlist instead.
 
 ### Clone Random-Order Limitations
 

@@ -118,6 +118,22 @@ Playlist generation finds nothing to add.
 
 ---
 
+### The Questions Found No Shows
+
+[Guided Questions](guided-questions.md) shows "No shows match your answers." after you finish answering.
+
+This means your combined answers, layered on top of your existing show filter, episode selection, and premiere settings, leave nothing to offer. It's not an error: narrow enough answers (an avoided genre plus a strict rating plus a short episode length, say) can rule out every show.
+
+**What to do:**
+
+- Choose **Adjust answers** in the dialog. This returns you to the first question with everything you already picked still selected, so you can loosen just the answer that's too strict rather than starting over.
+- Turn on **Show result counts** (Settings → EasyTV → Guided questions) so each answer option shows how many shows it would leave, making it easier to spot which answer is the one narrowing you down to zero.
+- Choose **Cancel** to close the questions and cancel the launch instead.
+
+**If this happens on every launch:** check that your regular settings (show filter, episode selection, smart playlist) aren't already close to zero shows on their own; the questions can only narrow further, never widen, so a near-empty starting set will hit zero with almost any answer.
+
+---
+
 ### Slow Performance
 
 EasyTV is sluggish on your device.
