@@ -1,8 +1,8 @@
 EasyTV Changelog
 ================
 
-Next release
-------------
+v1.10.0 (2026-09-04)
+--------------------
 New Features:
   - Each guided question now has its own mode: Ask (a dialog every launch,
     as before), Pre-set (its configured value applies silently, no
