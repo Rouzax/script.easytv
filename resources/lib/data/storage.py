@@ -37,17 +37,21 @@ Logging:
         - storage.batch_preload_error: Preload failed, falling back to unbatched
         - storage.clear_stale: Cleared window props for show deleted elsewhere
         - storage.reset: Storage singleton reset (settings changed)
+        - wizard.save_fail: Guided-flow answers not saved to disk
 """
 from __future__ import annotations
 
 import ast
 import contextlib
+import json
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Dict, Generator, List, Optional, Set, Tuple, Union
 
 import xbmcaddon
 import xbmcgui
+import xbmcvfs
 
 from resources.lib.constants import (
     DEFAULT_ADDON_ID,
@@ -86,12 +90,12 @@ def _build_property_key(show_id: Union[int, str], prop_name: str) -> str:
 def _parse_list(value: str) -> List[int]:
     """
     Parse a string representation of a list into a list of integers.
-    
+
     Handles both '[]' string format and actual list representations.
-    
+
     Args:
         value: String like '[1, 2, 3]' or empty string.
-    
+
     Returns:
         List of integers, or empty list if parsing fails.
     """
@@ -104,6 +108,49 @@ def _parse_list(value: str) -> List[int]:
         return []
     except (ValueError, SyntaxError):
         return []
+
+
+def _read_json_file(path: str) -> Dict[str, Any]:
+    """Best-effort JSON read; anything unusable yields an empty dict."""
+    try:
+        with open(path, 'r', encoding='utf-8') as fh:
+            data = json.load(fh)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _write_json_file(path: str, data: Dict[str, Any]) -> bool:
+    """Best-effort JSON write. Returns False on failure (never raises)."""
+    try:
+        with open(path, 'w', encoding='utf-8') as fh:
+            json.dump(data, fh)
+        return True
+    except (OSError, TypeError, ValueError):
+        return False
+
+
+def _wizard_answers_path(addon_id: str) -> str:
+    profile = xbmcvfs.translatePath(
+        f'special://profile/addon_data/{addon_id}/')
+    return os.path.join(profile, 'wizard_answers.json')
+
+
+def load_wizard_answers(addon_id: str) -> Dict[str, Any]:
+    """Previous guided-flow answers for this instance (empty on first run)."""
+    return _read_json_file(_wizard_answers_path(addon_id))
+
+
+def save_wizard_answers(answers: Dict[str, Any], addon_id: str) -> None:
+    """Persist guided-flow answers as next session's defaults."""
+    path = _wizard_answers_path(addon_id)
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+    except OSError:
+        pass
+    if not _write_json_file(path, answers):
+        get_logger('storage').warning(
+            "Wizard answers not saved", event="wizard.save_fail", path=path)
 
 
 # =============================================================================
