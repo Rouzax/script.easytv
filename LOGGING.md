@@ -140,7 +140,7 @@ Events follow the pattern: `domain.action`
 | `clone`    | Clone operations    | `clone.create`, `clone.update`, `clone.fail`         |
 | `export`   | Episode export      | `export.start`, `export.complete`, `export.fail`     |
 | `ui`       | User interface      | `ui.open`, `ui.select`, `ui.surprise`, `ui.fallback` |
-| `selector` | Show selector       | `selector.open`, `selector.save`                     |
+| `selector` | Show selector, guided-question genre preset picker | `selector.save`, `selector.crash`, `selector.genres_open`, `selector.genres_save` |
 | `shareddb` | Shared DB sync      | `shareddb.connect`, `shareddb.backoff`, `shareddb.write` |
 | `storage`  | Storage abstraction | `storage.init_local`, `storage.init_shared`, `storage.reset` |
 | `sync`     | Multi-instance sync | `sync.added`, `sync.daemon_check`, `sync.clear_requested` |

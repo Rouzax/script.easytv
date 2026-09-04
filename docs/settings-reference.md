@@ -41,24 +41,33 @@ EasyTV organizes settings into six categories:
 
 ### Guided Questions
 
-See [Guided Questions](guided-questions.md) for the full guide to what each question asks and how it narrows shows.
+See [Guided Questions](guided-questions.md) for the full guide to what each question asks, what its modes do, and how presets work.
 
 | Setting | Options | Default | Description |
 |---------|---------|---------|-------------|
 | **Ask what I'm in the mood for on launch** | On / Off | Off | Before Browse or Random Playlist opens, ask a few quick questions (genre, episode length, era, rating, how much to watch) and only offer shows that match. Your answers apply to this launch only and are never saved to settings. |
-| **Ask about genres to avoid** | On / Off | On | Include the question that removes genres you don't want right now. |
-| **Ask about genres** | On / Off | On | Include the question that picks the genres you want right now. |
-| **Ask about episode length** | On / Off | On | Include the question about average episode length. An answer replaces the duration filter for this launch; "No preference" uses the duration filter from settings. |
-| **Ask about era** | On / Off | On | Include the question about how recent the show should be. |
-| **Ask about rating** | On / Off | On | Include the question about minimum show rating. |
-| **Ask about how much to watch** | On / Off | On | Include the question about how many matching episodes a show should have available. |
+| **Genres to avoid** | Ask / Pre-set / Skip | Ask | Ask each launch, apply a pre-set list silently, or skip this filter. |
+| **Choose genres to avoid...** | (button) | (none) | Pick the genres the pre-set will exclude. |
+| **Selected:** | (display only) | - | Genres chosen for the "genres to avoid" pre-set, or "-" when none are chosen. |
+| **Genres** | Ask / Pre-set / Skip | Ask | Ask each launch, apply a pre-set list silently, or skip this filter. |
+| **Choose genres...** | (button) | (none) | Pick the genres the pre-set will require. |
+| **Selected:** | (display only) | - | Genres chosen for the "genres" pre-set, or "-" when none are chosen. |
+| **Episode length** | Ask / Pre-set / Skip | Ask | Ask each launch, apply a pre-set length silently, or skip. Skip still uses the Duration Filter from the Shows category when that is enabled. |
+| **Pre-set episode length** | No preference / Short (30 min or less) / Medium (30-45 min) / Long (over 45 min) | No preference | Length bucket applied without asking. |
+| **Era** | Ask / Pre-set / Skip | Ask | Ask each launch, apply a pre-set recency silently, or skip this filter. |
+| **Only shows from the last (years)** | 0-30 (slider) | 0 | 0 disables the pre-set. Applied without asking. |
+| **Rating** | Ask / Pre-set / Skip | Ask | Ask each launch, apply a pre-set minimum rating silently, or skip this filter. |
+| **Pre-set rating** | Any rating / Good (7+) / Great (8+) | Any rating | Minimum rating applied without asking. |
+| **How much to watch** | Ask / Pre-set / Skip | Ask | Ask each launch, apply a pre-set minimum silently, or skip this filter. |
+| **Pre-set how much to watch** | Anything / A few episodes available (3+) / Plenty to binge (10+) | Anything | Minimum available episodes applied without asking. |
 | **Remember my answers** | On / Off | On | Pre-select your previous answers the next time the questions appear. |
 | **Show result counts** | On / Off | On | Show how many shows remain next to each answer. |
 
 **Visibility rules:**
-- The eight toggles below "Ask what I'm in the mood for on launch" only appear when it is On.
+- The mode settings ("Genres to avoid", "Genres", "Episode length", "Era", "Rating", "How much to watch"), "Remember my answers", and "Show result counts" only appear when "Ask what I'm in the mood for on launch" is On.
+- Each preset's action button and "Selected:" row (the genre pickers) or preset value setting ("Pre-set episode length", "Only shows from the last (years)", "Pre-set rating", "Pre-set how much to watch") only appears when that question's mode is set to Pre-set.
 
-Each [clone](clones.md) has its own independent copy of this group, so a clone can enable guided questions and trim it down to a fixed set of questions as a saved mood, separately from the main instance.
+Each [clone](clones.md) has its own independent copy of this group: its own master switch, its own mode per question, and its own presets. A clone with the master switch on, every question set to Pre-set or Skip, and presets configured is a saved mood that launches straight to a narrowed Browse Mode or Random Playlist with no dialog, separately from the main instance.
 
 ### Appearance
 

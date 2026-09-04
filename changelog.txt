@@ -1,6 +1,32 @@
 EasyTV Changelog
 ================
 
+Next release
+------------
+New Features:
+  - Each guided question now has its own mode: Ask (a dialog every launch,
+    as before), Pre-set (its configured value applies silently, no
+    dialog), or Skip (nothing applies; the episode-length question still
+    falls back to the Duration Filter setting when that is enabled). Every
+    question also gained a preset: genre include/exclude pickers (the same
+    themed multi-select as the questions themselves), an episode-length
+    bucket, a recency-in-years cutoff, a minimum rating bucket, and a
+    minimum-episodes-available bucket. When a question is still asked, its
+    preset pre-selects the option, unless a remembered answer exists, in
+    which case the remembered answer wins. Every mode defaults to Ask, so
+    existing installs with guided questions on keep asking all six
+    questions until modes are changed. A clone with every question set to
+    Pre-set or Skip and its presets configured launches straight to a
+    narrowed Browse Mode or Random Playlist with no dialog at all, a saved
+    mood in one step. Clones keep their own independent modes, presets,
+    and remembered answers.
+
+Breaking Changes:
+  - The six per-question "Ask about..." toggles are replaced by the six
+    mode settings above. Anyone who had turned a question off needs to set
+    that question's mode to Skip; the old off setting has no equivalent
+    default and is not migrated.
+
 v1.9.0 (2026-09-04)
 -------------------
 New Features:
