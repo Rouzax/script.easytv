@@ -53,9 +53,13 @@ from resources.lib.constants import (
 )
 from resources.lib.data.queries import (
     build_add_episode_query,
-    build_inprogress_episodes_query,
     build_shows_art_query,
     get_clear_video_playlist_query,
+)
+from resources.lib.data.show_filters import (
+    fetch_inprogress_episode_ids,
+    filter_shows_by_population,
+    should_include_show,
 )
 from resources.lib.data.shows import (
     filter_shows_by_duration,
@@ -63,7 +67,6 @@ from resources.lib.data.shows import (
 )
 from resources.lib.data.storage import get_storage
 from resources.lib.playback.browse_player import BrowseModePlayer
-from resources.lib.playback.random_player import filter_shows_by_population
 from resources.lib.ui.browse_window import (
     BrowseWindow,
     BrowseWindowConfig,
@@ -218,118 +221,6 @@ class EpisodeListConfig:
     series_premieres: int = PREMIERE_MIX_IN
     season_premieres: int = PREMIERE_MIX_IN
     clone_mode: bool = False
-
-
-def _is_in_progress(show_id: int, inprogress_ids: Optional[set]) -> bool:
-    """Whether the show's on-deck episode carries a resume point.
-
-    With inprogress_ids supplied the answer comes from Kodi's live in-progress
-    set, which is authoritative. Without it we fall back to this box's cached
-    Resume property, which a peer's partial watch can leave stale: the bookmark
-    moves while the on-deck episode does not, so the cache is never invalidated.
-    """
-    if inprogress_ids is None:
-        return WINDOW.getProperty(f"EasyTV.{show_id}.Resume") == "true"
-    try:
-        episode_id = int(WINDOW.getProperty(f"EasyTV.{show_id}.EpisodeID"))
-    except (ValueError, TypeError):
-        return False
-    return episode_id in inprogress_ids
-
-
-def should_include_show(
-    show_id: int,
-    series_premieres: int,
-    season_premieres: int,
-    inprogress_ids: Optional[set] = None,
-) -> bool:
-    """
-    Decide whether a show passes the premiere filter.
-
-    Each premiere type has three modes: SKIP (exclude), MIX_IN (normal),
-    ONLY (premieres-only). When either type is ONLY the filter is in
-    "only mode": non-premieres are excluded and the other selector decides
-    which premiere types survive.
-
-    Evaluates the show's on-deck episode, read from window properties.
-
-    Args:
-        show_id: The TV show ID.
-        series_premieres: Mode for series premieres (SxxE01 where xx == 1).
-        season_premieres: Mode for season premieres (SxxE01 where xx > 1).
-
-    Returns:
-        True if the show should appear in the list.
-    """
-    only_mode = (series_premieres == PREMIERE_ONLY
-                 or season_premieres == PREMIERE_ONLY)
-
-    episode_no = WINDOW.getProperty(f"EasyTV.{show_id}.EpisodeNo")
-    if not episode_no or len(episode_no) < 6:
-        return not only_mode
-    try:
-        season_num = int(episode_no[1:3])
-        episode_num = int(episode_no[4:6])
-    except (ValueError, IndexError):
-        return not only_mode
-
-    is_premiere = (episode_num == 1)
-
-    # An in-progress premiere is kept even when its type is set to SKIP: the
-    # user is part-way through it and needs a route back to it.
-    #
-    # Not in only mode, though. There the premiere type IS the list ("season
-    # premieres only"), and an allowed premiere is already kept below whatever
-    # its resume state is, so this override could only ever admit a premiere of
-    # the type the user excluded. That leaked part-watched series premieres
-    # into the season-premiere list and vice versa.
-    if is_premiere and not only_mode:
-        if _is_in_progress(show_id, inprogress_ids):
-            return True
-
-    if only_mode:
-        if not is_premiere:
-            return False
-        if season_num == 1 and series_premieres == PREMIERE_SKIP:
-            return False
-        if season_num > 1 and season_premieres == PREMIERE_SKIP:
-            return False
-        return True
-
-    if not is_premiere:
-        return True
-    if season_num == 1:
-        return series_premieres != PREMIERE_SKIP
-    return season_premieres != PREMIERE_SKIP
-
-
-def fetch_inprogress_episode_ids(log) -> set:
-    """Every episode in the library that carries a resume point, in one query.
-
-    The premiere filter's in-progress override needs Kodi's truth, not this
-    box's cache: a peer's partial watch moves the bookmark without moving the
-    on-deck episode, so the cached Resume property is never invalidated and a
-    part-watched premiere silently disappears from an in-progress list.
-
-    Asking per show costs ~86ms each against a remote MySQL library (measured:
-    16.8s for 164 shows, and JSON-RPC batching only removed 16% of that). The
-    native inprogress filter answers for the whole library in ~114ms.
-
-    Returns:
-        Set of episode ids with an active resume point; empty on query failure,
-        which degrades to "nothing is in progress" rather than raising.
-    """
-    try:
-        result = json_query(build_inprogress_episodes_query())
-        return {
-            ep['episodeid']
-            for ep in result.get('episodes', [])
-            if 'episodeid' in ep
-        }
-    except Exception as e:
-        log.warning("In-progress lookup failed, premiere override disabled",
-                    event="browse.inprogress_error", error=str(e))
-        return set()
 
 
 def build_episode_list(

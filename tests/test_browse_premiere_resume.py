@@ -6,7 +6,7 @@ import pytest
 def patch_window(mocker):
     """Patch WINDOW.getProperty to return controlled values."""
     mock_window = mocker.patch(
-        'resources.lib.playback.browse_mode.WINDOW'
+        'resources.lib.data.show_filters.WINDOW'
     )
 
     def setup(prop_map):
@@ -28,7 +28,7 @@ def _make_should_include(series_premieres, season_premieres):
     Calls the real should_include_show so these tests cannot pass against a
     mirrored copy of the logic while production behaves differently.
     """
-    from resources.lib.playback.browse_mode import should_include_show
+    from resources.lib.data.show_filters import should_include_show
 
     def should_include(show_entry):
         return should_include_show(
@@ -179,7 +179,7 @@ class TestInProgressSetDrivesTheOverride:
 
     def test_premiere_kept_when_ondeck_episode_is_in_progress(self, patch_window):
         from resources.lib.constants import PREMIERE_SKIP
-        from resources.lib.playback.browse_mode import should_include_show
+        from resources.lib.data.show_filters import should_include_show
         patch_window({
             "EasyTV.7.EpisodeNo": "S01E01",
             "EasyTV.7.EpisodeID": "1234",
@@ -191,7 +191,7 @@ class TestInProgressSetDrivesTheOverride:
 
     def test_premiere_dropped_when_ondeck_episode_not_in_progress(self, patch_window):
         from resources.lib.constants import PREMIERE_SKIP
-        from resources.lib.playback.browse_mode import should_include_show
+        from resources.lib.data.show_filters import should_include_show
         patch_window({
             "EasyTV.7.EpisodeNo": "S01E01",
             "EasyTV.7.EpisodeID": "1234",
@@ -204,7 +204,7 @@ class TestInProgressSetDrivesTheOverride:
     def test_falls_back_to_property_when_no_set_supplied(self, patch_window):
         """Callers that do not pass a set keep the previous behaviour."""
         from resources.lib.constants import PREMIERE_SKIP
-        from resources.lib.playback.browse_mode import should_include_show
+        from resources.lib.data.show_filters import should_include_show
         patch_window({
             "EasyTV.7.EpisodeNo": "S01E01",
             "EasyTV.7.Resume": "true",
@@ -213,7 +213,7 @@ class TestInProgressSetDrivesTheOverride:
 
     def test_unparseable_episode_id_is_not_in_progress(self, patch_window):
         from resources.lib.constants import PREMIERE_SKIP
-        from resources.lib.playback.browse_mode import should_include_show
+        from resources.lib.data.show_filters import should_include_show
         patch_window({
             "EasyTV.7.EpisodeNo": "S01E01",
             "EasyTV.7.EpisodeID": "",

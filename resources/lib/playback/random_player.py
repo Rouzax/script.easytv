@@ -59,11 +59,12 @@ from resources.lib.data.queries import (
     get_clear_video_playlist_query,
     get_episode_filter,
 )
+from resources.lib.data.show_filters import (
+    fetch_inprogress_episode_ids,
+    filter_shows_by_population,
+)
 from resources.lib.data.shows import (
     extract_movieids_from_playlist,
-    extract_showids_from_playlist,
-    fetch_shows_with_watched_episodes,
-    fetch_unwatched_shows,
     filter_shows_by_duration,
     find_next_episode,
     resolve_ondeck_episode,
@@ -212,89 +213,6 @@ def _serialize_playlist_config(config: RandomPlaylistConfig) -> Dict[str, Any]:
         'duration_min': config.duration_min,
         'duration_max': config.duration_max,
     }
-
-
-def filter_shows_by_population(
-    population: dict,
-    sort_by: int,
-    sort_reverse: bool,
-    language: str,
-    episode_selection: int = EPISODE_SELECTION_UNWATCHED,
-    logger: Optional[StructuredLogger] = None
-) -> list:
-    """
-    Filter shows based on population criteria and episode selection mode.
-    
-    Retrieves shows based on the episode_selection mode and optionally filters
-    them based on a smart playlist or user-selected show list.
-    
-    Args:
-        population: Dict with one of:
-            - {'playlist': path} - Filter by smart playlist contents
-            - {'usersel': [show_ids]} - Filter by user-selected shows
-            - {'none': ''} - No filtering
-        sort_by: Sort method (0=name, 1=last played, 2=random)
-        sort_reverse: Whether to reverse sort order
-        language: System language for sorting
-        episode_selection: Which episodes to include:
-            - 0 (UNWATCHED): Only shows with unwatched episodes
-            - 1 (WATCHED): Only shows with watched episodes  
-            - 2 (BOTH): Shows with either unwatched or watched episodes
-        logger: Optional logger instance
-    
-    Returns:
-        List of [lastplayed_timestamp, showid, episode_id] for matching shows.
-        For watched-only shows, episode_id will be empty (selected on-demand).
-    """
-    log = logger or _get_log()
-    
-    # Fetch shows based on episode selection mode
-    if episode_selection == EPISODE_SELECTION_UNWATCHED:
-        # Unwatched only - use service cache (fast path)
-        stored_data = fetch_unwatched_shows(sort_by, sort_reverse, language)
-        log.debug("Fetched shows with unwatched episodes", count=len(stored_data))
-        
-    elif episode_selection == EPISODE_SELECTION_WATCHED:
-        # Watched only - query directly
-        stored_data = fetch_shows_with_watched_episodes(sort_by, sort_reverse, language)
-        log.debug("Fetched shows with watched episodes", count=len(stored_data))
-        
-    else:
-        # Both - merge unwatched and watched show lists
-        unwatched_shows = fetch_unwatched_shows(sort_by, sort_reverse, language)
-        watched_shows = fetch_shows_with_watched_episodes(sort_by, sort_reverse, language)
-        
-        # Merge lists, avoiding duplicates (prefer unwatched entry as it has episode_id)
-        unwatched_ids = {x[1] for x in unwatched_shows}
-        watched_only = [x for x in watched_shows if x[1] not in unwatched_ids]
-        
-        stored_data = unwatched_shows + watched_only
-        log.debug("Fetched shows for both mode", 
-                 unwatched=len(unwatched_shows), 
-                 watched_only=len(watched_only),
-                 total=len(stored_data))
-    
-    log.debug("Processing stored show data")
-    
-    if 'playlist' in population:
-        extracted_showlist = extract_showids_from_playlist(population['playlist'])
-        # If playlist extraction returned empty, return empty (filter failed)
-        if not extracted_showlist:
-            log.debug("Playlist extraction returned no shows, returning empty")
-            return []
-    elif 'usersel' in population:
-        extracted_showlist = population['usersel']
-    else:
-        extracted_showlist = None  # No filter configured
-    
-    if extracted_showlist is not None:
-        stored_data_filtered = [x for x in stored_data if x[1] in extracted_showlist]
-    else:
-        stored_data_filtered = stored_data
-    
-    log.debug("Stored data processing complete", count=len(stored_data_filtered))
-    
-    return stored_data_filtered
 
 
 def _fetch_movies(
@@ -824,22 +742,6 @@ def _process_tv_candidate(
         return tmp_episode_id, False
 
 
-def _fetch_inprogress_episode_ids(logger) -> set:
-    """Every episode with a resume point, in one query.
-
-    Asking per show costs ~86ms each against a remote MySQL library; the native
-    inprogress filter answers for the whole library in ~114ms.
-    """
-    try:
-        result = json_query(build_inprogress_episodes_query())
-        return {ep['episodeid'] for ep in result.get('episodes', [])
-                if 'episodeid' in ep}
-    except Exception as e:
-        logger.warning("In-progress lookup failed, premiere override disabled",
-                       event="playlist.inprogress_error", error=str(e))
-        return set()
-
-
 def _read_ondeck_episode_ids(candidate_list: List[str]) -> dict:
     """Map each TV candidate's show id to its cached on-deck episode id."""
     ondeck = {}
@@ -920,7 +822,7 @@ def _check_premiere_exclusion(
     is_premiere = (episode_num == 1)
 
     # In-progress premieres are kept when their type is merely SKIPped (the
-    # user is actively watching), mirroring browse_mode.should_include_show.
+    # user is actively watching), mirroring show_filters.should_include_show.
     # Resume is the on-deck episode's resume state (set by episode_tracker and
     # the shared display refresh), so "true" means genuinely in-progress.
     #
@@ -1488,7 +1390,7 @@ def build_random_playlist(
                 # episode is unwatched anyway.
                 inprogress_ids = {int(p[4]) for p in partial_episodes}
             else:
-                inprogress_ids = _fetch_inprogress_episode_ids(log)
+                inprogress_ids = fetch_inprogress_episode_ids(log)
             ondeck_ids = _read_ondeck_episode_ids(candidate_list)
 
         while count < config.length and candidate_list:
