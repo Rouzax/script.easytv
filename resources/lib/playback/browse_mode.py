@@ -30,7 +30,7 @@ Logging:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Set
 
 import xbmc
 import xbmcaddon
@@ -59,6 +59,7 @@ from resources.lib.data.queries import (
 from resources.lib.data.show_filters import (
     fetch_inprogress_episode_ids,
     filter_shows_by_population,
+    restrict_to_allowed,
     should_include_show,
 )
 from resources.lib.data.shows import (
@@ -205,6 +206,8 @@ class EpisodeListConfig:
         language: System language for sorting
         series_premieres: Series premiere filter mode (PREMIERE_SKIP=0, PREMIERE_MIX_IN=1, PREMIERE_ONLY=2)
         season_premieres: Season premiere filter mode (PREMIERE_SKIP=0, PREMIERE_MIX_IN=1, PREMIERE_ONLY=2)
+        allowed_show_ids: shows the guided flow allowed this run (None = flow did not run).
+            Only ever narrows; every other filter still applies.
     """
     skin: int = 0
     limit_shows: bool = False
@@ -221,6 +224,7 @@ class EpisodeListConfig:
     series_premieres: int = PREMIERE_MIX_IN
     season_premieres: int = PREMIERE_MIX_IN
     clone_mode: bool = False
+    allowed_show_ids: Optional[Set[int]] = None
 
 
 def build_episode_list(
@@ -290,6 +294,7 @@ def build_episode_list(
         show_data = filter_shows_by_population(
             population, config.sort_by, config.sort_reverse, config.language, logger=log
         )
+        show_data = restrict_to_allowed(show_data, config.allowed_show_ids)
         if config.duration_filter_enabled and show_data:
             show_data = filter_shows_by_duration(
                 show_data,

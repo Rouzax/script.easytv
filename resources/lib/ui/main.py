@@ -49,6 +49,7 @@ from resources.lib.constants import (
 )
 from resources.lib.playback.browse_mode import EpisodeListConfig, build_episode_list
 from resources.lib.playback.random_player import (
+    CONTENT_MOVIES_ONLY,
     RandomPlaylistConfig,
     build_random_playlist,
 )
@@ -200,10 +201,29 @@ def main_entry(addon, log):
 
     language = xbmc.getInfoLabel('System.Language')
 
+    # playlist_content is read here (rather than inside the choice == 1
+    # branch below) so the guided flow's movies-only guard and the branch
+    # itself share a single read. The 0 (TV-only) default is inert when
+    # choice != 1, since nothing reads it outside the playlist branch.
+    playlist_content = get_int_setting('playlist_content') if choice == 1 else 0
+
+    allowed_show_ids = None
+    if get_bool_setting('guided_enabled'):
+        if choice == 1 and playlist_content == CONTENT_MOVIES_ONLY:
+            # Movies-only playlists have no TV shows to narrow.
+            log.debug("Guided flow skipped for movies-only playlist",
+                      event="wizard.not_applicable")
+        else:
+            from resources.lib.ui.wizard import run_wizard
+            wizard_result = run_wizard(
+                addon_id=addon.getAddonInfo('id'),
+                population=population, mode_choice=choice, logger=log)
+            if wizard_result is None:
+                sys.exit()
+            allowed_show_ids = wizard_result.allowed_show_ids
+
     if choice == 1:
         # Random playlist mode
-        playlist_content = get_int_setting('playlist_content')
-
         # Get movie playlist setting if movies are included
         movie_playlist = None
         # playlist_content: 0=TV only, 1=mixed, 2=movies only
@@ -237,9 +257,11 @@ def main_entry(addon, log):
                 sort_by=sort_by, sort_reverse=sort_reverse, language=language,
                 movie_playlist=movie_playlist,
                 unwatched_ratio=get_int_setting('unwatched_ratio'),
-                duration_filter_enabled=get_bool_setting('duration_filter_enabled'),
+                duration_filter_enabled=(get_bool_setting('duration_filter_enabled')
+                                         if allowed_show_ids is None else False),
                 duration_min=get_int_setting('duration_min'),
-                duration_max=get_int_setting('duration_max')
+                duration_max=get_int_setting('duration_max'),
+                allowed_show_ids=allowed_show_ids,
             ),
             logger=log,
             addon_id=addon.getAddonInfo('id'),
@@ -257,7 +279,8 @@ def main_entry(addon, log):
                 skin_return=get_bool_setting('skin_return'),
                 excl_random_order_shows=get_bool_setting('excl_random_order_shows'),
                 script_path=script_path,
-                duration_filter_enabled=get_bool_setting('duration_filter_enabled'),
+                duration_filter_enabled=(get_bool_setting('duration_filter_enabled')
+                                         if allowed_show_ids is None else False),
                 duration_min=get_int_setting('duration_min'),
                 duration_max=get_int_setting('duration_max'),
                 sort_by=sort_by,
@@ -266,6 +289,7 @@ def main_entry(addon, log):
                 series_premieres=get_int_setting('premieres'),
                 season_premieres=get_int_setting('season_premieres'),
                 clone_mode=is_clone(addon),
+                allowed_show_ids=allowed_show_ids,
             ),
             monitor=xbmc.Monitor(),
             logger=log

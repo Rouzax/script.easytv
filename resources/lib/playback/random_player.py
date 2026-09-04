@@ -30,7 +30,7 @@ import ast
 import json
 import random
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
 
 import xbmc
 import xbmcgui
@@ -62,6 +62,7 @@ from resources.lib.data.queries import (
 from resources.lib.data.show_filters import (
     fetch_inprogress_episode_ids,
     filter_shows_by_population,
+    restrict_to_allowed,
 )
 from resources.lib.data.shows import (
     extract_movieids_from_playlist,
@@ -131,6 +132,8 @@ class RandomPlaylistConfig:
         duration_filter_enabled: Whether to filter shows by episode duration
         duration_min: Minimum episode duration in minutes (0 = no minimum)
         duration_max: Maximum episode duration in minutes (0 = no maximum)
+        allowed_show_ids: shows the guided flow allowed this run (None = flow did not run).
+            Only ever narrows; every other filter still applies.
     """
     length: int = 10
     playlist_content: int = CONTENT_MIXED
@@ -151,6 +154,7 @@ class RandomPlaylistConfig:
     duration_filter_enabled: bool = False
     duration_min: int = 0
     duration_max: int = 0
+    allowed_show_ids: Optional[Set[int]] = None
 
 
 def _resolve_clone_ondeck(show_id: int, random_order_shows: List[int]) -> Optional[int]:
@@ -212,6 +216,8 @@ def _serialize_playlist_config(config: RandomPlaylistConfig) -> Dict[str, Any]:
         'duration_filter_enabled': config.duration_filter_enabled,
         'duration_min': config.duration_min,
         'duration_max': config.duration_max,
+        'allowed_show_ids': (sorted(config.allowed_show_ids)
+                             if config.allowed_show_ids is not None else None),
     }
 
 
@@ -1186,6 +1192,10 @@ def build_random_playlist(
                     population, config.sort_by, config.sort_reverse, config.language,
                     episode_selection=config.episode_selection, logger=log
                 )
+                stored_data_filtered = restrict_to_allowed(
+                    stored_data_filtered,
+                    set(config.allowed_show_ids) if config.allowed_show_ids is not None
+                    else None)
 
                 # Apply duration filter if enabled
                 if config.duration_filter_enabled and stored_data_filtered:

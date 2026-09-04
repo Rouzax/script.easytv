@@ -1319,6 +1319,7 @@ class ServiceDaemon:
             duration_filter_enabled=config_dict.get('duration_filter_enabled', False),
             duration_min=config_dict.get('duration_min', 0),
             duration_max=config_dict.get('duration_max', 0),
+            allowed_show_ids=config_dict.get('allowed_show_ids'),
         )
         
         # Rebuild the playlist
