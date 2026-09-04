@@ -1375,66 +1375,6 @@ msgctxt "#32752"
 msgid "Before Browse or Random Playlist opens, ask a few quick questions (genre, episode length, era, rating, how much to watch) and only offer shows that match. Your answers apply to this launch only and are never saved to settings."
 msgstr ""
 
-#. Settings: Guided questions - Ask ignore genre setting
-msgctxt "#32753"
-msgid "Ask about genres to avoid"
-msgstr ""
-
-#. Settings: Guided questions - Ask ignore genre help
-msgctxt "#32754"
-msgid "Include the question that removes genres you don't want right now."
-msgstr ""
-
-#. Settings: Guided questions - Ask genre setting
-msgctxt "#32755"
-msgid "Ask about genres"
-msgstr ""
-
-#. Settings: Guided questions - Ask genre help
-msgctxt "#32756"
-msgid "Include the question that picks the genres you want right now."
-msgstr ""
-
-#. Settings: Guided questions - Ask length setting
-msgctxt "#32757"
-msgid "Ask about episode length"
-msgstr ""
-
-#. Settings: Guided questions - Ask length help
-msgctxt "#32758"
-msgid "Include the question about average episode length. An answer replaces the duration filter for this launch; \"No preference\" uses the duration filter from settings."
-msgstr ""
-
-#. Settings: Guided questions - Ask era setting
-msgctxt "#32759"
-msgid "Ask about era"
-msgstr ""
-
-#. Settings: Guided questions - Ask era help
-msgctxt "#32760"
-msgid "Include the question about how recent the show should be."
-msgstr ""
-
-#. Settings: Guided questions - Ask rating setting
-msgctxt "#32761"
-msgid "Ask about rating"
-msgstr ""
-
-#. Settings: Guided questions - Ask rating help
-msgctxt "#32762"
-msgid "Include the question about minimum show rating."
-msgstr ""
-
-#. Settings: Guided questions - Ask depth setting
-msgctxt "#32763"
-msgid "Ask about how much to watch"
-msgstr ""
-
-#. Settings: Guided questions - Ask depth help
-msgctxt "#32764"
-msgid "Include the question about how many matching episodes a show should have available."
-msgstr ""
-
 #. Settings: Guided questions - Remember answers setting
 msgctxt "#32765"
 msgid "Remember my answers"
@@ -1550,3 +1490,137 @@ msgctxt "#32789"
 msgid "Adjust answers"
 msgstr ""
 
+#. Settings: Guided questions - Question mode option: ask each time
+msgctxt "#32790"
+msgid "Ask"
+msgstr ""
+
+#. Settings: Guided questions - Question mode option: apply a pre-set value silently
+msgctxt "#32791"
+msgid "Pre-set"
+msgstr ""
+
+#. Settings: Guided questions - Question mode option: skip this question
+msgctxt "#32792"
+msgid "Skip"
+msgstr ""
+
+#. Settings: Guided questions - Ignore genre mode setting
+msgctxt "#32793"
+msgid "Genres to avoid"
+msgstr ""
+
+#. Settings: Guided questions - Ignore genre mode help
+msgctxt "#32794"
+msgid "Ask each launch, apply a pre-set list silently, or skip this filter."
+msgstr ""
+
+#. Settings: Guided questions - Genre mode setting
+msgctxt "#32795"
+msgid "Genres"
+msgstr ""
+
+#. Settings: Guided questions - Genre mode help
+msgctxt "#32796"
+msgid "Ask each launch, apply a pre-set list silently, or skip this filter."
+msgstr ""
+
+#. Settings: Guided questions - Length mode setting
+msgctxt "#32797"
+msgid "Episode length"
+msgstr ""
+
+#. Settings: Guided questions - Length mode help
+msgctxt "#32798"
+msgid "Ask each launch, apply a pre-set length silently, or skip. Skip still uses the Duration Filter from the Shows category when that is enabled."
+msgstr ""
+
+#. Settings: Guided questions - Era mode setting
+msgctxt "#32799"
+msgid "Era"
+msgstr ""
+
+#. Settings: Guided questions - Era mode help
+msgctxt "#32800"
+msgid "Ask each launch, apply a pre-set recency silently, or skip this filter."
+msgstr ""
+
+#. Settings: Guided questions - Rating mode setting
+msgctxt "#32801"
+msgid "Rating"
+msgstr ""
+
+#. Settings: Guided questions - Rating mode help
+msgctxt "#32802"
+msgid "Ask each launch, apply a pre-set minimum rating silently, or skip this filter."
+msgstr ""
+
+#. Settings: Guided questions - Depth mode setting
+msgctxt "#32803"
+msgid "How much to watch"
+msgstr ""
+
+#. Settings: Guided questions - Depth mode help
+msgctxt "#32804"
+msgid "Ask each launch, apply a pre-set minimum silently, or skip this filter."
+msgstr ""
+
+#. Settings: Guided questions - Choose genres to avoid action
+msgctxt "#32805"
+msgid "Choose genres to avoid..."
+msgstr ""
+
+#. Settings: Guided questions - Choose genres to avoid action help
+msgctxt "#32806"
+msgid "Pick the genres the pre-set will exclude."
+msgstr ""
+
+#. Settings: Guided questions - Choose genres action
+msgctxt "#32807"
+msgid "Choose genres..."
+msgstr ""
+
+#. Settings: Guided questions - Choose genres action help
+msgctxt "#32808"
+msgid "Pick the genres the pre-set will require."
+msgstr ""
+
+#. Settings: Guided questions - Preset episode length setting
+msgctxt "#32809"
+msgid "Pre-set episode length"
+msgstr ""
+
+#. Settings: Guided questions - Preset episode length help
+msgctxt "#32810"
+msgid "Length bucket applied without asking."
+msgstr ""
+
+#. Settings: Guided questions - Preset era (recency) setting
+msgctxt "#32811"
+msgid "Only shows from the last (years)"
+msgstr ""
+
+#. Settings: Guided questions - Preset era (recency) help
+msgctxt "#32812"
+msgid "0 disables the pre-set. Applied without asking."
+msgstr ""
+
+#. Settings: Guided questions - Preset rating setting
+msgctxt "#32813"
+msgid "Pre-set rating"
+msgstr ""
+
+#. Settings: Guided questions - Preset rating help
+msgctxt "#32814"
+msgid "Minimum rating applied without asking."
+msgstr ""
+
+#. Settings: Guided questions - Preset depth setting
+msgctxt "#32815"
+msgid "Pre-set how much to watch"
+msgstr ""
+
+#. Settings: Guided questions - Preset depth help
+msgctxt "#32816"
+msgid "Minimum available episodes applied without asking."
+msgstr ""
