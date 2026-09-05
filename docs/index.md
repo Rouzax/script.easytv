@@ -19,6 +19,8 @@ EasyTV maintains a list of the **next episode to watch** for every TV show with 
 | **[Browse Mode](browse-mode.md)** | See all your shows with their next episode ready. Pick what you're in the mood for. | Active choosing |
 | **[Random Playlist](random-playlist-mode.md)** | One click starts a shuffled playlist. Sit back and let EasyTV decide. | Eliminating decision fatigue |
 
+Either way, optional **[Guided Questions](guided-questions.md)** can run first: answer a few quick questions about what you feel like, and only matching shows are offered.
+
 ---
 
 ## Quick Feature Overview
@@ -27,6 +29,7 @@ EasyTV maintains a list of the **next episode to watch** for every TV show with 
 - **Smart Episode Tracking:** Always knows your next episode, even with gaps in watch history
 - **Instant Updates:** Lists refresh immediately when you finish watching
 - **[Surprise Me](browse-mode.md#surprise-me):** Can't decide? One button picks a show and plays its next episode
+- **[Guided Questions](guided-questions.md):** Answer a few quick questions (genres, episode length, era, rating, how much to watch) and EasyTV only offers shows that match your mood; pre-set answers turn a clone into a one-click saved mood
 - **Multiple View Styles:** Card List, Posters, Big Screen, Split View, and Showcase, with 4 accent color themes
 
 ### 🎲 Random Playlists
@@ -64,6 +67,7 @@ That's it. EasyTV's background service handles everything automatically.
 | **[Installation](installation.md)** | Requirements, installation steps, first run |
 | **[Browse Mode](browse-mode.md)** | Complete guide to the episode list |
 | **[Random Playlist Mode](random-playlist-mode.md)** | Complete guide to shuffled playlists |
+| **[Guided Questions](guided-questions.md)** | Mood questions and presets that narrow both modes |
 | **[Random-Order Shows](random-order-shows.md)** | Shuffle-friendly shows explained |
 | **[Settings Reference](settings-reference.md)** | Every setting explained |
 | **[Smart Playlist Integration](smart-playlist-integration.md)** | How to filter content with Kodi playlists |
