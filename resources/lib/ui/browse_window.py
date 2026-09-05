@@ -39,6 +39,7 @@ import time
 from dataclasses import dataclass
 from datetime import date
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
+from urllib.parse import unquote
 
 import xbmc
 import xbmcaddon
@@ -66,6 +67,20 @@ from resources.lib.data.queries import build_episode_details_query
 from resources.lib.data.shows import resolve_ondeck_episode
 from resources.lib.data.storage import get_storage
 from resources.lib.utils import format_duration, get_logger, json_query, lang
+
+
+def _unwrap_image_url(value: str) -> str:
+    """Return the raw path inside a Kodi image:// wrapped URL.
+
+    JSON-RPC art values arrive image:// encoded. Plain image controls
+    (setArt thumbs) render those fine, but the skin's multiimage fanart
+    panels (Big Screen, Posters) reject them in <imagepath> with
+    "unsupported protocol", leaving the panel black. Those panels read
+    the Fanart_Image property, so it must carry the decoded inner path.
+    """
+    if value.startswith('image://'):
+        return unquote(value[len('image://'):].rstrip('/'))
+    return value
 
 if TYPE_CHECKING:
     from resources.lib.utils import StructuredLogger
@@ -379,7 +394,7 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
 
         list_item = xbmcgui.ListItem(label=title, label2=eptitle)
         list_item.setArt({'thumb': poster, 'icon': poster})
-        list_item.setProperty("Fanart_Image", fanart)
+        list_item.setProperty("Fanart_Image", _unwrap_image_url(fanart))
         list_item.setProperty("numwatched", num_watched)
         list_item.setProperty("numondeck", num_ondeck)
         list_item.setProperty("numskipped", num_skipped)
@@ -466,7 +481,7 @@ class BrowseWindow(xbmcgui.WindowXMLDialog):
         # Update the item in-place
         item.setLabel2(eptitle)
         item.setArt({'thumb': poster, 'icon': poster})
-        item.setProperty("Fanart_Image", fanart)
+        item.setProperty("Fanart_Image", _unwrap_image_url(fanart))
         item.setProperty("numwatched", num_watched)
         item.setProperty("numondeck", num_ondeck)
         item.setProperty("numskipped", num_skipped)
