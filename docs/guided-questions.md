@@ -79,9 +79,13 @@ When a question is asked (mode **Ask**), every answer narrows the candidate list
 
 ### 1. Ignore Genres
 
+![Ignore Genres question](assets/screenshots/dialog-guided-ignore-genres.png)
+
 A multi-select list of every genre present in your candidate shows. Pick any number of genres to exclude, or pick none. Genres you avoid here are removed from the list offered by question 2 during the same run.
 
 ### 2. Select Genres
+
+![Select Genres question](assets/screenshots/dialog-guided-genres.png)
 
 A multi-select list of the remaining genres. Pick any number to require at least one of; pick none to leave genre unrestricted.
 
@@ -89,19 +93,27 @@ If none of your candidate shows have genre metadata, a genre question set to **A
 
 ### 3. Select Episode Length
 
+![Select Episode Length question](assets/screenshots/dialog-guided-length.png)
+
 A single-select choice: **Short (30 min or less)**, **Medium (30-45 min)**, **Long (over 45 min)**, or **No preference**.
 
 An answer here **replaces** your **Duration Filter** setting for this run; see [Episode Length and the Duration Filter](#episode-length-and-the-duration-filter). **No preference** falls back to your existing Duration Filter setting instead.
 
 ### 4. Select Time Period
 
+![Select Time Period question](assets/screenshots/dialog-guided-era.png)
+
 A single-select choice built from the years present in your candidate shows: **Recent (last 5 years)**, one option per decade that has shows (newest first, e.g. "2020s", "2010s"), and **No preference**.
 
 ### 5. Select Rating
 
+![Select Rating question](assets/screenshots/dialog-guided-rating.png)
+
 A single-select choice: **Any rating**, **Good (7+)**, **Great (8+)**.
 
 ### 6. How much to watch?
+
+![How much to watch? question](assets/screenshots/dialog-guided-depth.png)
 
 A single-select choice about how many matching episodes a show should have available: **Anything**, **A few episodes available (3+)**, **Plenty to binge (10+)**.
 
@@ -211,6 +223,8 @@ When **Playlist content** (Random Playlist settings) is set to **Movies only**, 
 ---
 
 ## When No Shows Match
+
+![No shows match your answers](assets/screenshots/dialog-guided-no-results.png)
 
 If the combination of asked answers and presets leaves zero shows, and at least one question is set to **Ask**, EasyTV shows "No shows match your answers." with two choices:
 

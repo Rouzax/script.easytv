@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <addon id="script.easytv"
        name="EasyTV"
-       version="1.10.0"
+       version="1.10.1"
        provider-name="Rouzax">
     <requires>
         <import addon="xbmc.python" version="3.0.1"/>
@@ -25,19 +25,16 @@
         <forum>https://forum.kodi.tv/showthread.php?tid=383902</forum>
         <website>https://rouzax.github.io/script.easytv/</website>
         <source>https://github.com/Rouzax/script.easytv</source>
-        <news>v1.10.0 (2026-09-04)
+        <news>v1.10.1 (2026-09-05)
+- Fixed fanart not showing in the Big Screen and Posters browse views
+- Documentation now shows every guided question with fresh screenshots
+
+v1.10.0 (2026-09-04)
 - Guided questions grew modes: Ask each launch, apply a Pre-set value silently, or Skip a question entirely
 - Pre-fill answers in settings: genre pickers, episode length, recency in years, rating and how-much-to-watch presets
 - When a question is still asked, its preset comes pre-selected (your remembered answer wins if you have one)
 - A clone with everything Pre-set or Skip launches straight into a matching browse or playlist: a one-click saved mood
 - Note: the six "Ask about..." toggles became mode settings; re-pick Skip if you had turned a question off
-
-v1.9.0 (2026-09-04)
-- New: Guided questions. Answer a few quick questions (genres, episode length, era, rating, how much to watch) and EasyTV only offers shows that match your mood
-- Off by default: turn it on under Settings > EasyTV > Guided questions and choose which questions get asked
-- Answers apply to one launch only and are never saved to settings; optionally remember them as next time's pre-selected defaults
-- Works on top of your existing filters: smart playlist selections, premieres and watched settings still apply
-- Clones get their own independent copy, so a clone can be a saved mood
 </news>
         <assets>
             <icon>icon.png</icon>

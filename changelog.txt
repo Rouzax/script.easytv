@@ -1,7 +1,17 @@
 EasyTV Changelog
 ================
 
-v1.10.0 (2026-09-04)
+v1.10.1 (2026-09-05)
+--------------------
+Bug Fixes:
+  - Fixed: fanart panels in the Big Screen and Posters browse views
+    rendered black. Kodi's JSON-RPC returns art as image:// wrapped URLs;
+    the skin's multiimage <imagepath> rejects that form ("unsupported
+    protocol"), so the Fanart_Image list item property now carries the
+    decoded inner path (browse_window._unwrap_image_url). Thumbs and grid
+    posters were unaffected (plain image controls accept image:// URLs).
+
+TEMP_MARKER
 --------------------
 New Features:
   - Each guided question now has its own mode: Ask (a dialog every launch,
