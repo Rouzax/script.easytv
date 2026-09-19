@@ -11,7 +11,7 @@ Bug Fixes:
     decoded inner path (browse_window._unwrap_image_url). Thumbs and grid
     posters were unaffected (plain image controls accept image:// URLs).
 
-TEMP_MARKER
+v1.10.0 (2026-09-04)
 --------------------
 New Features:
   - Each guided question now has its own mode: Ask (a dialog every launch,
