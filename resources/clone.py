@@ -50,7 +50,7 @@ Logging:
 import os
 import shutil
 import sys
-from typing import Optional
+from typing import NoReturn, Optional
 from xml.etree import ElementTree as et
 
 import xbmc
@@ -94,7 +94,7 @@ addon_path       = xbmcvfs.translatePath('special://home/addons')
 log              = get_logger('clone')
 
 
-def errorHandle(exception: Exception, trace: object, new_path: Optional[str] = None) -> None:
+def errorHandle(exception: Exception, trace: object, new_path: Optional[str] = None) -> NoReturn:
 
     log.error("Clone creation failed", event="clone.fail", error=str(exception), trace=str(trace))
 

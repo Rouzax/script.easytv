@@ -60,7 +60,7 @@ Logging:
 import os
 import shutil
 import sys
-from typing import Optional
+from typing import NoReturn, Optional
 from xml.etree import ElementTree as et
 
 import xbmc
@@ -92,7 +92,7 @@ def _lang(string_id):
     return __addon__.getLocalizedString(string_id)
 
 
-def errorHandle(exception: Exception, trace: object, path_to_clean: Optional[str] = None) -> None:
+def errorHandle(exception: Exception, trace: object, path_to_clean: Optional[str] = None) -> NoReturn:
     """Handle errors during update."""
     _log(f"Clone update failed: {exception}", xbmc.LOGERROR)
 
