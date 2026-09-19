@@ -362,7 +362,6 @@ def validate_show_selections(
 
 
 # Type alias for callback functions used by load_settings
-# Note: Use List instead of list for Python 3.8 compatibility (Kodi uses 3.8)
 RandomOrderCallback = Callable[[int], None]
 StoreNextEpCallback = Callable[[int, int, List, List, int, int], None]
 RemoveShowCallback = Callable[[int], None]

@@ -119,7 +119,6 @@ PROPERTY_PREFIX = "EasyTV"
 # =============================================================================
 
 # Callback to update smart playlists when episode data changes
-# Note: Use Union instead of | for Python 3.8 compatibility (Kodi uses 3.8)
 # The callback accepts (show_id, **kwargs) where kwargs may include quiet=bool, remove=bool
 SmartPlaylistUpdateCallback = Callable[..., None]
 

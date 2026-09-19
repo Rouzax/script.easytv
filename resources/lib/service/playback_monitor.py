@@ -96,7 +96,6 @@ class PlaybackSettings:
 
 
 # Type aliases for callbacks
-# Note: Use List/Dict instead of list/dict for Python 3.8 compatibility (Kodi uses 3.8)
 SettingsGetter = Callable[[], PlaybackSettings]
 RandomShowsGetter = Callable[[], List[int]]
 RefreshShowCallback = Callable[[List[int]], None]

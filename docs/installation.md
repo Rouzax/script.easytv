@@ -9,7 +9,7 @@
 | **Optional** | Movies library (for mixed playlists) |
 | **Optional** | Shared MySQL/MariaDB database + `script.module.pymysql` (for [multi-instance sync](multi-instance-sync.md)) |
 
-> ⚠️ **Not compatible** with Kodi 20 (Nexus) or earlier versions. EasyTV uses Python 3.8+ features and Kodi 21+ APIs.
+> ⚠️ **Not compatible** with Kodi 20 (Nexus) or earlier versions. EasyTV targets the Python 3.11 runtime that Kodi 21 ships and Kodi 21+ APIs.
 
 ---
 

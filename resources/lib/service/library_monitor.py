@@ -39,7 +39,6 @@ if TYPE_CHECKING:
 
 
 # Type aliases for callbacks
-# Note: Use List instead of list for Python 3.8 compatibility (Kodi uses 3.8)
 SettingsReloadCallback = Callable[[], None]
 GetEpisodesCallback = Callable[[List[int]], None]
 GetRandomShowsCallback = Callable[[], List[int]]

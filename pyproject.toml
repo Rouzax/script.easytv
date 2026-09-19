@@ -2,13 +2,16 @@
 # Dev tooling configuration only. Excluded from the packaged Kodi addon zip.
 
 [tool.ruff]
-# Kodi Windows builds run Python 3.8; never propose newer syntax.
-target-version = "py38"
+# Kodi 21 runs Python 3.11.7 on the official Windows build and on Linux builds
+# using Kodi's bundled dependencies. Only a native distro package links against
+# the distro's Python 3, which can be older.
+target-version = "py311"
 
 [tool.ruff.lint]
 # ruff defaults (E4/E7/E9 + pyflakes F) plus import sorting (I).
 # E501 (line length) is intentionally not enforced (prefer noqa over mass-reformat);
-# UP (pyupgrade) is excluded so the linter never suggests 3.9+ syntax.
+# UP (pyupgrade) stays excluded: its rewrites are valid at this floor, but applying
+# them is a repo-wide sweep that belongs in its own change.
 select = ["E4", "E7", "E9", "F", "I"]
 
 [tool.coverage.run]

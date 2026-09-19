@@ -60,7 +60,7 @@ Please keep PRs focused — one feature or fix per PR makes review easier.
 
 ## Code Style
 
-- Python 3.8+ compatible (Kodi 21 minimum)
+- Python 3.11+ compatible (Kodi 21 minimum)
 - Type hints where practical
 - Clear, descriptive naming
 - Follow existing patterns in the codebase
@@ -193,7 +193,7 @@ ruff check
 # Static analysis
 pyflakes $(find . -name "*.py" -not -path "*/__pycache__/*")
 
-# Type checking (Python 3.8 target)
+# Type checking (Python 3.11 target)
 pyright
 
 # Dead-code detection
