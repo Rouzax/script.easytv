@@ -18,6 +18,13 @@ select = ["E4", "E7", "E9", "F", "I"]
 source = ["resources/lib"]
 omit = ["*/__pycache__/*", "tests/*"]
 
+[tool.coverage.report]
+# Floor, not a target: it records the coverage the suite already holds so a
+# change cannot silently lose ground. Raise it when a change earns more; never
+# lower it to make a run pass. Only bites where coverage is requested (CI),
+# so the pre-push hook stays fast.
+fail_under = 40
+
 [tool.vulture]
 paths = ["resources/lib"]
 min_confidence = 80
