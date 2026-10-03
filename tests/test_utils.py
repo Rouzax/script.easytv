@@ -333,6 +333,53 @@ class TestJsonQueryInvalidUtf8:
         result = json_query({"method": "VideoLibrary.GetEpisodeDetails"})
         assert result["title"] == "Pok\u00e9mon \u2603"
 
+    @pytest.fixture
+    def debug_lines(self, monkeypatch):
+        """Enable debug logging and collect the lines written to the log file."""
+        from resources.lib.utils import StructuredLogger
+        lines = []
+        monkeypatch.setattr(StructuredLogger, "_initialized", True)
+        monkeypatch.setattr(StructuredLogger, "_debug_enabled", True)
+        monkeypatch.setattr(StructuredLogger, "_write_to_file",
+                            lambda self, level, msg: lines.append((level, msg)))
+        return lines
+
+    @staticmethod
+    def _respond(mocker, raw):
+        mocker.patch("xbmc.executeJSONRPC",
+                     return_value=raw.decode("utf-8", "surrogateescape"))
+
+    def test_replacement_is_logged_with_owning_item(self, mocker, debug_lines):
+        self._respond(mocker,
+                      b'{"result": {"episodes": [{"episodeid": 7, "title": "Pilot"},'
+                      b' {"episodeid": 812, "tvshowid": 4, "title": "Pok\xe9mon",'
+                      b' "plot": "ok"}]}}')
+        json_query({"method": "VideoLibrary.GetEpisodes"})
+        assert len(debug_lines) == 1
+        level, msg = debug_lines[0]
+        assert level == "DEBUG"
+        assert "event=jsonrpc.invalid_utf8" in msg
+        assert "method=VideoLibrary.GetEpisodes" in msg
+        assert "field=result.episodes[1].title" in msg
+        assert "episodeid=812" in msg
+        assert "tvshowid=4" in msg
+
+    def test_replacement_in_list_names_the_enclosing_item(self, mocker, debug_lines):
+        self._respond(mocker,
+                      b'{"result": {"tvshows": [{"tvshowid": 3, "title": "Dark",'
+                      b' "genre": ["Crime", "Dr\xe9ma"]}]}}')
+        json_query({"method": "VideoLibrary.GetTVShows"})
+        _level, msg = debug_lines[0]
+        assert "field=result.tvshows[0].genre[1]" in msg
+        assert "tvshowid=3" in msg
+        assert "item=Dark" in msg
+
+    def test_clean_response_logs_nothing(self, mocker, debug_lines):
+        self._respond(mocker,
+                      '{"result": {"episodes": [{"title": "Pok\u00e9mon \ufffd"}]}}'.encode())
+        json_query({"method": "VideoLibrary.GetEpisodes"})
+        assert debug_lines == []
+
 
 # ── StructuredLogger ─────────────────────────────────────────────────
 

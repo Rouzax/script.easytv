@@ -670,6 +670,44 @@ def log_timing(
         )
 
 
+def _find_replaced_text(
+    node: Any, path: str, owner: Optional[Dict[str, Any]],
+) -> Generator[tuple[str, Optional[Dict[str, Any]]], None, None]:
+    """Yield (field path, enclosing object) for every string holding U+FFFD."""
+    if isinstance(node, dict):
+        for key, value in node.items():
+            yield from _find_replaced_text(value, f"{path}.{key}", node)
+    elif isinstance(node, list):
+        for index, value in enumerate(node):
+            yield from _find_replaced_text(value, f"{path}[{index}]", owner)
+    elif isinstance(node, str) and '\ufffd' in node:
+        yield path, owner
+
+
+def _log_replaced_text(query: Union[Dict[str, Any], List[Dict[str, Any]]],
+                       data: Any) -> None:
+    """Point at the library items whose text held invalid UTF-8.
+
+    The field path alone does not identify an episode or show when the bad
+    byte sits in a plot or a path, so the enclosing object's ids and title
+    are logged too.
+    """
+    _log = get_logger('data')
+    method = query.get("method", "unknown") if isinstance(query, dict) else "batch"
+    root = "result" if isinstance(data, dict) and "result" in data else "response"
+    if root == "result":
+        data = data["result"]
+    for field, owner in _find_replaced_text(data, root, None):
+        context: Dict[str, Any] = {k: v for k, v in (owner or {}).items()
+                                   if k.endswith("id") and isinstance(v, int)}
+        name = (owner or {}).get("title") or (owner or {}).get("label")
+        if isinstance(name, str):
+            context["item"] = name
+        _log.debug("Invalid UTF-8 replaced in library text",
+                   event="jsonrpc.invalid_utf8", method=method, field=field,
+                   **context)
+
+
 def json_query(query: Union[Dict[str, Any], List[Dict[str, Any]]], return_result: bool = True) -> Dict[str, Any]:
     """
     Execute a JSON-RPC query against Kodi.
@@ -689,8 +727,10 @@ def json_query(query: Union[Dict[str, Any], List[Dict[str, Any]]], return_result
         # surrogate. Passing such a string back into the Kodi API segfaults
         # Kodi (it does not check PyUnicode_AsUTF8 for NULL), so restore the
         # raw bytes and replace the invalid ones with U+FFFD.
-        response = response.encode('utf-8', 'surrogateescape').decode('utf-8', 'replace')
-        data = json.loads(response)
+        cleaned = response.encode('utf-8', 'surrogateescape').decode('utf-8', 'replace')
+        data = json.loads(cleaned)
+        if cleaned != response and StructuredLogger._debug_enabled:
+            _log_replaced_text(query, data)
         
         if return_result:
             return data.get('result', {})

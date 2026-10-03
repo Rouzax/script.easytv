@@ -242,6 +242,33 @@ If you're using [multi-instance sync](multi-instance-sync.md), these are the mos
 
 ---
 
+### A Title Shows a � Symbol
+
+An episode title, show title, plot, genre or file path in EasyTV shows the replacement character `�`.
+
+**Why it happens:** that text is stored in the Kodi video library with a character that is not valid UTF-8, typically an accented letter (such as é) saved in an older encoding, often from an NFO file or an old scrape. EasyTV deliberately shows `�` in its place, because handing that text back to Kodi unchanged would crash Kodi. This is protection, not a bug, and playback of the episode is unaffected.
+
+**Find the affected item:**
+1. Enable debug logging: **Settings → Advanced → Debugging**, then enable **Enable debug logging**
+2. Restart Kodi (the EasyTV service reads the debug setting only when it starts, and it reads your whole TV library at startup)
+3. Search `easytv.log` for `jsonrpc.invalid_utf8` (locations are in [Log File Locations](#log-file-locations))
+
+Each line names the field (`field=`), the item's ids (`episodeid=` for an episode, `tvshowid=` for the show) and its title (`item=`). The ids only appear when the library response includes them. For example:
+
+```
+2026-10-03 10:23:41.029 [DEBUG] [EasyTV.data] Invalid UTF-8 replaced in library text | event=jsonrpc.invalid_utf8, method=VideoLibrary.GetEpisodes, field=result.episodes[0].plot, episodeid=812, tvshowid=4, item=Pilot
+```
+
+This means the plot of the episode "Pilot" holds the bad character.
+
+**Fix it:**
+1. Correct the text in Kodi (edit the episode's or show's information) or in the NFO file it was scraped from
+2. Refresh that episode or show
+
+After that the `�` disappears.
+
+---
+
 ## Debug Logging
 
 For diagnosing complex issues, enable detailed logging.
