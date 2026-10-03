@@ -2,7 +2,7 @@
 # Pinned dev tooling. Excluded from the packaged Kodi addon zip.
 # Install: pip install -r requirements-dev.txt
 ruff==0.16.9
-pyright==1.1.411
+pyright==1.1.414
 pyflakes==4.0.0
 vulture==2.16
 pytest==9.1.1
