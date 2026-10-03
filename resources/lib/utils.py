@@ -353,7 +353,7 @@ class StructuredLogger:
         Returns:
             Formatted string: "[EasyTV.module] message | key=value, ..."
         """
-        base = f"[EasyTV.{self.module}] {message}"
+        formatted = f"[EasyTV.{self.module}] {message}"
         if kwargs:
             pairs = []
             for k, v in kwargs.items():
@@ -361,8 +361,11 @@ class StructuredLogger:
                 if k != 'trace' and len(str_v) > LOG_MAX_VALUE_LENGTH:
                     str_v = str_v[:LOG_MAX_VALUE_LENGTH] + "..."
                 pairs.append(f"{k}={str_v}")
-            return f"{base} | {', '.join(pairs)}"
-        return base
+            formatted = f"{formatted} | {', '.join(pairs)}"
+        # Strings Kodi hands to Python (paths, info labels) can carry lone
+        # surrogates for non-UTF-8 bytes. xbmc.log segfaults Kodi on those and
+        # the UTF-8 log file rejects them, so replace them before either sink.
+        return formatted.encode('utf-8', 'replace').decode('utf-8')
     
     def _format_file_line(self, level: str, formatted_message: str) -> str:
         """
@@ -681,7 +684,12 @@ def json_query(query: Union[Dict[str, Any], List[Dict[str, Any]]], return_result
     try:
         request = json.dumps(query)
         response = xbmc.executeJSONRPC(request)
-        # In Python 3, executeJSONRPC already returns a string
+        # Kodi decodes the response with surrogateescape, so a non-UTF-8 byte
+        # in the library (a Latin-1 title, path or plot) arrives as a lone
+        # surrogate. Passing such a string back into the Kodi API segfaults
+        # Kodi (it does not check PyUnicode_AsUTF8 for NULL), so restore the
+        # raw bytes and replace the invalid ones with U+FFFD.
+        response = response.encode('utf-8', 'surrogateescape').decode('utf-8', 'replace')
         data = json.loads(response)
         
         if return_result:
@@ -1076,6 +1084,14 @@ def set_custom_icon(addon_id: Optional[str] = None) -> bool:
         if not image_path:
             log.debug("Icon browse cancelled", event="icon.browse_cancelled")
             return False
+        # A file name that is not valid UTF-8 comes back holding lone
+        # surrogates, and xbmcvfs.copy segfaults Kodi on such a path.
+        try:
+            image_path.encode('utf-8')
+        except UnicodeEncodeError:
+            log.warning("Icon path is not valid UTF-8", event="icon.path_invalid",
+                        path=image_path)
+            return False
         source = image_path
 
     log.debug("Icon selected", event="icon.selected", path=source)
@@ -1262,15 +1278,14 @@ def restart_addon(addon_id: str, delay_ms: int = 500) -> None:
         addon_id: The addon ID to restart.
         delay_ms: Milliseconds to wait between disable and enable.
     """
-    import json as _json
-    xbmc.executeJSONRPC(_json.dumps({
+    xbmc.executeJSONRPC(json.dumps({
         "jsonrpc": "2.0",
         "method": "Addons.SetAddonEnabled",
         "id": 1,
         "params": {"addonid": addon_id, "enabled": False}
     }))
     xbmc.sleep(delay_ms)
-    xbmc.executeJSONRPC(_json.dumps({
+    xbmc.executeJSONRPC(json.dumps({
         "jsonrpc": "2.0",
         "method": "Addons.SetAddonEnabled",
         "id": 1,

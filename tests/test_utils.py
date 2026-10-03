@@ -5,7 +5,9 @@ import pytest
 
 from resources.lib.utils import (
     compare_versions,
+    get_logger,
     is_clone,
+    json_query,
     parse_lastplayed_date,
     parse_show_id_list,
     parse_version,
@@ -238,6 +240,31 @@ class TestSetCustomIcon:
         mock_browse_dialog.browse.assert_called_once()
 
 
+    def test_browsed_non_utf8_path_is_rejected_without_copying(self, mocker):
+        """xbmcvfs.copy segfaults Kodi on a path holding a lone surrogate
+        (a file name that is not valid UTF-8), so such a pick is refused."""
+        mock_addon = mocker.MagicMock()
+        mock_addon.getAddonInfo.side_effect = lambda k: {
+            'path': '/addon', 'id': 'script.easytv', 'profile': '/profile'
+        }[k]
+        mocker.patch('resources.lib.utils.xbmcaddon.Addon', return_value=mock_addon)
+        mocker.patch('resources.lib.ui.dialogs.show_select', return_value=4)  # Browse...
+        mock_browse_dialog = mocker.MagicMock()
+        mock_browse_dialog.browse.return_value = b'/custom/ic\xf4ne.png'.decode(
+            'utf-8', 'surrogateescape'
+        )
+        mocker.patch('resources.lib.utils.xbmcgui.Dialog', return_value=mock_browse_dialog)
+        mock_copy = mocker.patch('resources.lib.utils.xbmcvfs.copy', return_value=True)
+        mocker.patch('resources.lib.utils.os.makedirs')
+        mocker.patch('resources.lib.utils.lang', side_effect=lambda x, **kw: str(x))
+
+        from resources.lib.utils import set_custom_icon
+        result = set_custom_icon('script.easytv')
+
+        assert result is False
+        mock_copy.assert_not_called()
+
+
 # ── is_clone ─────────────────────────────────────────────────────────
 
 def _addon(addon_id):
@@ -277,3 +304,46 @@ class TestParseShowIdList:
 
     def test_malformed(self):
         assert parse_show_id_list("{not valid") == []
+
+
+# ── json_query ───────────────────────────────────────────────────────
+
+class TestJsonQueryInvalidUtf8:
+    """Kodi hands JSON-RPC text to Python with ``surrogateescape``, so a raw
+    non-UTF-8 byte in the library arrives as a lone surrogate. Kodi segfaults
+    when such a string is passed back into its API (``Window.setProperty``),
+    so every string json_query returns must be encodable as UTF-8."""
+
+    # What executeJSONRPC returns for a title stored as Latin-1 b"Pok\xe9mon".
+    KODI_RESPONSE = b'{"result": {"title": "Pok\xe9mon"}}'.decode(
+        "utf-8", "surrogateescape"
+    )
+
+    def test_lone_surrogate_becomes_replacement_character(self, mocker):
+        mocker.patch("xbmc.executeJSONRPC", return_value=self.KODI_RESPONSE)
+        result = json_query({"method": "VideoLibrary.GetEpisodeDetails"})
+        assert result["title"] == "Pok\ufffdmon"
+        result["title"].encode("utf-8")
+
+    def test_valid_non_ascii_is_unchanged(self, mocker):
+        mocker.patch(
+            "xbmc.executeJSONRPC",
+            return_value='{"result": {"title": "Pok\u00e9mon \u2603"}}',
+        )
+        result = json_query({"method": "VideoLibrary.GetEpisodeDetails"})
+        assert result["title"] == "Pok\u00e9mon \u2603"
+
+
+# ── StructuredLogger ─────────────────────────────────────────────────
+
+class TestLoggerInvalidUtf8:
+    """xbmc.log is a Kodi string API too: a lone surrogate in a logged value
+    (a filesystem path from Dialog.browse, an info label) would crash Kodi."""
+
+    def test_lone_surrogate_in_value_is_logged_as_utf8(self, mocker):
+        kodi_log = mocker.patch("xbmc.log")
+        path = b"/media/Pok\xe9mon".decode("utf-8", "surrogateescape")
+        get_logger("test").info("Export started", event="export.start", location=path)
+        logged = kodi_log.call_args[0][0]
+        logged.encode("utf-8")
+        assert "location=/media/Pok" in logged
