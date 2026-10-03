@@ -1,6 +1,32 @@
 EasyTV Changelog
 ================
 
+v1.10.2 (2026-10-03)
+--------------------
+Bug Fixes:
+  - Fixed: Kodi crashed on every start, ending in safe mode, when the
+    video library held text that is not valid UTF-8 (a Latin-1 title,
+    plot or file path). executeJSONRPC decodes its result with
+    surrogateescape, so the bad byte reached Python as a lone surrogate;
+    passing it back through Window.setProperty segfaults Kodi because
+    PyXBMCGetUnicodeString does not check PyUnicode_AsUTF8 for NULL.
+    json_query now restores the raw bytes and decodes them with
+    replacement, so invalid bytes become U+FFFD before any caller sees
+    them (#64).
+  - Fixed: the same crash was reachable through logging, since xbmc.log
+    is also a Kodi string API. StructuredLogger._format_message now
+    replaces surrogates before the Kodi log and easytv.log, and the
+    custom icon picker refuses a browsed file name that is not valid
+    UTF-8 instead of passing it to xbmcvfs.copy.
+
+Internal:
+  - Raised the toolchain's Python target (pyright, ruff) from 3.8 to
+    3.11, matching the Python bundled with Kodi 21.
+  - Coverage is now enforced as a floor in CI instead of only reported.
+  - The changelog test validates every version header, and the v1.10.0
+    header placeholder was restored.
+  - Annotated errorHandle in the clone scripts as NoReturn.
+
 v1.10.1 (2026-09-05)
 --------------------
 Bug Fixes:

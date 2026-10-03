@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <addon id="script.easytv"
        name="EasyTV"
-       version="1.10.1"
+       version="1.10.2"
        provider-name="Rouzax">
     <requires>
         <import addon="xbmc.python" version="3.0.1"/>
@@ -25,7 +25,11 @@
         <forum>https://forum.kodi.tv/showthread.php?tid=383902</forum>
         <website>https://rouzax.github.io/script.easytv/</website>
         <source>https://github.com/Rouzax/script.easytv</source>
-        <news>v1.10.1 (2026-09-05)
+        <news>v1.10.2 (2026-10-03)
+- Fixed Kodi crashing on every start (and ending in safe mode) when a title, plot or file path in your library contains an unusual character
+- Such characters now show as a placeholder symbol instead
+
+v1.10.1 (2026-09-05)
 - Fixed fanart not showing in the Big Screen and Posters browse views
 - Documentation now shows every guided question with fresh screenshots
 
