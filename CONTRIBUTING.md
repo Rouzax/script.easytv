@@ -39,7 +39,7 @@ I can't promise every feature will be implemented, but I do read all suggestions
 #### Skins
 I'm not a skinner, so **skin contributions and improvements are especially welcome!** The default skin files are in:
 ```
-resources/skins/Default/720p/
+resources/skins/Default/1080i/
 ```
 
 If you create or improve a skin, please submit a PR.
@@ -55,6 +55,34 @@ For code changes:
 6. Submit a pull request
 
 Please keep PRs focused — one feature or fix per PR makes review easier.
+
+---
+
+## Issue Labels and Milestones
+
+Labels say what an issue is or what it is waiting on. Milestones say when it is expected to ship.
+
+**Labels**
+
+| Label | Meaning |
+|-------|---------|
+| `bug` | Something isn't working. Set automatically by the bug report form. |
+| `enhancement` | A new feature or improvement. Set automatically by the feature request form. |
+| `documentation` | The docs need changing, not the add-on. |
+| `needs-info` | Waiting on the reporter. The issue may be closed if the details never arrive. |
+| `needs-upstream` | Waiting on Kodi or a skin. EasyTV cannot fix it on its own. |
+| `duplicate`, `invalid`, `wontfix` | Why an issue was closed without a change. |
+
+**Milestones**
+
+| Milestone | Meaning |
+|-----------|---------|
+| Next | Planned for the coming release. |
+| Later | Accepted, but not planned for a particular release yet. |
+
+An issue without a milestone has not been triaged yet. Milestones do not promise a version number; [changelog.txt](changelog.txt) records what each release contained.
+
+The label list lives in [.github/sync-labels.sh](.github/sync-labels.sh). Change labels there and run the script, rather than editing them on GitHub.
 
 ---
 
@@ -214,6 +242,6 @@ pre-commit run --all-files
 
 ## Questions?
 
-If you're unsure about something, open an issue and ask. I'd rather answer questions than have contributions go to waste.
+If you're unsure about something, ask in the [Kodi forum thread](https://forum.kodi.tv/showthread.php?tid=383902), or open an issue if it concerns a change you want to make. I'd rather answer questions than have contributions go to waste.
 
 Thanks for helping make EasyTV better!

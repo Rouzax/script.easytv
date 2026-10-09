@@ -1,0 +1,12 @@
+# Structurally synced with script.easymovie/.github/ISSUE_TEMPLATE/config.yml. Keep parallel.
+blank_issues_enabled: true
+contact_links:
+  - name: Troubleshooting and FAQ
+    url: https://rouzax.github.io/script.easytv/docs/troubleshooting-and-faq/
+    about: Common problems and their fixes. Check here before opening a bug report.
+  - name: Documentation
+    url: https://rouzax.github.io/script.easytv/docs/
+    about: How to set up and use EasyTV.
+  - name: Kodi forum thread
+    url: https://forum.kodi.tv/showthread.php?tid=383902
+    about: Questions, help with setup, and general discussion.
