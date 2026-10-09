@@ -77,10 +77,10 @@ Labels say what an issue is or what it is waiting on. Milestones say when it is 
 
 | Milestone | Meaning |
 |-----------|---------|
-| Next | Planned for the coming release. |
+| Next | Planned for the coming release. At release it is renamed to that version and closed, and a new Next is opened. |
 | Later | Accepted, but not planned for a particular release yet. |
 
-An issue without a milestone has not been triaged yet. Milestones do not promise a version number; [changelog.txt](changelog.txt) records what each release contained.
+An issue without a milestone has not been triaged yet. Open milestones do not promise a version number; closed milestones record what each release shipped, and [changelog.txt](changelog.txt) describes the changes.
 
 The label list lives in [.github/sync-labels.sh](.github/sync-labels.sh). Change labels there and run the script, rather than editing them on GitHub.
 
