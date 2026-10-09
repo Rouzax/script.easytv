@@ -110,48 +110,33 @@ The label list lives in [.github/sync-labels.sh](.github/sync-labels.sh). Change
 
 ```
 script.easytv/
+├── addon.xml               # Kodi addon metadata
 ├── default.py              # UI entry point (browse/random playlist)
 ├── service.py              # Background service entry point
-├── addon.xml               # Kodi addon metadata
-├── resources/
-│   ├── settings.xml        # Settings definition (Kodi 21+ format)
-│   ├── settings_clone.xml  # Clone addon settings template
-│   ├── addon_clone.xml     # Clone addon metadata template
-│   ├── selector.py         # Show selection dialog
-│   ├── clone.py            # Clone addon creator
-│   ├── update_clone.py     # Clone updater
-│   ├── episode_exporter.py # Export episodes to folder
-│   ├── playlists.py        # Playlist utilities
-│   ├── language/
-│   │   └── resource.language.en_gb/
-│   │       └── strings.po
-│   ├── skins/
-│   │   └── Default/1080i/
-│   │       ├── script-easytv-main.xml
-│   │       ├── script-easytv-BigScreenList.xml
-│   │       └── script-easytv-contextwindow.xml
-│   └── lib/                # Core library modules
-│       ├── constants.py    # All magic values
-│       ├── utils.py        # Shared utilities (logging, JSON-RPC, settings)
-│       ├── data/           # Data layer
-│       │   ├── queries.py      # JSON-RPC query builders
-│       │   ├── shows.py        # Show/episode data access
-│       │   └── smart_playlists.py  # Playlist file management
-│       ├── service/        # Background service
-│       │   ├── daemon.py           # Main service loop
-│       │   ├── settings.py         # Settings management
-│       │   ├── episode_tracker.py  # Episode tracking logic
-│       │   ├── playback_monitor.py # Playback event handling
-│       │   └── library_monitor.py  # Library change detection
-│       ├── ui/             # User interface
-│       │   ├── browse_window.py    # Episode list window
-│       │   ├── context_menu.py     # Context menu handler
-│       │   └── dialogs.py          # Common dialogs
-│       └── playback/       # Playback logic
-│           ├── episode_list.py     # Browse mode builder
-│           ├── random_player.py    # Random playlist builder
-│           └── browse_player.py    # Browse mode player
+└── resources/
+    ├── settings.xml        # Settings definition (Kodi 21+ format)
+    ├── addon_clone.xml     # Clone addon metadata template
+    ├── settings_clone.xml  # Clone addon settings template
+    ├── *.py                # Script entry points: show/playlist/genre selectors,
+    │                       #   clone create/update, episode export, clear sync data,
+    │                       #   dialog preview
+    ├── icons/              # Theme icons
+    ├── language/           # Localization strings (strings.po)
+    ├── skins/Default/
+    │   ├── 1080i/          # Window and dialog XML
+    │   └── media/          # Skin textures
+    └── lib/                # Core library
+        ├── constants.py    # All magic values
+        ├── utils.py        # Shared utilities (logging, JSON-RPC, settings)
+        ├── data/           # JSON-RPC queries, show processing, smart playlists,
+        │                   #   caches, storage, multi-instance sync database
+        ├── service/        # Background service: daemon loop, settings, episode
+        │                   #   tracking, library and playback monitoring
+        ├── ui/             # Browse window, dialogs, context menu, guided-flow wizard
+        └── playback/       # Random playlist builder, browse mode, playlist sessions
 ```
+
+Each module starts with a docstring describing its responsibility; read those for the detail below package level.
 
 ---
 
