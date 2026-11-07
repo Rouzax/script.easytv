@@ -469,6 +469,18 @@ Font-substitution workaround for the Estuary-only skin font bug ([kodi#28534](ht
 
 ---
 
+## Library Text Events
+
+`json_query` replaces invalid UTF-8 in JSON-RPC results with U+FFFD before any caller sees it, because handing a lone surrogate back to a Kodi string API crashes Kodi. These events point at the library item that holds the bad text.
+
+### jsonrpc Events (Logger: 'data')
+
+| Event | Level | Description |
+|-------|-------|-------------|
+| `jsonrpc.invalid_utf8` | DEBUG | A string in the result held invalid UTF-8 and was replaced. Fields: `method`, `field` (path within the result), the enclosing item's integer `*id` fields (such as `episodeid`, `tvshowid`), and `item` (its title or label). Emitted only when a replacement happened and debug logging is on |
+
+---
+
 ## Troubleshooting
 
 ### Log File Not Created
