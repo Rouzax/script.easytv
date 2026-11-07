@@ -1,6 +1,34 @@
 EasyTV Changelog
 ================
 
+v1.11.0 (2026-11-07)
+--------------------
+New Features:
+  - Added home-menu icons under resources/icons/menu/ for skins that
+    let users pick a menu icon (Skin Shortcuts thumb): white 128x128
+    PNGs in the format of skin extras/icons, so colordiffuse tinting
+    and sizing match the skin's own icons. A TV family with one badge
+    per clone purpose, sparkle and "easy TV" wordmark marks for EasyTV
+    itself, and plain die and tree glyphs. Built from Tabler Icons
+    (MIT); the licence ships alongside. New docs page: Menu Icons.
+
+Improvements:
+  - With debug logging enabled, each library string whose invalid
+    UTF-8 json_query replaced with U+FFFD is logged as
+    jsonrpc.invalid_utf8, with its field path and the enclosing item's
+    ids and title, so the offending show or episode can be found. The
+    walk runs only when a replacement happened and debug logging is
+    on. The troubleshooting page gained a matching symptom entry.
+
+Internal:
+  - tests/test_menu_icons.py pins the menu icon format (size,
+    white-only, glyph inside the centred 64 px).
+  - Codified issue labels (.github/sync-labels.sh) and the Next/Later
+    milestones; CONTRIBUTING.md documents them, and its project
+    structure section now matches the code.
+  - Bumped dev tooling: pyright 1.1.414, pre-commit 4.6.2, coverage
+    7.16.1, ruff 0.16.9, pyflakes 4.0.0, actions/deploy-pages 5.0.1.
+
 v1.10.2 (2026-10-03)
 --------------------
 Bug Fixes:
