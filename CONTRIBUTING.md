@@ -82,7 +82,7 @@ Labels say what an issue is or what it is waiting on. Milestones say when it is 
 
 An issue without a milestone has not been triaged yet. Open milestones do not promise a version number; closed milestones record what each release shipped, and [changelog.txt](changelog.txt) describes the changes.
 
-The label list lives in [.github/sync-labels.sh](.github/sync-labels.sh). Change labels there and run the script, rather than editing them on GitHub.
+The label list lives in [.github/sync-labels.sh](.github/sync-labels.sh). Change labels there and run `bash .github/sync-labels.sh`, rather than editing them on GitHub.
 
 ---
 

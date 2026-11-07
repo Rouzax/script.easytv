@@ -3,8 +3,11 @@
 #
 # Make the repository's labels match the list below, which is the source of truth.
 #
-#   .github/sync-labels.sh            create or update every listed label
-#   .github/sync-labels.sh --prune    also delete labels that are not listed
+#   bash .github/sync-labels.sh            create or update every listed label
+#   bash .github/sync-labels.sh --prune    also delete labels that are not listed
+#
+# Run it through bash: the file must stay non-executable, because
+# kodi-addon-checker fails on any executable file in the add-on directory.
 #
 # Labels say what an issue is or what it waits on; its milestone (Next or Later)
 # says when it ships. GitHub issue types need an organization account, so the
@@ -39,7 +42,7 @@ prune=false
 case "${1:-}" in
     "") ;;
     --prune) prune=true ;;
-    *) echo "usage: sync-labels.sh [--prune]" >&2; exit 2 ;;
+    *) echo "usage: bash .github/sync-labels.sh [--prune]" >&2; exit 2 ;;
 esac
 
 while IFS='|' read -r name color description; do
