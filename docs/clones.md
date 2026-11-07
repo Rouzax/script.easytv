@@ -64,6 +64,8 @@ Each clone can have its own custom icon, making them visually distinct in Kodi m
 
 This makes it easy to identify different clones at a glance (e.g., a kids icon for a kids-only clone).
 
+This sets the add-on's own icon, shown in the add-on browser. For the icon next to the clone in your skin's home menu, see [Menu Icons](menu-icons.md).
+
 ---
 
 ## Clone Limitations
@@ -163,3 +165,4 @@ For advanced setups, you can use the main EasyTV addon purely as a background se
 - **[Multi-Instance Sync](multi-instance-sync.md):** Why clones don't participate in sync
 - **[Auto-Created Smart Playlists](auto-generated-playlists.md):** Apply show filter to smart playlists for the Power User Pattern
 - **[Smart Playlist Integration](smart-playlist-integration.md):** Filter strategies that pair with clones
+- **[Menu Icons](menu-icons.md):** Matching home-menu icons for each clone

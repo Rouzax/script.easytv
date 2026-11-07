@@ -95,6 +95,7 @@ nav:
       - Smart Playlist Examples: smart-playlist-examples.md
   - Advanced:
       - Clones: clones.md
+      - Menu Icons: menu-icons.md
       - Episode Export: episode-export.md
       - Auto-Generated Playlists: auto-generated-playlists.md
       - Multi-Instance Sync: multi-instance-sync.md

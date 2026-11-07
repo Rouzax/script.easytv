@@ -94,6 +94,7 @@ See the [Installation page in the docs](https://rouzax.github.io/script.easytv/d
 | [Smart Playlist Examples](https://rouzax.github.io/script.easytv/docs/smart-playlist-examples/) | Ready-to-use playlist files |
 | [Random-Order Shows](https://rouzax.github.io/script.easytv/docs/random-order-shows/) | Shuffle-friendly content |
 | [Clones](https://rouzax.github.io/script.easytv/docs/clones/) | Multiple EasyTV instances with independent settings |
+| [Menu Icons](https://rouzax.github.io/script.easytv/docs/menu-icons/) | Icons for EasyTV and its clones in your home menu |
 | [Episode Export](https://rouzax.github.io/script.easytv/docs/episode-export/) | Copy next episodes for offline viewing |
 | [Auto-Generated Playlists](https://rouzax.github.io/script.easytv/docs/auto-generated-playlists/) | Smart playlists for skin widgets and channel surfing |
 | [Multi-Instance Sync](https://rouzax.github.io/script.easytv/docs/multi-instance-sync/) | Share progress across devices |
@@ -124,6 +125,8 @@ EasyTV began in 2024 as a fork of [LazyTV](https://github.com/KODeKarnage/script
 This project is licensed under the **GNU General Public License v3.0** (GPL-3.0-only).
 
 See [LICENSE.txt](LICENSE.txt) for the full license text.
+
+The [menu icons](https://rouzax.github.io/script.easytv/docs/menu-icons/) are built from [Tabler Icons](https://tabler.io/icons) (MIT). Their license ships with them in `resources/icons/menu/LICENSE-tabler-icons.txt`.
 
 ---
 
